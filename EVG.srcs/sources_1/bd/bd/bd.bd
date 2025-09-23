@@ -1,7 +1,7 @@
 {
   "design": {
     "design_info": {
-      "boundary_crc": "0x54041FA7B3EE04A5",
+      "boundary_crc": "0xB22BE0C807AC0A6B",
       "device": "xc7k160tffg676-2",
       "gen_directory": "../../../../EVG.gen/sources_1/bd/bd",
       "name": "bd",
@@ -368,11 +368,6 @@
         "left": "1",
         "right": "0"
       },
-      "evgHwTriggers": {
-        "direction": "I",
-        "left": "3",
-        "right": "0"
-      },
       "evgDistributedBus": {
         "direction": "I",
         "left": "7",
@@ -467,6 +462,11 @@
             "value_src": "default"
           }
         }
+      },
+      "evgHwTriggers": {
+        "direction": "I",
+        "left": "7",
+        "right": "0"
       }
     },
     "components": {
@@ -796,6 +796,9 @@
           },
           "PRIM_SOURCE": {
             "value": "Differential_clock_capable_pin"
+          },
+          "USE_INCLK_STOPPED": {
+            "value": "false"
           }
         }
       },
@@ -2065,12 +2068,27 @@
       },
       "ospreyEVG": {
         "vlnv": "ospreydcs.com:user:ospreyEVG:1.0",
-        "xci_name": "bd_ospreyEVG_0_2",
-        "xci_path": "ip/bd_ospreyEVG_0_2/bd_ospreyEVG_0_2.xci",
+        "xci_name": "bd_ospreyEVG_0_3",
+        "xci_path": "ip/bd_ospreyEVG_0_3/bd_ospreyEVG_0_3.xci",
         "inst_hier_path": "ospreyEVG",
         "parameters": {
           "DEBUG": {
             "value": "false"
+          },
+          "EVGCLK_FREQUENCY": {
+            "value": "125000000"
+          },
+          "HW_TRIGGER_COUNT": {
+            "value": "8"
+          },
+          "SEQRAM_ADDR_WIDTH": {
+            "value": "12"
+          },
+          "SEQRAM_BANK_COUNT": {
+            "value": "8"
+          },
+          "TIMER_COUNT": {
+            "value": "8"
           }
         }
       },
@@ -2270,22 +2288,28 @@
           "rst_clk_wiz_1_100M/dcm_locked"
         ]
       },
-      "distributedBus_0_1": {
-        "ports": [
-          "evgDistributedBus",
-          "ospreyEVG/distributedBus"
-        ]
-      },
       "eos_in_0_1": {
         "ports": [
           "startupEOS",
           "hwicap/eos_in"
         ]
       },
-      "evgClk_0_1": {
+      "evgClk_1": {
         "ports": [
           "evgClk",
           "ospreyEVG/evgClk"
+        ]
+      },
+      "evgDistributedBus_1": {
+        "ports": [
+          "evgDistributedBus",
+          "ospreyEVG/distributedBus"
+        ]
+      },
+      "evgHwTriggers_1": {
+        "ports": [
+          "evgHwTriggers",
+          "ospreyEVG/hwTriggers_a"
         ]
       },
       "evrClk_0_1": {
@@ -2311,12 +2335,6 @@
         "ports": [
           "evrRxChars",
           "ospreyEVR/evrRxChars"
-        ]
-      },
-      "hwTriggers_a_0_1": {
-        "ports": [
-          "evgHwTriggers",
-          "ospreyEVG/hwTriggers_a"
         ]
       },
       "iic_fpga_gpo": {
@@ -2364,7 +2382,7 @@
           "ospreyEVR/s_axi_aclk"
         ]
       },
-      "ospreyEVG_0_evgTxCharisK": {
+      "ospreyEVG_0_evgTxCharIsK": {
         "ports": [
           "ospreyEVG/evgTxCharIsK",
           "evgTxCharIsK"
@@ -2400,7 +2418,7 @@
           "phy_reset_n"
         ]
       },
-      "ppsMarker_a_0_1": {
+      "ppsMarker_a_1": {
         "ports": [
           "ppsMarker_a",
           "ospreyEVG/ppsMarker_a"
