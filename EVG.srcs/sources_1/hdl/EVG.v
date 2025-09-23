@@ -34,6 +34,7 @@ module EVG #(
     input  wire DDR_REF_CLK_N,
     input  wire MGTREFCLK0_116_P,
     input  wire MGTREFCLK0_116_N,
+    input  wire CLK20_VCXO,
     output wire VCXO_EN,
 
     output wire BOOT_CS_B,
@@ -70,33 +71,37 @@ module EVG #(
     output wire [CFG_MGT_COUNT-1:0] QSFP_TX_P,
     output wire [CFG_MGT_COUNT-1:0] QSFP_TX_N,
 
-    input  wire PMOD1_0,
-    input  wire PMOD1_1,
-    output wire PMOD1_2,
-    output wire PMOD1_3,
-    input  wire PMOD1_4,
-    input  wire PMOD1_5,
+    input  wire PMOD2_0,
+    input  wire PMOD2_1,
+    output wire PMOD2_2,
+    output wire PMOD2_3,
+    input  wire PMOD2_4,
+    input  wire PMOD2_5,
+    output wire PMOD2_6,
+    output wire PMOD2_7,
+
+    input  wire PMOD1_0,  // PMOD-GPS 3DFix
+    output wire PMOD1_1,  // PMOD-GPS RxD
+    input  wire PMOD1_2,  // PMOD-GPS TxD
+    input  wire PMOD1_3,  // PMOD-GPS PPS
+    output wire PMOD1_4,
+    output wire PMOD1_5,
     output wire PMOD1_6,
     output wire PMOD1_7,
 
-    input  wire PMOD2_0,  // PMOD-GPS 3DFix
-    output wire PMOD2_1,  // PMOD-GPS RxD
-    input  wire PMOD2_2,  // PMOD-GPS TxD
-    input  wire PMOD2_3,  // PMOD-GPS PPS
-    input  wire PMOD2_4,
-    input  wire PMOD2_5,
-    input  wire PMOD2_6,
-    input  wire PMOD2_7
+    input  wire FMC1_PPS_MARKER
     );
+
+localparam MGT_DATA_WIDTH       = 16;
+localparam MGT_COMMA_ALIGN_BYTE = 1;
 
 ///////////////////////////////////////////////////////////////////////////////
 // Static outputs
-assign VCXO_EN = 1'b0;
-assign WR_DAC2_SYNC_Tn = 1'b1;
+assign VCXO_EN = 1'b1;
 
 ///////////////////////////////////////////////////////////////////////////////
 // Clocks
-wire sysClk, clk125, clk200, clk500, evgClk, evrClk, gtRefClkDiv2;
+wire sysClk, clk20, clk125, clk200, clk500, evgClk, evrClk, gtRefClkDiv2;
 wire evrPPSmarker;
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -117,10 +122,11 @@ assign GPIO_IN[GPIO_IDX_FIRMWARE_DATE] = FIRMWARE_BUILD_DATE;
 
 ///////////////////////////////////////////////////////////////////////////////
 // Hardware trigger I/O
-wire [3:0] evgTriggers, evrTriggers;
+wire [7:0] evgTriggers, evrTriggers;
 // Yes, this really is the way that the PMOD-MPS card is wired...
-assign evgTriggers = {PMOD1_5, PMOD1_1, PMOD1_4, PMOD1_0};
-assign {PMOD1_7, PMOD1_3, PMOD1_6, PMOD1_2} = evrTriggers;
+assign evgTriggers = {PMOD2_5, PMOD2_1, PMOD2_4, PMOD2_0, PMOD2_5, PMOD2_1, PMOD2_4, PMOD2_0};
+//assign {PMOD2_7, PMOD2_3, PMOD2_6, PMOD2_2} = evrTriggers;
+assign {PMOD1_5,PMOD1_4} = evrTriggers[1:0];
 
 ///////////////////////////////////////////////////////////////////////////////
 // Keep track of elapsed time
@@ -133,11 +139,25 @@ sysClkCounters #(.CLK_RATE(CFG_SYSCLK_RATE), .DEBUG("false"))
     .secondsSinceBoot(GPIO_IN[GPIO_IDX_SECONDS_SINCE_BOOT]));
 
 ///////////////////////////////////////////////////////////////////////////////
+// Generate local PPS
+BUFG bufClk20 (.I(CLK20_VCXO), .O(clk20));
+wire localPPSmarker;
+localPPS #(.DEBUG("false"))
+  localPPS_i (
+    .sysClk(sysClk),
+    .sysCsrStrobe(GPIO_STROBES[GPIO_IDX_LOCAL_PPS_CSR]),
+    .sysGPIO_OUT(GPIO_OUT),
+    .sysStatus(GPIO_IN[GPIO_IDX_LOCAL_PPS_CSR]),
+    .clk20(clk20),
+    .localPPSmarker(localPPSmarker));
+
+///////////////////////////////////////////////////////////////////////////////
 // Lock clock to PPS marker
 // DAC1 adjusts the 125 MHz MGT reference, DDR reference, and system clocks.
 // DAC2 adjusts the 20 MHz system clock.
 wire ppsValid, clk125PPSmarker, hwPPSmarker_a;
-marbleClockSync #(.DEBUG("false"))
+marbleClockSync #(
+    .DEBUG("false"))
   marbleClockSync (
     .sysClk(sysClk),
     .sysCsrStrobe(GPIO_STROBES[GPIO_IDX_MARBLE_VCXO_PLL_CSR]),
@@ -147,15 +167,15 @@ marbleClockSync #(.DEBUG("false"))
     .sysHwInterval(GPIO_IN[GPIO_IDX_MARBLE_VCXO_HW_PPS]),
     .clk125(clk125),
     .clk500(clk500),
-    .ppsPrimary_pin(PMOD2_7),
-    .ppsSecondary_pin(PMOD2_3),
-    .ppsFromFabric(evrPPSmarker),
+    .ppsPrimary_pin(FMC1_PPS_MARKER),
+    .ppsSecondary_pin(PMOD1_3),
+    .ppsFromFabric(localPPSmarker),  /*FIXME! should be localPPS for EVG and EVR PPS for EVR -- how to distinguish???? */
     .hwPPSmarker_a(hwPPSmarker_a),
     .hwPPSvalid(ppsValid),
     .ppsMarker(clk125PPSmarker),
     .ppsToggle(),
     .SPI_CLK(WR_DAC_SCLK_T),
-    .SPI_SYNCn(WR_DAC1_SYNC_Tn),
+    .SPI_SYNCn({WR_DAC2_SYNC_Tn, WR_DAC1_SYNC_Tn}),
     .SPI_SDI(WR_DAC_DIN_T));
 
 //////////////////////////////////////////////////////////////////////////////
@@ -209,10 +229,11 @@ wire measuredUsingInteralAcqMarker;
 reg [2:0] frequencyChannelSelect = 0;
 frequencyCounters #(
     .CLOCKS_PER_ACQUISITION(CFG_SYSCLK_RATE),
-    .CHANNEL_COUNT(5))
+    .CHANNEL_COUNT(6))
   frequencyCounters (
     .clk(sysClk),
-    .measuredClocks({ evgClk,
+    .measuredClocks({ clk20,
+                      evgClk,
                       evrClk,
                       clk200,
                       gtRefClkDiv2,
@@ -231,23 +252,24 @@ assign GPIO_IN[GPIO_IDX_FREQUENCY_COUNTERS] = { measuredUsingInteralAcqMarker,
 
 ///////////////////////////////////////////////////////////////////////////////
 // Multi-gigabit transceivers
-wire [15:0] evgTxChars;
-wire  [1:0] evgTxCharIsK;
-wire        evrLinkUp;
-wire [15:0] evrRxChars;
-wire  [1:0] evrRxCharIsK;
+wire                      [CFG_MGT_COUNT-1:0] mgtRxClks;
+wire                      [CFG_MGT_COUNT-1:0] mgtRxLinkUp;
+wire     [(CFG_MGT_COUNT*MGT_DATA_WIDTH)-1:0] mgtRxChars;
+wire [(CFG_MGT_COUNT*(MGT_DATA_WIDTH/8))-1:0] mgtRxCharIsK;
+(*MARK_DEBUG="true"*) wire                     [MGT_DATA_WIDTH-1:0] evgTxChars;
+(*MARK_DEBUG="true"*) wire                 [(MGT_DATA_WIDTH/8)-1:0] evgTxCharIsK;
 
-fiberLinks #(
+mgtWrapper #(
     .MGT_COUNT(CFG_MGT_COUNT),
-    .MGT_DATA_WIDTH(16),
+    .MGT_DATA_WIDTH(MGT_DATA_WIDTH),
+    .COMMA_ALIGN_BYTE(MGT_COMMA_ALIGN_BYTE),
     .SYSCLK_RATE(CFG_SYSCLK_RATE),
     .DEBUG("false"))
-  fiberLinks_i (
+  mgtWrapper_i (
     .sysClk(sysClk),
     .sysCsrStrobe(GPIO_STROBES[GPIO_IDX_MGT_CSR]),
     .sysGPIO_OUT(GPIO_OUT),
     .sysStatus(GPIO_IN[GPIO_IDX_MGT_CSR]),
-    .sysLinkStatus(GPIO_IN[GPIO_IDX_LINK_STATUS]),
     .gtRefClkP(MGTREFCLK0_116_P),
     .gtRefClkN(MGTREFCLK0_116_N),
     .gtRefClkDiv2(gtRefClkDiv2),
@@ -255,13 +277,38 @@ fiberLinks #(
     .rxN(QSFP_RX_N),
     .txP(QSFP_TX_P),
     .txN(QSFP_TX_N),
+    .mgtRxClks(mgtRxClks),
+    .mgtRxLinkUp(mgtRxLinkUp),
+    .mgtRxChars(mgtRxChars),
+    .mgtRxCharIsK(mgtRxCharIsK),
+    .mgtTxClk(evgClk),
+    .mgtTxChars({CFG_MGT_COUNT{evgTxChars}}),
+    .mgtTxCharIsK({CFG_MGT_COUNT{evgTxCharIsK}}));
+
+assign GPIO_IN[GPIO_IDX_LINK_STATUS] = {{32-CFG_MGT_COUNT{1'b0}}, mgtRxLinkUp};
+assign evrClk = mgtRxClks[0];
+
+///////////////////////////////////////////////////////////////////////////////
+// Measure event link round-trip latency
+evgLatencyCheck #(
+    .RX_COUNT(CFG_MGT_COUNT),
+    .EVENT_CODE_BYTE(MGT_COMMA_ALIGN_BYTE),
+    .MGT_DATA_WIDTH(MGT_DATA_WIDTH),
+    .DEBUG("false"))
+  evgLatencyCheck_i (
+    .sysClk(sysClk),
+    .sysCsrStrobe(GPIO_STROBES[GPIO_IDX_LINK_LATENCY]),
+    .sysGPIO_OUT(GPIO_OUT),
+    .sysStatus(GPIO_IN[GPIO_IDX_LINK_LATENCY]),
+    .sampleClk(clk125),
+    .sampleClkX4(clk500),
+    .mgtRxClks(mgtRxClks),
+    .mgtRxChars(mgtRxChars),
+    .mgtRxCharIsK(mgtRxCharIsK),
     .mgtTxClk(evgClk),
     .mgtTxChars(evgTxChars),
     .mgtTxCharIsK(evgTxCharIsK),
-    .evrClk(evrClk),
-    .evrLinkUp(evrLinkUp),
-    .evrRxChars(evrRxChars),
-    .evrRxCharIsK(evrRxCharIsK));
+    .latencies());
 
 ///////////////////////////////////////////////////////////////////////////////
 // Delay data from PHY
@@ -320,18 +367,18 @@ bd bd_i (
     .evgTxCharIsK(evgTxCharIsK),
     .ppsMarker_a(clk125PPSmarker),
     .evgHwTriggers(evgTriggers),
-    .evgDistributedBus(8'h00),
+    .evgDistributedBus(8'b0), // FIXME! -- Should come from FMC1!
 
     .evrClk(evrClk),
-    .evrLinkUp(evrLinkUp),
-    .evrRxChars(evrRxChars),
-    .evrRxCharIsK(evrRxCharIsK),
+    .evrLinkUp(mgtRxLinkUp[0]),
+    .evrRxChars(mgtRxChars[0+:MGT_DATA_WIDTH]),
+    .evrRxCharIsK(mgtRxChars[0+:MGT_DATA_WIDTH/8]),
     .evrPPSmarker(evrPPSmarker),
     .evrHwTriggers(evrTriggers),
 
     .gnssPPS(hwPPSmarker_a),
-    .gnssRxD(PMOD2_2),
-    .gnssTxD(PMOD2_1),
+    .gnssRxD(PMOD1_2),
+    .gnssTxD(PMOD1_1),
 
     .console_rxd(FPGA_TxD),
     .console_txd(FPGA_RxD)

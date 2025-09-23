@@ -52,7 +52,7 @@ module mgtWrapper #(
     output wire     [(MGT_COUNT*MGT_DATA_WIDTH)-1:0] mgtRxChars,
     output wire [(MGT_COUNT*(MGT_DATA_WIDTH/8))-1:0] mgtRxCharIsK,
 
-    output wire                      [MGT_COUNT-1:0] mgtTxClk,
+    output wire                                      mgtTxClk,
     input  wire     [(MGT_COUNT*MGT_DATA_WIDTH)-1:0] mgtTxChars,
     input  wire [(MGT_COUNT*(MGT_DATA_WIDTH/8))-1:0] mgtTxCharIsK);
 
