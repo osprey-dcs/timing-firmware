@@ -101,7 +101,7 @@ assign VCXO_EN = 1'b1;
 
 ///////////////////////////////////////////////////////////////////////////////
 // Clocks
-wire sysClk, clk20, clk125, clk200, clk500, evgClk, evrClk, gtRefClkDiv2;
+wire sysClk, clk20, clk125, clk200, clk500, evgClk, gtRefClkDiv2;
 wire evrPPSmarker;
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -234,7 +234,7 @@ frequencyCounters #(
     .clk(sysClk),
     .measuredClocks({ clk20,
                       evgClk,
-                      evrClk,
+                      mgtRxClks[0],
                       clk200,
                       gtRefClkDiv2,
                       sysClk }),
@@ -256,8 +256,8 @@ wire                      [CFG_MGT_COUNT-1:0] mgtRxClks;
 wire                      [CFG_MGT_COUNT-1:0] mgtRxLinkUp;
 wire     [(CFG_MGT_COUNT*MGT_DATA_WIDTH)-1:0] mgtRxChars;
 wire [(CFG_MGT_COUNT*(MGT_DATA_WIDTH/8))-1:0] mgtRxCharIsK;
-(*MARK_DEBUG="true"*) wire                     [MGT_DATA_WIDTH-1:0] evgTxChars;
-(*MARK_DEBUG="true"*) wire                 [(MGT_DATA_WIDTH/8)-1:0] evgTxCharIsK;
+wire                     [MGT_DATA_WIDTH-1:0] evgTxChars;
+wire                 [(MGT_DATA_WIDTH/8)-1:0] evgTxCharIsK;
 
 mgtWrapper #(
     .MGT_COUNT(CFG_MGT_COUNT),
@@ -286,29 +286,6 @@ mgtWrapper #(
     .mgtTxCharIsK({CFG_MGT_COUNT{evgTxCharIsK}}));
 
 assign GPIO_IN[GPIO_IDX_LINK_STATUS] = {{32-CFG_MGT_COUNT{1'b0}}, mgtRxLinkUp};
-assign evrClk = mgtRxClks[0];
-
-///////////////////////////////////////////////////////////////////////////////
-// Measure event link round-trip latency
-evgLatencyCheck #(
-    .RX_COUNT(CFG_MGT_COUNT),
-    .EVENT_CODE_BYTE(MGT_COMMA_ALIGN_BYTE),
-    .MGT_DATA_WIDTH(MGT_DATA_WIDTH),
-    .DEBUG("false"))
-  evgLatencyCheck_i (
-    .sysClk(sysClk),
-    .sysCsrStrobe(GPIO_STROBES[GPIO_IDX_LINK_LATENCY]),
-    .sysGPIO_OUT(GPIO_OUT),
-    .sysStatus(GPIO_IN[GPIO_IDX_LINK_LATENCY]),
-    .sampleClk(clk125),
-    .sampleClkX4(clk500),
-    .mgtRxClks(mgtRxClks),
-    .mgtRxChars(mgtRxChars),
-    .mgtRxCharIsK(mgtRxCharIsK),
-    .mgtTxClk(evgClk),
-    .mgtTxChars(evgTxChars),
-    .mgtTxCharIsK(evgTxCharIsK),
-    .latencies());
 
 ///////////////////////////////////////////////////////////////////////////////
 // Delay data from PHY
@@ -329,6 +306,7 @@ bd bd_i (
     .sysReset_n(1'b1),
     .startupEOS(startupEOS),
     .sysClk(sysClk),
+    .clk20(clk20),
     .clk125(clk125),
     .clk500(clk500),
     .clk200(clk200),
@@ -365,11 +343,14 @@ bd bd_i (
     .evgClk(evgClk),
     .evgTxChars(evgTxChars),
     .evgTxCharIsK(evgTxCharIsK),
+    .evgRxClks(mgtRxClks),
+    .evgRxChars(mgtRxChars),
+    .evgRxCharIsK(mgtRxCharIsK),
     .ppsMarker_a(clk125PPSmarker),
     .evgHwTriggers(evgTriggers),
     .evgDistributedBus(8'b0), // FIXME! -- Should come from FMC1!
 
-    .evrClk(evrClk),
+    .evrClk(mgtRxClks[0]),
     .evrLinkUp(mgtRxLinkUp[0]),
     .evrRxChars(mgtRxChars[0+:MGT_DATA_WIDTH]),
     .evrRxCharIsK(mgtRxChars[0+:MGT_DATA_WIDTH/8]),
