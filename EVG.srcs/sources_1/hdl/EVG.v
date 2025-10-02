@@ -223,34 +223,6 @@ mmcIO #(.DEBUG("false"))
     .MMC_MISO(FPGA_MISO));
 
 ///////////////////////////////////////////////////////////////////////////////
-// Measure clocks
-wire [29:0] measuredFrequency;
-wire measuredUsingInteralAcqMarker;
-reg [2:0] frequencyChannelSelect = 0;
-frequencyCounters #(
-    .CLOCKS_PER_ACQUISITION(CFG_SYSCLK_RATE),
-    .CHANNEL_COUNT(6))
-  frequencyCounters (
-    .clk(sysClk),
-    .measuredClocks({ clk20,
-                      evgClk,
-                      mgtRxClks[0],
-                      clk200,
-                      gtRefClkDiv2,
-                      sysClk }),
-    .acqMarker_a(hwPPSmarker_a),
-    .useInternalAcqMarker(measuredUsingInteralAcqMarker),
-    .channelSelect(frequencyChannelSelect),
-    .frequency(measuredFrequency));
-always @(posedge sysClk) begin
-    if (GPIO_STROBES[GPIO_IDX_FREQUENCY_COUNTERS]) begin
-        frequencyChannelSelect <= GPIO_OUT[2:0];
-    end
-end
-assign GPIO_IN[GPIO_IDX_FREQUENCY_COUNTERS] = { measuredUsingInteralAcqMarker,
-                                                      1'b0, measuredFrequency };
-
-///////////////////////////////////////////////////////////////////////////////
 // Multi-gigabit transceivers
 wire                      [CFG_MGT_COUNT-1:0] mgtRxClks;
 wire                      [CFG_MGT_COUNT-1:0] mgtRxLinkUp;
@@ -286,6 +258,34 @@ mgtWrapper #(
     .mgtTxCharIsK({CFG_MGT_COUNT{evgTxCharIsK}}));
 
 assign GPIO_IN[GPIO_IDX_LINK_STATUS] = {{32-CFG_MGT_COUNT{1'b0}}, mgtRxLinkUp};
+
+///////////////////////////////////////////////////////////////////////////////
+// Measure clocks
+wire [29:0] measuredFrequency;
+wire measuredUsingInteralAcqMarker;
+reg [2:0] frequencyChannelSelect = 0;
+frequencyCounters #(
+    .CLOCKS_PER_ACQUISITION(CFG_SYSCLK_RATE),
+    .CHANNEL_COUNT(6))
+  frequencyCounters (
+    .clk(sysClk),
+    .measuredClocks({ clk20,
+                      evgClk,
+                      mgtRxClks[0],
+                      clk200,
+                      gtRefClkDiv2,
+                      sysClk }),
+    .acqMarker_a(hwPPSmarker_a),
+    .useInternalAcqMarker(measuredUsingInteralAcqMarker),
+    .channelSelect(frequencyChannelSelect),
+    .frequency(measuredFrequency));
+always @(posedge sysClk) begin
+    if (GPIO_STROBES[GPIO_IDX_FREQUENCY_COUNTERS]) begin
+        frequencyChannelSelect <= GPIO_OUT[2:0];
+    end
+end
+assign GPIO_IN[GPIO_IDX_FREQUENCY_COUNTERS] = { measuredUsingInteralAcqMarker,
+                                                      1'b0, measuredFrequency };
 
 ///////////////////////////////////////////////////////////////////////////////
 // Delay data from PHY
