@@ -24,15 +24,9 @@ set_property -dict {PACKAGE_PIN B24 IOSTANDARD LVCMOS25} [get_ports BOOT_MOSI]
 set_property -dict {PACKAGE_PIN A25 IOSTANDARD LVCMOS25} [get_ports BOOT_MISO]
 
 # Board I2C switch
-set_property PACKAGE_PIN B16 [get_ports I2C_FPGA_SCL]
-set_property IOSTANDARD LVCMOS25 [get_ports I2C_FPGA_SCL]
-set_property PULLUP true [get_ports I2C_FPGA_SCL]
-set_property PACKAGE_PIN A17 [get_ports I2C_FPGA_SDA]
-set_property IOSTANDARD LVCMOS25 [get_ports I2C_FPGA_SDA]
-set_property PULLUP true [get_ports I2C_FPGA_SDA]
-set_property PACKAGE_PIN B19 [get_ports I2C_FPGA_SW_RSTn]
-set_property IOSTANDARD LVCMOS25 [get_ports I2C_FPGA_SW_RSTn]
-set_property PULLUP true [get_ports I2C_FPGA_SW_RSTn]
+set_property -dict {PACKAGE_PIN B16 IOSTANDARD LVCMOS25 PULLUP true} [get_ports I2C_FPGA_SCL]
+set_property -dict {PACKAGE_PIN A17 IOSTANDARD LVCMOS25 PULLUP true} [get_ports I2C_FPGA_SDA]
+set_property -dict {PACKAGE_PIN B19 IOSTANDARD LVCMOS25 PULLUP true} [get_ports I2C_FPGA_SW_RSTn]
 
 # SPI from microcontroller
 set_property -dict {PACKAGE_PIN AE21 IOSTANDARD LVCMOS25} [get_ports FPGA_SCLK]

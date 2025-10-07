@@ -298,24 +298,6 @@
             },
             "V9": {
                 "VT": "AC",
-                "BA": "0x44A10000",
-                "HA": "0x44A1FFFF",
-                "BP": "C_S_AXI_BASEADDR",
-                "HP": "C_S_AXI_HIGHADDR",
-                "MA": "Data",
-                "MX": "/microblaze_0",
-                "MI": "M_AXI_DP",
-                "MS": "SEG_ospreyEVR_0_S_AXI_reg",
-                "MV": "xilinx.com:ip:microblaze:11.0",
-                "SX": "/ospreyEVR",
-                "SI": "S_AXI",
-                "SS": "S_AXI_reg",
-                "SV": "ospreydcs.com:osprey:ospreyEVR:1.0",
-                "TM": "data",
-                "TU": "register"
-            },
-            "V10": {
-                "VT": "AC",
                 "BA": "0x44A20000",
                 "HA": "0x44A2FFFF",
                 "BP": "C_S_AXI_LITE_BASEADDR",
@@ -332,7 +314,7 @@
                 "TM": "data",
                 "TU": "register"
             },
-            "V11": {
+            "V10": {
                 "VT": "AC",
                 "BA": "0x44A30000",
                 "HA": "0x44A3FFFF",
@@ -350,7 +332,7 @@
                 "TM": "data",
                 "TU": "register"
             },
-            "V12": {
+            "V11": {
                 "VT": "AC",
                 "BA": "0x44A40000",
                 "HA": "0x44A4FFFF",
@@ -368,7 +350,7 @@
                 "TM": "data",
                 "TU": "register"
             },
-            "V13": {
+            "V12": {
                 "VT": "AC",
                 "BA": "0x44A50000",
                 "HA": "0x44A5FFFF",
@@ -386,7 +368,7 @@
                 "TM": "data",
                 "TU": "register"
             },
-            "V14": {
+            "V13": {
                 "VT": "AC",
                 "BA": "0x44A60000",
                 "HA": "0x44A6FFFF",
@@ -467,11 +449,6 @@
             },
             {
                 "src": "V13",
-                "trg": "V2",
-                "EH": "2"
-            },
-            {
-                "src": "V14",
                 "trg": "V2",
                 "EH": "2"
             }

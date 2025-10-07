@@ -102,7 +102,6 @@ assign VCXO_EN = 1'b1;
 ///////////////////////////////////////////////////////////////////////////////
 // Clocks
 wire sysClk, clk20, clk125, clk200, clk500, evgClk, gtRefClkDiv2;
-wire evrPPSmarker;
 
 ///////////////////////////////////////////////////////////////////////////////
 // General-purpose I/O register glue
@@ -119,14 +118,6 @@ endgenerate
 
 `include "firmwareBuildDate.v"
 assign GPIO_IN[GPIO_IDX_FIRMWARE_DATE] = FIRMWARE_BUILD_DATE;
-
-///////////////////////////////////////////////////////////////////////////////
-// Hardware trigger I/O
-wire [7:0] evgTriggers, evrTriggers;
-// Yes, this really is the way that the PMOD-MPS card is wired...
-assign evgTriggers = {PMOD2_5, PMOD2_1, PMOD2_4, PMOD2_0, PMOD2_5, PMOD2_1, PMOD2_4, PMOD2_0};
-//assign {PMOD2_7, PMOD2_3, PMOD2_6, PMOD2_2} = evrTriggers;
-assign {PMOD1_5,PMOD1_4} = evrTriggers[1:0];
 
 ///////////////////////////////////////////////////////////////////////////////
 // Keep track of elapsed time
@@ -261,17 +252,25 @@ assign GPIO_IN[GPIO_IDX_LINK_STATUS] = {{32-CFG_MGT_COUNT{1'b0}}, mgtRxLinkUp};
 
 ///////////////////////////////////////////////////////////////////////////////
 // Measure clocks
+localparam FREQ_MON_CHANNEL_COUNT = 13;
 wire [29:0] measuredFrequency;
 wire measuredUsingInteralAcqMarker;
-reg [2:0] frequencyChannelSelect = 0;
+reg [$clog2(FREQ_MON_CHANNEL_COUNT)-1:0] frequencyChannelSelect = 0;
 frequencyCounters #(
     .CLOCKS_PER_ACQUISITION(CFG_SYSCLK_RATE),
-    .CHANNEL_COUNT(6))
+    .CHANNEL_COUNT(FREQ_MON_CHANNEL_COUNT))
   frequencyCounters (
     .clk(sysClk),
-    .measuredClocks({ clk20,
-                      evgClk,
+    .measuredClocks({ mgtRxClks[7],
+                      mgtRxClks[6],
+                      mgtRxClks[5],
+                      mgtRxClks[4],
+                      mgtRxClks[3],
+                      mgtRxClks[2],
+                      mgtRxClks[1],
                       mgtRxClks[0],
+                      evgClk,
+                      clk20,
                       clk200,
                       gtRefClkDiv2,
                       sysClk }),
@@ -281,7 +280,7 @@ frequencyCounters #(
     .frequency(measuredFrequency));
 always @(posedge sysClk) begin
     if (GPIO_STROBES[GPIO_IDX_FREQUENCY_COUNTERS]) begin
-        frequencyChannelSelect <= GPIO_OUT[2:0];
+        frequencyChannelSelect <= GPIO_OUT[$clog2(FREQ_MON_CHANNEL_COUNT)-1:0];
     end
 end
 assign GPIO_IN[GPIO_IDX_FREQUENCY_COUNTERS] = { measuredUsingInteralAcqMarker,
@@ -347,15 +346,7 @@ bd bd_i (
     .evgRxChars(mgtRxChars),
     .evgRxCharIsK(mgtRxCharIsK),
     .ppsMarker_a(clk125PPSmarker),
-    .evgHwTriggers(evgTriggers),
-    .evgDistributedBus(8'b0), // FIXME! -- Should come from FMC1!
-
-    .evrClk(mgtRxClks[0]),
-    .evrLinkUp(mgtRxLinkUp[0]),
-    .evrRxChars(mgtRxChars[0+:MGT_DATA_WIDTH]),
-    .evrRxCharIsK(mgtRxChars[0+:MGT_DATA_WIDTH/8]),
-    .evrPPSmarker(evrPPSmarker),
-    .evrHwTriggers(evrTriggers),
+    .evgHwInputs_a({PMOD2_1, PMOD2_4, PMOD2_0, PMOD2_5, PMOD2_1, PMOD2_4, PMOD2_0, PMOD2_5, PMOD2_1, PMOD2_4, PMOD2_0, PMOD2_5, PMOD2_1, PMOD2_4, PMOD2_0}), //FIXME: Should come from FMC1
 
     .gnssPPS(hwPPSmarker_a),
     .gnssRxD(PMOD1_2),

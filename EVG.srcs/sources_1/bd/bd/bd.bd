@@ -1,7 +1,7 @@
 {
   "design": {
     "design_info": {
-      "boundary_crc": "0x9DD7F8448EA65B3F",
+      "boundary_crc": "0x11E488B5AAE061F7",
       "device": "xc7k160tffg676-2",
       "gen_directory": "../../../../EVG.gen/sources_1/bd/bd",
       "name": "bd",
@@ -34,10 +34,8 @@
         "m05_couplers": {},
         "m06_couplers": {},
         "m07_couplers": {},
-        "m08_couplers": {},
-        "m09_couplers": {}
+        "m08_couplers": {}
       },
-      "clk_wiz_0": "",
       "generic_reg": "",
       "marbleBootFlash": "",
       "iic_fpga": "",
@@ -45,7 +43,6 @@
       "hwicap": "",
       "ospreyGNSS": "",
       "ospreyUDP": "",
-      "ospreyEVR": "",
       "latencyMMCM": "",
       "ospreyEVG": ""
     },
@@ -299,58 +296,12 @@
           }
         }
       },
-      "evrLinkUp": {
-        "direction": "I"
-      },
-      "evrHwTriggers": {
-        "direction": "O",
-        "left": "3",
-        "right": "0"
-      },
-      "evrRxCharIsK": {
-        "direction": "I",
-        "left": "1",
-        "right": "0"
-      },
-      "evrRxChars": {
-        "direction": "I",
-        "left": "15",
-        "right": "0"
-      },
-      "evrClk": {
-        "type": "clk",
-        "direction": "I",
-        "parameters": {
-          "CLK_DOMAIN": {
-            "value": "bd_evrClk",
-            "value_src": "default"
-          },
-          "FREQ_HZ": {
-            "value": "125000000"
-          },
-          "FREQ_TOLERANCE_HZ": {
-            "value": "0",
-            "value_src": "default"
-          },
-          "INSERT_VIP": {
-            "value": "0",
-            "value_src": "default"
-          },
-          "PHASE": {
-            "value": "0.0",
-            "value_src": "default"
-          }
-        }
-      },
       "i2c_fpga_gpo": {
         "direction": "O",
         "left": "0",
         "right": "0"
       },
       "phy_reset_n": {
-        "direction": "O"
-      },
-      "evrPPSmarker": {
         "direction": "O"
       },
       "evgClk": {
@@ -367,11 +318,6 @@
       "evgTxCharIsK": {
         "direction": "O",
         "left": "1",
-        "right": "0"
-      },
-      "evgDistributedBus": {
-        "direction": "I",
-        "left": "7",
         "right": "0"
       },
       "gnssRxD": {
@@ -464,11 +410,6 @@
           }
         }
       },
-      "evgHwTriggers": {
-        "direction": "I",
-        "left": "7",
-        "right": "0"
-      },
       "evgRxClks": {
         "direction": "I",
         "left": "7",
@@ -508,6 +449,11 @@
             "value_src": "default"
           }
         }
+      },
+      "evgHwInputs_a": {
+        "direction": "I",
+        "left": "14",
+        "right": "0"
       }
     },
     "components": {
@@ -867,7 +813,7 @@
         "xci_name": "bd_microblaze_0_axi_periph_0",
         "parameters": {
           "NUM_MI": {
-            "value": "10"
+            "value": "9"
           }
         },
         "interface_ports": {
@@ -917,11 +863,6 @@
             "vlnv": "xilinx.com:interface:aximm_rtl:1.0"
           },
           "M08_AXI": {
-            "mode": "Master",
-            "vlnv_bus_definition": "xilinx.com:interface:aximm:1.0",
-            "vlnv": "xilinx.com:interface:aximm_rtl:1.0"
-          },
-          "M09_AXI": {
             "mode": "Master",
             "vlnv_bus_definition": "xilinx.com:interface:aximm:1.0",
             "vlnv": "xilinx.com:interface:aximm_rtl:1.0"
@@ -1100,22 +1041,6 @@
           "M08_ARESETN": {
             "type": "rst",
             "direction": "I"
-          },
-          "M09_ACLK": {
-            "type": "clk",
-            "direction": "I",
-            "parameters": {
-              "ASSOCIATED_BUSIF": {
-                "value": "M09_AXI"
-              },
-              "ASSOCIATED_RESET": {
-                "value": "M09_ARESETN"
-              }
-            }
-          },
-          "M09_ARESETN": {
-            "type": "rst",
-            "direction": "I"
           }
         },
         "components": {
@@ -1126,7 +1051,7 @@
             "inst_hier_path": "microblaze_0_axi_periph/xbar",
             "parameters": {
               "NUM_MI": {
-                "value": "10"
+                "value": "9"
               },
               "NUM_SI": {
                 "value": "1"
@@ -1148,8 +1073,7 @@
                   "M05_AXI",
                   "M06_AXI",
                   "M07_AXI",
-                  "M08_AXI",
-                  "M09_AXI"
+                  "M08_AXI"
                 ]
               }
             }
@@ -1713,62 +1637,6 @@
                 ]
               }
             }
-          },
-          "m09_couplers": {
-            "interface_ports": {
-              "M_AXI": {
-                "mode": "Master",
-                "vlnv_bus_definition": "xilinx.com:interface:aximm:1.0",
-                "vlnv": "xilinx.com:interface:aximm_rtl:1.0"
-              },
-              "S_AXI": {
-                "mode": "Slave",
-                "vlnv_bus_definition": "xilinx.com:interface:aximm:1.0",
-                "vlnv": "xilinx.com:interface:aximm_rtl:1.0"
-              }
-            },
-            "ports": {
-              "M_ACLK": {
-                "type": "clk",
-                "direction": "I",
-                "parameters": {
-                  "ASSOCIATED_BUSIF": {
-                    "value": "M_AXI"
-                  },
-                  "ASSOCIATED_RESET": {
-                    "value": "M_ARESETN"
-                  }
-                }
-              },
-              "M_ARESETN": {
-                "type": "rst",
-                "direction": "I"
-              },
-              "S_ACLK": {
-                "type": "clk",
-                "direction": "I",
-                "parameters": {
-                  "ASSOCIATED_BUSIF": {
-                    "value": "S_AXI"
-                  },
-                  "ASSOCIATED_RESET": {
-                    "value": "S_ARESETN"
-                  }
-                }
-              },
-              "S_ARESETN": {
-                "type": "rst",
-                "direction": "I"
-              }
-            },
-            "interface_nets": {
-              "m09_couplers_to_m09_couplers": {
-                "interface_ports": [
-                  "S_AXI",
-                  "M_AXI"
-                ]
-              }
-            }
           }
         },
         "interface_nets": {
@@ -1824,12 +1692,6 @@
             "interface_ports": [
               "m08_couplers/M_AXI",
               "M08_AXI"
-            ]
-          },
-          "m09_couplers_to_microblaze_0_axi_periph": {
-            "interface_ports": [
-              "m09_couplers/M_AXI",
-              "M09_AXI"
             ]
           },
           "microblaze_0_axi_periph_to_s00_couplers": {
@@ -1897,12 +1759,6 @@
               "xbar/M08_AXI",
               "m08_couplers/S_AXI"
             ]
-          },
-          "xbar_to_m09_couplers": {
-            "interface_ports": [
-              "xbar/M09_AXI",
-              "m09_couplers/S_AXI"
-            ]
           }
         },
         "nets": {
@@ -1921,7 +1777,6 @@
               "m06_couplers/M_ACLK",
               "m07_couplers/M_ACLK",
               "m08_couplers/M_ACLK",
-              "m09_couplers/M_ACLK",
               "m00_couplers/S_ACLK",
               "m01_couplers/S_ACLK",
               "m02_couplers/S_ACLK",
@@ -1930,8 +1785,7 @@
               "m05_couplers/S_ACLK",
               "m06_couplers/S_ACLK",
               "m07_couplers/S_ACLK",
-              "m08_couplers/S_ACLK",
-              "m09_couplers/S_ACLK"
+              "m08_couplers/S_ACLK"
             ]
           },
           "microblaze_0_axi_periph_ARESETN_net": {
@@ -1949,7 +1803,6 @@
               "m06_couplers/M_ARESETN",
               "m07_couplers/M_ARESETN",
               "m08_couplers/M_ARESETN",
-              "m09_couplers/M_ARESETN",
               "m00_couplers/S_ARESETN",
               "m01_couplers/S_ARESETN",
               "m02_couplers/S_ARESETN",
@@ -1958,50 +1811,8 @@
               "m05_couplers/S_ARESETN",
               "m06_couplers/S_ARESETN",
               "m07_couplers/S_ARESETN",
-              "m08_couplers/S_ARESETN",
-              "m09_couplers/S_ARESETN"
+              "m08_couplers/S_ARESETN"
             ]
-          }
-        }
-      },
-      "clk_wiz_0": {
-        "vlnv": "xilinx.com:ip:clk_wiz:6.0",
-        "xci_name": "bd_clk_wiz_0_0",
-        "xci_path": "ip/bd_clk_wiz_0_0/bd_clk_wiz_0_0.xci",
-        "inst_hier_path": "clk_wiz_0",
-        "parameters": {
-          "CLKIN1_JITTER_PS": {
-            "value": "80.0"
-          },
-          "CLKOUT1_JITTER": {
-            "value": "92.027"
-          },
-          "CLKOUT1_PHASE_ERROR": {
-            "value": "96.948"
-          },
-          "CLKOUT1_REQUESTED_OUT_FREQ": {
-            "value": "500"
-          },
-          "MMCM_CLKFBOUT_MULT_F": {
-            "value": "8.000"
-          },
-          "MMCM_CLKIN1_PERIOD": {
-            "value": "8.000"
-          },
-          "MMCM_CLKOUT0_DIVIDE_F": {
-            "value": "2.000"
-          },
-          "PRIM_IN_FREQ": {
-            "value": "125"
-          },
-          "PRIM_SOURCE": {
-            "value": "Global_buffer"
-          },
-          "USE_LOCKED": {
-            "value": "false"
-          },
-          "USE_RESET": {
-            "value": "false"
           }
         }
       },
@@ -2107,23 +1918,6 @@
         "xci_path": "ip/bd_ospreyUDP_0_0/bd_ospreyUDP_0_0.xci",
         "inst_hier_path": "ospreyUDP"
       },
-      "ospreyEVR": {
-        "vlnv": "ospreydcs.com:osprey:ospreyEVR:1.0",
-        "xci_name": "bd_ospreyEVR_0_2",
-        "xci_path": "ip/bd_ospreyEVR_0_2/bd_ospreyEVR_0_2.xci",
-        "inst_hier_path": "ospreyEVR",
-        "parameters": {
-          "DEBUG": {
-            "value": "false"
-          },
-          "DISTRIBUTED_BUFFER_ADDR_WIDTH": {
-            "value": "10"
-          },
-          "OUTPUT_TRIGGER_COUNT": {
-            "value": "4"
-          }
-        }
-      },
       "latencyMMCM": {
         "vlnv": "xilinx.com:ip:clk_wiz:6.0",
         "xci_name": "bd_clk_wiz_2_0",
@@ -2185,9 +1979,6 @@
           },
           "EVGCLK_FREQUENCY": {
             "value": "125000000"
-          },
-          "HW_TRIGGER_COUNT": {
-            "value": "8"
           },
           "RX_COUNT": {
             "value": "8"
@@ -2256,7 +2047,7 @@
       "microblaze_0_axi_periph_M02_AXI": {
         "interface_ports": [
           "microblaze_0_axi_periph/M02_AXI",
-          "ospreyEVR/S_AXI"
+          "hwicap/S_AXI_LITE"
         ]
       },
       "microblaze_0_axi_periph_M03_AXI": {
@@ -2293,12 +2084,6 @@
         "interface_ports": [
           "microblaze_0_axi_periph/M08_AXI",
           "ospreyEVG/S_AXI"
-        ]
-      },
-      "microblaze_0_axi_periph_M09_AXI": {
-        "interface_ports": [
-          "microblaze_0_axi_periph/M09_AXI",
-          "hwicap/S_AXI_LITE"
         ]
       },
       "microblaze_0_debug": {
@@ -2357,12 +2142,6 @@
           "latencyMMCM/clk_in1"
         ]
       },
-      "clk_wiz_0_clk_out1": {
-        "ports": [
-          "clk_wiz_0/clk_out1",
-          "ospreyEVR/evrClk4"
-        ]
-      },
       "clk_wiz_1_clk_out2": {
         "ports": [
           "clk_wiz_1/clk_out2",
@@ -2400,18 +2179,6 @@
           "ospreyEVG/evgClk"
         ]
       },
-      "evgDistributedBus_1": {
-        "ports": [
-          "evgDistributedBus",
-          "ospreyEVG/distributedBus"
-        ]
-      },
-      "evgHwTriggers_1": {
-        "ports": [
-          "evgHwTriggers",
-          "ospreyEVG/hwTriggers_a"
-        ]
-      },
       "evgRxCharIsK_0_1": {
         "ports": [
           "evgRxCharIsK",
@@ -2430,29 +2197,10 @@
           "ospreyEVG/evgRxClks"
         ]
       },
-      "evrClk_0_1": {
+      "hwInputs_a_0_1": {
         "ports": [
-          "evrClk",
-          "clk_wiz_0/clk_in1",
-          "ospreyEVR/evrClk"
-        ]
-      },
-      "evrLinkUp_1": {
-        "ports": [
-          "evrLinkUp",
-          "ospreyEVR/evrLinkUp"
-        ]
-      },
-      "evrRxCharIsK_1": {
-        "ports": [
-          "evrRxCharIsK",
-          "ospreyEVR/evrRxCharIsK"
-        ]
-      },
-      "evrRxChars_1": {
-        "ports": [
-          "evrRxChars",
-          "ospreyEVR/evrRxChars"
+          "evgHwInputs_a",
+          "ospreyEVG/hwInputs_a"
         ]
       },
       "iic_fpga_gpo": {
@@ -2504,11 +2252,9 @@
           "microblaze_0_axi_periph/M07_ACLK",
           "microblaze_0_axi_periph/M08_ACLK",
           "hwicap/s_axi_aclk",
-          "microblaze_0_axi_periph/M09_ACLK",
           "hwicap/icap_clk",
           "ospreyGNSS/s_axi_aclk",
           "ospreyUDP/s_axi_lite_aclk",
-          "ospreyEVR/s_axi_aclk",
           "ospreyEVG/s_axi_aclk"
         ]
       },
@@ -2522,18 +2268,6 @@
         "ports": [
           "ospreyEVG/evgTxChars",
           "evgTxChars"
-        ]
-      },
-      "ospreyEVR_0_evrOutputTriggers": {
-        "ports": [
-          "ospreyEVR/evrHardwareTriggers",
-          "evrHwTriggers"
-        ]
-      },
-      "ospreyEVR_evrPPSmarker": {
-        "ports": [
-          "ospreyEVR/evrPPSmarker",
-          "evrPPSmarker"
         ]
       },
       "ospreyGNSS_txD": {
@@ -2592,10 +2326,8 @@
           "microblaze_0_axi_periph/M07_ARESETN",
           "microblaze_0_axi_periph/M08_ARESETN",
           "hwicap/s_axi_aresetn",
-          "microblaze_0_axi_periph/M09_ARESETN",
           "ospreyGNSS/s_axi_aresetn",
           "ospreyUDP/s_axi_lite_aresetn",
-          "ospreyEVR/s_axi_aresetn",
           "ospreyEVG/s_axi_aresetn"
         ]
       },
@@ -2611,11 +2343,6 @@
         "address_spaces": {
           "Data": {
             "segments": {
-              "SEG_axi_hwicap_0_Reg": {
-                "address_block": "/hwicap/S_AXI_LITE/Reg",
-                "offset": "0x40200000",
-                "range": "64K"
-              },
               "SEG_axi_iic_0_Reg": {
                 "address_block": "/iic_fpga/S_AXI/Reg",
                 "offset": "0x40800000",
@@ -2637,6 +2364,11 @@
                 "range": "128K",
                 "offset_high_param": "C_HIGHADDR"
               },
+              "SEG_hwicap_Reg": {
+                "address_block": "/hwicap/S_AXI_LITE/Reg",
+                "offset": "0x40200000",
+                "range": "64K"
+              },
               "SEG_marbleBootFlash_0_S_AXI_LITE_reg": {
                 "address_block": "/marbleBootFlash/S_AXI_LITE/S_AXI_LITE_reg",
                 "offset": "0x44A20000",
@@ -2647,13 +2379,6 @@
               "SEG_ospreyEVG_0_S_AXI_reg": {
                 "address_block": "/ospreyEVG/S_AXI/S_AXI_reg",
                 "offset": "0x44A50000",
-                "range": "64K",
-                "offset_base_param": "C_S_AXI_BASEADDR",
-                "offset_high_param": "C_S_AXI_HIGHADDR"
-              },
-              "SEG_ospreyEVR_0_S_AXI_reg": {
-                "address_block": "/ospreyEVR/S_AXI/S_AXI_reg",
-                "offset": "0x44A10000",
                 "range": "64K",
                 "offset_base_param": "C_S_AXI_BASEADDR",
                 "offset_high_param": "C_S_AXI_HIGHADDR"
