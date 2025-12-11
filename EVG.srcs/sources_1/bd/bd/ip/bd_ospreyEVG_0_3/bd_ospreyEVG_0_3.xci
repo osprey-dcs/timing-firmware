@@ -4,7 +4,7 @@
     "xci_name": "bd_ospreyEVG_0_3",
     "cell_name": "ospreyEVG",
     "component_reference": "ospreydcs.com:user:ospreyEVG:1.0",
-    "ip_revision": "24",
+    "ip_revision": "25",
     "gen_directory": "../../../../../../EVG.gen/sources_1/bd/bd/ip/bd_ospreyEVG_0_3",
     "parameters": {
       "component_parameters": {
@@ -49,7 +49,7 @@
       },
       "runtime_parameters": {
         "IPCONTEXT": [ { "value": "IP_Integrator" } ],
-        "IPREVISION": [ { "value": "24" } ],
+        "IPREVISION": [ { "value": "25" } ],
         "MANAGED": [ { "value": "TRUE" } ],
         "OUTPUTDIR": [ { "value": "../../../../../../EVG.gen/sources_1/bd/bd/ip/bd_ospreyEVG_0_3" } ],
         "SELECTEDSIMMODEL": [ { "value": "" } ],

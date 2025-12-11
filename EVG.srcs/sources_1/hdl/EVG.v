@@ -251,6 +251,9 @@ mgtWrapper #(
 assign GPIO_IN[GPIO_IDX_LINK_STATUS] = {{32-CFG_MGT_COUNT{1'b0}}, mgtRxLinkUp};
 
 ///////////////////////////////////////////////////////////////////////////////
+// Merge MPS fault status
+
+///////////////////////////////////////////////////////////////////////////////
 // Measure clocks
 localparam FREQ_MON_CHANNEL_COUNT = 13;
 wire [29:0] measuredFrequency;
@@ -347,6 +350,13 @@ bd bd_i (
     .evgRxCharIsK(mgtRxCharIsK),
     .ppsMarker_a(clk125PPSmarker),
     .evgHwInputs_a({PMOD2_1, PMOD2_4, PMOD2_0, PMOD2_5, PMOD2_1, PMOD2_4, PMOD2_0, PMOD2_5, PMOD2_1, PMOD2_4, PMOD2_0, PMOD2_5, PMOD2_1, PMOD2_4, PMOD2_0}), //FIXME: Should come from FMC1
+
+    .evrClk(mgtRxClks[0]),
+    .evrRxChars(mgtRxChars[15:0]),
+    .evrRxCharIsK(mgtRxCharIsK[1:0]),
+    .evrBitClk(1'b0),
+    .evrLinkUp(mgtRxLinkUp[0]),
+    .evrHwDriverIn(2'b00),
 
     .gnssPPS(hwPPSmarker_a),
     .gnssRxD(PMOD1_2),

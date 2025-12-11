@@ -1,11 +1,11 @@
-BEDROCK = $(HOME)/src/Osprey/src/Firmware/bedrock
+BEDROCK = ../bedrock
 VERILOG_HEADER = ../../../EVG.srcs/sources_1/hdl/gpio.v
 EVG_DRIVER_DATA = ../../EVG_platform/hw/drivers/ospreyEVG_v1_0/data
 
 all: softwareBuildDate.h JSONrom.h $(VERILOG_HEADER)
 JSONrom.h: create_JSON_ROM.py $(EVG_DRIVER_DATA)/ospreyEVG.py
-	PYTHONPATH="$(EVG_DRIVER_DATA):$(PYTHONPATH)" python create_JSON_ROM.py >LEEP.json
-	python "$(BEDROCK)/build-tools/build_rom.py" -j LEEP.json -c JSONrom.h
+	PYTHONPATH="$(EVG_DRIVER_DATA):$(PYTHONPATH)" python3 create_JSON_ROM.py >LEEP.json
+	python3 "$(BEDROCK)/build_rom.py" -j LEEP.json -c JSONrom.h
 
 softwareBuildDate.h: clockAdjust.c \
                      clockAdjust.h \
@@ -46,7 +46,7 @@ softwareBuildDate.h: clockAdjust.c \
                      JSONrom.h
 	sh setSoftwareBuildDate.sh >softwareBuildDate.h
 
-../../../EVG.srcs/sources_1/hdl/gpio.v: gpio.h
+$(VERILOG_HEADER): gpio.h
 	echo "UPDATING VERILOG HEADER -- FIRMWARE MUST BE REBUILT!"
 	sh createVerilogHeader.sh "$(VERILOG_HEADER)"
 

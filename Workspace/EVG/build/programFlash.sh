@@ -1,8 +1,8 @@
 #!/bin/sh
 
-IP=192.168.19.101
-BOOT=evg.bit
-TARGET=BOOT.bin
+IP=192.168.79.12
+BOOT=EVG.bit
+TARGET=BOOT_A.bin
 
 usage()
 {
@@ -13,7 +13,7 @@ usage()
 for i
 do
     case "$i" in
-    -a)        TARGET=BOOT_A.bin ;;
+    -a)        TARGET=BOOT.bin ;;
     *.bi[nt])  BOOT="$i" ;;
     [0-9][.0-9]*)  IP="$i" ;;
     *) usage ;;

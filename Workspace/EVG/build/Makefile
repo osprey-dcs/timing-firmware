@@ -1,6 +1,6 @@
 MMI = ../../../EVG.runs/impl_1/EVG.mmi
 BIT = ../../../EVG.runs/impl_1/EVG.bit
-IMAGE = evg.bit
+IMAGE = EVG.bit
 
 ELF = ../Release/EVG.elf
 
