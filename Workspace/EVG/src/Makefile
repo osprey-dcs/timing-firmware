@@ -1,10 +1,16 @@
 BEDROCK = ../bedrock
 VERILOG_HEADER = ../../../EVG.srcs/sources_1/hdl/gpio.v
 EVG_DRIVER_DATA = ../../EVG_platform/hw/drivers/ospreyEVG_v1_0/data
+EVR_DRIVER_DATA = ../../EVG_platform/hw/drivers/ospreyEVR_v1_0/data
 
-all: softwareBuildDate.h JSONrom.h $(VERILOG_HEADER)
-JSONrom.h: create_JSON_ROM.py $(EVG_DRIVER_DATA)/ospreyEVG.py
-	PYTHONPATH="$(EVG_DRIVER_DATA):$(PYTHONPATH)" python3 create_JSON_ROM.py >LEEP.json
+all: softwareBuildDate.h verilogHeader JSONrom.h
+
+verilogHeader: $(VERILOG_HEADER)
+
+JSONrom.h: create_JSON_ROM.py \
+           $(EVG_DRIVER_DATA)/ospreyEVG.py \
+           $(EVR_DRIVER_DATA)/ospreyEVR.py
+	PYTHONPATH="$(EVG_DRIVER_DATA):$(EVR_DRIVER_DATA):$(PYTHONPATH)" python3 create_JSON_ROM.py >LEEP.json
 	python3 "$(BEDROCK)/build_rom.py" -j LEEP.json -c JSONrom.h
 
 softwareBuildDate.h: clockAdjust.c \
@@ -18,10 +24,10 @@ softwareBuildDate.h: clockAdjust.c \
                      ffs.c \
                      ffs.h \
                      gpio.h \
-                     gpsTime.c \
-                     gpsTime.h \
                      iicFPGA.c \
                      iicFPGA.h \
+                     ioSelect.c \
+                     ioSelect.h \
                      localPPS.c \
                      localPPS.h \
                      main.c \

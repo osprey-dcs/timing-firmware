@@ -14,6 +14,12 @@ ospreyEVG.ospreyEVG_emitJSON(EVG_REG_BASE=1000000, \
                              seqAddrWidth=11)
 
 #############################################################################
+# Event receiver
+import ospreyEVR
+ospreyEVR.ospreyEVR_emitJSON(EVR_REG_BASE=1100000, \
+                             hwOutputCount=8)
+
+#############################################################################
 # Marble support
 
 print("""  "FPGA:powerUp_": {

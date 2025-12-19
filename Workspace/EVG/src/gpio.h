@@ -44,6 +44,7 @@
 #define GPIO_IDX_MARBLE_VCXO_PLL_CSR        8 // VCXO clock adjust status
 #define GPIO_IDX_MARBLE_VCXO_PLL_AUX        9 // More VCXO clock adjust status
 #define GPIO_IDX_MARBLE_VCXO_HW_PPS        10 // Hardware PPS status
+#define GPIO_IDX_IO_SELECT                 11 // Hardware configuration
 
 #define GPIO_IDX_COUNT                     32 // Number of GPIO registers
 

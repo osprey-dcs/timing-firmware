@@ -62,6 +62,7 @@ static struct iicMap {
 #define FMC_COUNT 2
 static uint32_t serialNumber[FMC_COUNT];
 static uint32_t partNumber[FMC_COUNT];
+static char nameString[FMC_COUNT][64];
 
 static int
 setMux(unsigned char c)
@@ -168,6 +169,10 @@ showIPMI(int device)
         printf("%15s: %s\n", cp, strBuf);
         if ((index >= 0) && (index < FMC_COUNT)) {
             switch (field) {
+            case 1:
+                strncpy(nameString[index], strBuf, sizeof(nameString[0]));
+                nameString[index][sizeof(nameString[0]) - 1] = '\0';
+                break;
             case 2:
                 serialNumber[index] = number;
                 break;
@@ -177,6 +182,15 @@ showIPMI(int device)
             }
         }
     }
+}
+
+const char *
+iicFPGAgetNameString(int index)
+{
+    if ((index < 0) || (index >= FMC_COUNT)) {
+        return "";
+    }
+    return nameString[index];
 }
 
 uint32_t

@@ -27,6 +27,7 @@
  */
 #include <stdio.h>
 #include <ospreyEVG.h>
+#include <ospreyEVR.h>
 #include <ospreyUDP.h>
 #include "clockAdjust.h"
 #include "config.h"
@@ -85,6 +86,8 @@ struct LEEPpacket {
 
 #define REG_EVG_START                       1000000
 #define REG_EVG_COUNT                       100000
+#define REG_EVR_START                       1100000
+#define REG_EVR_COUNT                       100000
 
 #define RANGE(base, count) (base) ... ((base)+(count)-1)
 
@@ -115,9 +118,15 @@ setMgtClkSwitch0(int inputClkIndex)
 static void
 writeReg(int address, uint32_t value)
 {
-    if ((address >= REG_EVG_START)
+    if (systemParameters.ntpServer
+     && (address >= REG_EVG_START)
      && (address < (REG_EVG_START + REG_EVG_COUNT))) {
         ospreyEVG_FEEDwrite(address - REG_EVG_START, value);
+        return;
+    }
+    if ((address >= REG_EVR_START)
+     && (address < (REG_EVR_START + REG_EVR_COUNT))) {
+        ospreyEVR_FEEDwrite(address - REG_EVR_START, value);
         return;
     }
     switch(address) {
@@ -136,9 +145,14 @@ readReg(int address)
     /*
      * Application-specific registers
      */
-    if ((address >= REG_EVG_START)
+    if (systemParameters.ntpServer
+     && (address >= REG_EVG_START)
      && (address < (REG_EVG_START + REG_EVG_COUNT))) {
         return ospreyEVG_FEEDread(address - REG_EVG_START);
+    }
+    if ((address >= REG_EVR_START)
+     && (address < (REG_EVR_START + REG_EVR_COUNT))) {
+        return ospreyEVR_FEEDread(address - REG_EVR_START);
     }
     switch(address) {
     case REG_POWERUP_STATE:       return powerUpFlag;

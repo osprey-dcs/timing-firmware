@@ -39,6 +39,7 @@
 #define CSR_W_DRP_ADDR_SHIFT    16
 #define CSR_RW_DRP_DATA_MASK    0xFFFF
 #define CSR_W_SEL_MASK          (0x7 << CSR_W_SEL_SHIFT)
+#define CSR_W_LOOPBACK          0x4000000
 #define CSR_W_LANE_RXSLIDE      0x2000000
 #define CSR_W_TX_LANE_POWERDOWN 0x1000000
 #define CSR_W_RX_LANE_POWERDOWN 0x800000
@@ -58,6 +59,12 @@
 
 #define PLLS_LOCKED    (CSR_R_QPLL1_LOCKED | CSR_R_QPLL0_LOCKED)
 #define FSM_RESET_DONE (CSR_R_RX_FSM_RESET_DONE | CSR_R_TX_FSM_RESET_DONE)
+
+#define LOOBPACK_NONE       0
+#define LOOBPACK_NEAR_PCS   1
+#define LOOBPACK_NEAR_PMA   2
+#define LOOBPACK_FAR_PMA    4
+#define LOOBPACK_FAR_PCS    6
 
 /*
  * For now, start by assuming that all lanes are active
@@ -149,6 +156,16 @@ mgtFetchSysmon(int index)
     case 0: return GPIO_READ(GPIO_IDX_LINK_STATUS);
     default: return 0;
     }
+}
+
+void
+mgtSetLoopback(int mgtIndex, int loopback)
+{
+    if ((mgtIndex < 0) || (mgtIndex >= CFG_MGT_COUNT)) {
+        return;
+    }
+    GPIO_WRITE(GPIO_IDX_MGT_CSR, CSR_W_LOOPBACK | (mgtIndex << 3) |
+                                                              (loopback & 0x7));
 }
 
 void

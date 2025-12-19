@@ -27,7 +27,6 @@
  */
 #include <stdio.h>
 #include <ospreyEVG.h>
-#include "gpsTime.h"
 #include "gpio.h"
 #include "ospreyEVG.h"
 #include "ntpTime.h"
@@ -40,8 +39,7 @@ evgCrank(void)
     uint32_t status = ospreyEVGStatus();
     if ((status & (OSPREY_EVG_STATUS_PPS_VALID | OSPREY_EVG_STATUS_TIME_VALID))
                                                == OSPREY_EVG_STATUS_PPS_VALID) {
-        uint32_t seconds = systemParameters.ntpServer ? ntpNewTime() :
-                                                        gpsNewTime();
+        uint32_t seconds = ntpNewTime();
         if (seconds != 0) {
             ospreyEVGSetSeconds(seconds);
             if (debugFlags & DEBUGFLAG_EVG) {

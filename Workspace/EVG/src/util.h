@@ -44,6 +44,7 @@
 #define DEBUGFLAG_MGT_STATUS_SHOW       0x20000
 #define DEBUGFLAG_FLASH_SHOW            0x40000
 #define DEBUGFLAG_MGTCLKSWITCHSHOW      0x80000
+#define DEBUGFLAG_PMOD1_IS_GPS          0x100000
 extern int debugFlags;
 
 #define ntohl(x) __builtin_bswap32(x)

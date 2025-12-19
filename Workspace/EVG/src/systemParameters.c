@@ -105,7 +105,7 @@ systemParametersInit(void)
         showIPv4address("NTP server", systemParameters.ntpServer);
     }
     else {
-        printf(" NTP server not specified -- will use GNSS receiver.\n");
+        printf(" NTP server not specified -- operating as Event Receiver.\n");
     }
     debugFlags = systemParameters.startupDebugFlags;
     tftpSetVerbose((debugFlags & DEBUGFLAG_TFTP) != 0);

@@ -31,8 +31,8 @@
 #include "epics.h"
 #include "evg.h"
 #include "gpio.h"
-#include "gpsTime.h"
 #include "iicFPGA.h"
+#include "ioSelect.h"
 #include "mgt.h"
 #include "mgtClkSwitch.h"
 #include "mmcMailbox.h"
@@ -43,6 +43,22 @@
 #include "tftp.h"
 #include "util.h"
 #include "xadc.h"
+
+#include <ospreyEVR.h>
+static void
+checkEVR(void)
+{
+    int code;
+    uint32_t seconds, ticks;
+    static int firstTime = 1;
+    if (firstTime) {
+        firstTime = 0;
+        ospreyEVRSetEventAction(125, OSPREY_EVR_ACTION_WRITE_FIFO);
+    }
+    if ((code = ospreyEVRGetFifoEvent(&seconds, &ticks)) != 0) {
+        printf("%X %3d %10u%10u\n", ospreyEVRStatus(), code, seconds, ticks);
+    }
+}
 
 int
 main(void)
@@ -79,6 +95,7 @@ main(void)
                                networkConfig.macAddress);
     consoleInit();
     iicFPGAinit();
+    ioSelectInit();
     mgtClkSwitchInit();
     mgtClkSwitchConnectOutputToInput(MGT_CLK_SWITCH_OUTPUT_MGTCLK0,
                                      systemParameters.mgtClkSwitch0);
@@ -86,13 +103,19 @@ main(void)
     mgtInit();
     tftpInit();
     epicsInit();
-    ospreyEVGInit(XPAR_OSPREYEVG_S_AXI_BASEADDR);
+    if (systemParameters.ntpServer) {
+        ospreyEVGInit(XPAR_OSPREYEVG_S_AXI_BASEADDR);
+    }
+    ospreyEVRInit(XPAR_OSPREYEVR_S_AXI_BASEADDR);
     for (;;) {
         clockAdjustScan();
         mgtCrank();
-        evgCrank();
+        if (systemParameters.ntpServer) {
+            evgCrank();
+        }
         consoleCrank();
         ospreyUDPcrank();
+        checkEVR();
     }
     cleanup_platform();
     return 0;

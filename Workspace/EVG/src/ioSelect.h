@@ -23,13 +23,12 @@
  */
 
 /*
- * Get time of day from NMEA GPS receiver
+ * Route EVG/EVG I/O
  */
-#ifndef _GPSTIME_H_
-#define _GPSTIME_H_
+#ifndef _IOSELECT_H_
+#define _IOSELECT_H_
 
-#include <stdint.h>
+void ioSelectInit(void);
+int ioSelectStatus(void);
 
-uint32_t gpsNewTime(void);
-
-#endif /* _GPSTIME_H_ */
+#endif /* _IOSELECT_H_ */

@@ -27,6 +27,12 @@
  */
 #ifndef _MGT_H_
 #define _MGT_H_
+ 
+#define MGT_LOOPBACK_NONE       0
+#define MGT_LOOPBACK_NEAR_PCS   1
+#define MGT_LOOPBACK_NEAR_PMA   2
+#define MGT_LOOPBACK_FAR_PMA    4
+#define MGT_LOOPBACK_FAR_PCS    6
 
 void mgtInit(void);
 void mgtCrank(void);
@@ -34,6 +40,7 @@ void mgtShowStatus(void);
 uint32_t mgtFetchSysmon(int index);
 void mgtSetActiveRx(uint32_t active);
 void mgtSetActiveTx(uint32_t active);
+void mgtSetLoopback(int mgtIndex, int loopback);
 
 void mgtDRPwrite(int mgtIndex, int drpAddress, int value);
 int mgtDRPread(int mgtIndex, int drpAddress);
