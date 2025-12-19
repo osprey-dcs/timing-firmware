@@ -1,7 +1,7 @@
 {
   "design": {
     "design_info": {
-      "boundary_crc": "0xB1CC314FD7E02EE6",
+      "boundary_crc": "0x15C9443066E84FD5",
       "device": "xc7k160tffg676-2",
       "gen_directory": "../../../../EVG.gen/sources_1/bd/bd",
       "name": "bd",
@@ -34,18 +34,17 @@
         "m05_couplers": {},
         "m06_couplers": {},
         "m07_couplers": {},
-        "m08_couplers": {},
-        "m09_couplers": {}
+        "m08_couplers": {}
       },
       "generic_reg": "",
       "marbleBootFlash": "",
       "iic_fpga": "",
       "xadc": "",
       "hwicap": "",
-      "ospreyGNSS": "",
       "ospreyUDP": "",
       "latencyMMCM": "",
       "ospreyEVG": "",
+      "evrMMCM": "",
       "ospreyEVR": ""
     },
     "interface_ports": {
@@ -322,15 +321,6 @@
         "left": "1",
         "right": "0"
       },
-      "gnssRxD": {
-        "direction": "I"
-      },
-      "gnssPPS": {
-        "direction": "I"
-      },
-      "gnssTxD": {
-        "direction": "O"
-      },
       "startupEOS": {
         "direction": "I"
       },
@@ -470,15 +460,30 @@
         "left": "1",
         "right": "0"
       },
-      "evrBitClk": {
-        "direction": "I"
-      },
       "evrLinkUp": {
         "direction": "I"
       },
       "evrHwDriverIn": {
         "direction": "I",
-        "left": "1",
+        "left": "7",
+        "right": "0"
+      },
+      "evrPPSmarker": {
+        "direction": "O"
+      },
+      "evrHardwareOutputs": {
+        "direction": "O",
+        "left": "7",
+        "right": "0"
+      },
+      "evrTriStateOut": {
+        "direction": "O",
+        "left": "7",
+        "right": "0"
+      },
+      "evrTriStateIn": {
+        "direction": "I",
+        "left": "7",
         "right": "0"
       }
     },
@@ -839,7 +844,7 @@
         "xci_name": "bd_microblaze_0_axi_periph_0",
         "parameters": {
           "NUM_MI": {
-            "value": "10"
+            "value": "9"
           }
         },
         "interface_ports": {
@@ -889,11 +894,6 @@
             "vlnv": "xilinx.com:interface:aximm_rtl:1.0"
           },
           "M08_AXI": {
-            "mode": "Master",
-            "vlnv_bus_definition": "xilinx.com:interface:aximm:1.0",
-            "vlnv": "xilinx.com:interface:aximm_rtl:1.0"
-          },
-          "M09_AXI": {
             "mode": "Master",
             "vlnv_bus_definition": "xilinx.com:interface:aximm:1.0",
             "vlnv": "xilinx.com:interface:aximm_rtl:1.0"
@@ -1072,22 +1072,6 @@
           "M08_ARESETN": {
             "type": "rst",
             "direction": "I"
-          },
-          "M09_ACLK": {
-            "type": "clk",
-            "direction": "I",
-            "parameters": {
-              "ASSOCIATED_BUSIF": {
-                "value": "M09_AXI"
-              },
-              "ASSOCIATED_RESET": {
-                "value": "M09_ARESETN"
-              }
-            }
-          },
-          "M09_ARESETN": {
-            "type": "rst",
-            "direction": "I"
           }
         },
         "components": {
@@ -1098,7 +1082,7 @@
             "inst_hier_path": "microblaze_0_axi_periph/xbar",
             "parameters": {
               "NUM_MI": {
-                "value": "10"
+                "value": "9"
               },
               "NUM_SI": {
                 "value": "1"
@@ -1120,8 +1104,7 @@
                   "M05_AXI",
                   "M06_AXI",
                   "M07_AXI",
-                  "M08_AXI",
-                  "M09_AXI"
+                  "M08_AXI"
                 ]
               }
             }
@@ -1685,62 +1668,6 @@
                 ]
               }
             }
-          },
-          "m09_couplers": {
-            "interface_ports": {
-              "M_AXI": {
-                "mode": "Master",
-                "vlnv_bus_definition": "xilinx.com:interface:aximm:1.0",
-                "vlnv": "xilinx.com:interface:aximm_rtl:1.0"
-              },
-              "S_AXI": {
-                "mode": "Slave",
-                "vlnv_bus_definition": "xilinx.com:interface:aximm:1.0",
-                "vlnv": "xilinx.com:interface:aximm_rtl:1.0"
-              }
-            },
-            "ports": {
-              "M_ACLK": {
-                "type": "clk",
-                "direction": "I",
-                "parameters": {
-                  "ASSOCIATED_BUSIF": {
-                    "value": "M_AXI"
-                  },
-                  "ASSOCIATED_RESET": {
-                    "value": "M_ARESETN"
-                  }
-                }
-              },
-              "M_ARESETN": {
-                "type": "rst",
-                "direction": "I"
-              },
-              "S_ACLK": {
-                "type": "clk",
-                "direction": "I",
-                "parameters": {
-                  "ASSOCIATED_BUSIF": {
-                    "value": "S_AXI"
-                  },
-                  "ASSOCIATED_RESET": {
-                    "value": "S_ARESETN"
-                  }
-                }
-              },
-              "S_ARESETN": {
-                "type": "rst",
-                "direction": "I"
-              }
-            },
-            "interface_nets": {
-              "m09_couplers_to_m09_couplers": {
-                "interface_ports": [
-                  "S_AXI",
-                  "M_AXI"
-                ]
-              }
-            }
           }
         },
         "interface_nets": {
@@ -1796,12 +1723,6 @@
             "interface_ports": [
               "m08_couplers/M_AXI",
               "M08_AXI"
-            ]
-          },
-          "m09_couplers_to_microblaze_0_axi_periph": {
-            "interface_ports": [
-              "m09_couplers/M_AXI",
-              "M09_AXI"
             ]
           },
           "microblaze_0_axi_periph_to_s00_couplers": {
@@ -1869,12 +1790,6 @@
               "xbar/M08_AXI",
               "m08_couplers/S_AXI"
             ]
-          },
-          "xbar_to_m09_couplers": {
-            "interface_ports": [
-              "xbar/M09_AXI",
-              "m09_couplers/S_AXI"
-            ]
           }
         },
         "nets": {
@@ -1893,7 +1808,6 @@
               "m06_couplers/M_ACLK",
               "m07_couplers/M_ACLK",
               "m08_couplers/M_ACLK",
-              "m09_couplers/M_ACLK",
               "m00_couplers/S_ACLK",
               "m01_couplers/S_ACLK",
               "m02_couplers/S_ACLK",
@@ -1902,8 +1816,7 @@
               "m05_couplers/S_ACLK",
               "m06_couplers/S_ACLK",
               "m07_couplers/S_ACLK",
-              "m08_couplers/S_ACLK",
-              "m09_couplers/S_ACLK"
+              "m08_couplers/S_ACLK"
             ]
           },
           "microblaze_0_axi_periph_ARESETN_net": {
@@ -1921,7 +1834,6 @@
               "m06_couplers/M_ARESETN",
               "m07_couplers/M_ARESETN",
               "m08_couplers/M_ARESETN",
-              "m09_couplers/M_ARESETN",
               "m00_couplers/S_ARESETN",
               "m01_couplers/S_ARESETN",
               "m02_couplers/S_ARESETN",
@@ -1930,8 +1842,7 @@
               "m05_couplers/S_ARESETN",
               "m06_couplers/S_ARESETN",
               "m07_couplers/S_ARESETN",
-              "m08_couplers/S_ARESETN",
-              "m09_couplers/S_ARESETN"
+              "m08_couplers/S_ARESETN"
             ]
           }
         }
@@ -2021,17 +1932,6 @@
         "xci_path": "ip/bd_axi_hwicap_0_0/bd_axi_hwicap_0_0.xci",
         "inst_hier_path": "hwicap"
       },
-      "ospreyGNSS": {
-        "vlnv": "ospreyDCS.com:user:ospreyGNSS:1.0",
-        "xci_name": "bd_ospreyGNSS_0",
-        "xci_path": "ip/bd_ospreyGNSS_0/bd_ospreyGNSS_0.xci",
-        "inst_hier_path": "ospreyGNSS",
-        "parameters": {
-          "DEBUG": {
-            "value": "false"
-          }
-        }
-      },
       "ospreyUDP": {
         "vlnv": "user.org:user:ospreyUDP:1.0",
         "xci_name": "bd_ospreyUDP_0_0",
@@ -2114,17 +2014,58 @@
           }
         }
       },
+      "evrMMCM": {
+        "vlnv": "xilinx.com:ip:clk_wiz:6.0",
+        "xci_name": "bd_clk_wiz_0_0",
+        "xci_path": "ip/bd_clk_wiz_0_0/bd_clk_wiz_0_0.xci",
+        "inst_hier_path": "evrMMCM",
+        "parameters": {
+          "CLKIN1_JITTER_PS": {
+            "value": "80.0"
+          },
+          "CLKOUT1_JITTER": {
+            "value": "92.027"
+          },
+          "CLKOUT1_PHASE_ERROR": {
+            "value": "96.948"
+          },
+          "CLKOUT1_REQUESTED_OUT_FREQ": {
+            "value": "500"
+          },
+          "MMCM_CLKFBOUT_MULT_F": {
+            "value": "8.000"
+          },
+          "MMCM_CLKIN1_PERIOD": {
+            "value": "8.000"
+          },
+          "MMCM_CLKOUT0_DIVIDE_F": {
+            "value": "2.000"
+          },
+          "PRIM_IN_FREQ": {
+            "value": "125"
+          },
+          "USE_LOCKED": {
+            "value": "false"
+          },
+          "USE_RESET": {
+            "value": "false"
+          }
+        }
+      },
       "ospreyEVR": {
         "vlnv": "ospreydcs.com:osprey:ospreyEVR:2.0",
         "xci_name": "bd_ospreyEVR_0_0",
         "xci_path": "ip/bd_ospreyEVR_0_0/bd_ospreyEVR_0_0.xci",
         "inst_hier_path": "ospreyEVR",
         "parameters": {
+          "ENABLE_TRISTATE_CONTROL": {
+            "value": "1"
+          },
           "HARDWARE_OUTPUT_COUNT": {
-            "value": "2"
+            "value": "8"
           },
           "SERDES_FACTOR": {
-            "value": "1"
+            "value": "8"
           }
         }
       }
@@ -2211,19 +2152,13 @@
       "microblaze_0_axi_periph_M07_AXI": {
         "interface_ports": [
           "microblaze_0_axi_periph/M07_AXI",
-          "ospreyGNSS/S_AXI"
+          "ospreyEVR/S_AXI"
         ]
       },
       "microblaze_0_axi_periph_M08_AXI": {
         "interface_ports": [
           "microblaze_0_axi_periph/M08_AXI",
           "ospreyEVG/S_AXI"
-        ]
-      },
-      "microblaze_0_axi_periph_M09_AXI": {
-        "interface_ports": [
-          "microblaze_0_axi_periph/M09_AXI",
-          "ospreyEVR/S_AXI"
         ]
       },
       "microblaze_0_debug": {
@@ -2258,12 +2193,6 @@
           "generic_reg/GPIO_IN"
         ]
       },
-      "PPS_0_1": {
-        "ports": [
-          "gnssPPS",
-          "ospreyGNSS/PPS"
-        ]
-      },
       "axi_lite_generic_reg_0_GPIO_OUT": {
         "ports": [
           "generic_reg/GPIO_OUT",
@@ -2280,6 +2209,12 @@
         "ports": [
           "clk20",
           "latencyMMCM/clk_in1"
+        ]
+      },
+      "clk_wiz_0_clk_out1": {
+        "ports": [
+          "evrMMCM/clk_out1",
+          "ospreyEVR/evrBitClk"
         ]
       },
       "clk_wiz_1_clk_out2": {
@@ -2337,15 +2272,10 @@
           "ospreyEVG/evgRxClks"
         ]
       },
-      "evrBitClk_0_1": {
-        "ports": [
-          "evrBitClk",
-          "ospreyEVR/evrBitClk"
-        ]
-      },
       "evrClk_0_1": {
         "ports": [
           "evrClk",
+          "evrMMCM/clk_in1",
           "ospreyEVR/evrClk"
         ]
       },
@@ -2365,6 +2295,12 @@
         "ports": [
           "evrRxChars",
           "ospreyEVR/evrRxChars"
+        ]
+      },
+      "evrTriStateIn_0_1": {
+        "ports": [
+          "evrTriStateIn",
+          "ospreyEVR/evrTriStateIn"
         ]
       },
       "hwDriverIn_a_0_1": {
@@ -2429,10 +2365,8 @@
           "microblaze_0_axi_periph/M08_ACLK",
           "hwicap/s_axi_aclk",
           "hwicap/icap_clk",
-          "ospreyGNSS/s_axi_aclk",
           "ospreyUDP/s_axi_lite_aclk",
           "ospreyEVG/s_axi_aclk",
-          "microblaze_0_axi_periph/M09_ACLK",
           "ospreyEVR/s_axi_aclk"
         ]
       },
@@ -2448,10 +2382,22 @@
           "evgTxChars"
         ]
       },
-      "ospreyGNSS_txD": {
+      "ospreyEVR_evrHardwareOutputs": {
         "ports": [
-          "ospreyGNSS/txD",
-          "gnssTxD"
+          "ospreyEVR/evrHardwareOutputs",
+          "evrHardwareOutputs"
+        ]
+      },
+      "ospreyEVR_evrPPSmarker": {
+        "ports": [
+          "ospreyEVR/evrPPSmarker",
+          "evrPPSmarker"
+        ]
+      },
+      "ospreyEVR_evrTriStateOut": {
+        "ports": [
+          "ospreyEVR/evrTriStateOut",
+          "evrTriStateOut"
         ]
       },
       "ospreyUDP_0_phy_reset_n": {
@@ -2504,17 +2450,9 @@
           "microblaze_0_axi_periph/M07_ARESETN",
           "microblaze_0_axi_periph/M08_ARESETN",
           "hwicap/s_axi_aresetn",
-          "ospreyGNSS/s_axi_aresetn",
           "ospreyUDP/s_axi_lite_aresetn",
           "ospreyEVG/s_axi_aresetn",
-          "microblaze_0_axi_periph/M09_ARESETN",
           "ospreyEVR/s_axi_aresetn"
-        ]
-      },
-      "rxD_0_1": {
-        "ports": [
-          "gnssRxD",
-          "ospreyGNSS/rxD"
         ]
       }
     },
@@ -2563,19 +2501,12 @@
                 "offset_base_param": "C_S_AXI_BASEADDR",
                 "offset_high_param": "C_S_AXI_HIGHADDR"
               },
-              "SEG_ospreyEVR_0_S_AXI_reg": {
+              "SEG_ospreyEVR_S_AXI_reg": {
                 "address_block": "/ospreyEVR/S_AXI/S_AXI_reg",
                 "offset": "0x44A10000",
                 "range": "64K",
                 "offset_base_param": "C_S_AXI_BASEADDR",
                 "offset_high_param": "C_S_AXI_HIGHADDR"
-              },
-              "SEG_ospreyGNSS_AXI_reg": {
-                "address_block": "/ospreyGNSS/AXI/AXI_reg",
-                "offset": "0x44A60000",
-                "range": "64K",
-                "offset_base_param": "C_AXI_BASEADDR",
-                "offset_high_param": "C_AXI_HIGHADDR"
               },
               "SEG_ospreyUDP_0_S_AXI_LITE_reg": {
                 "address_block": "/ospreyUDP/S_AXI_LITE/S_AXI_LITE_reg",

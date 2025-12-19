@@ -385,25 +385,6 @@
                 "SV": "ospreydcs.com:user:ospreyEVG:1.0",
                 "TM": "data",
                 "TU": "register"
-            },
-            "V14": {
-                "VT": "AC",
-                "BA": "0x44A60000",
-                "HA": "0x44A6FFFF",
-                "BP": "C_AXI_BASEADDR",
-                "HP": "C_AXI_HIGHADDR",
-                "MA": "Data",
-                "MX": "/microblaze_0",
-                "MI": "M_AXI_DP",
-                "MS": "SEG_ospreyGNSS_0_AXI_reg",
-                "MV": "xilinx.com:ip:microblaze:11.0",
-                "SX": "/ospreyGNSS",
-                "SI": "S_AXI",
-                "MM": "AXI",
-                "SS": "AXI_reg",
-                "SV": "ospreyDCS.com:user:ospreyGNSS:1.0",
-                "TM": "data",
-                "TU": "register"
             }
         },
         "edges": [
@@ -467,11 +448,6 @@
             },
             {
                 "src": "V13",
-                "trg": "V2",
-                "EH": "2"
-            },
-            {
-                "src": "V14",
                 "trg": "V2",
                 "EH": "2"
             }
