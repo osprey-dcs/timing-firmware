@@ -64,13 +64,6 @@ localparam RESET_APPLY_COUNTER_LOAD = SYSCLK_RATE / 10000;
 localparam RESET_APPLY_COUNTER_WIDTH = $clog2(RESET_APPLY_COUNTER_LOAD+1) + 1;
 
 /*
- * Development debugging
- */
-wire [2:0] LOOPBACK_NONE     = 3'b000;
-wire [2:0] LOOPBACK_PMA_NEAR = 3'b010;
-wire [2:0] LOOPBACK = LOOPBACK_NONE;
-
-/*
  * Dynamic reconfiguration port
  */
 localparam DRP_ADDR_WIDTH = 9;
@@ -106,6 +99,11 @@ reg [RESET_APPLY_COUNTER_WIDTH-1:0]rxSoftResetCounter=-RESET_APPLY_COUNTER_LOAD,
                                    txSoftResetCounter=-RESET_APPLY_COUNTER_LOAD;
 wire rxSoftReset = rxSoftResetCounter[RESET_APPLY_COUNTER_WIDTH-1];
 wire txSoftReset = txSoftResetCounter[RESET_APPLY_COUNTER_WIDTH-1];
+
+/*
+ * Lopback control (first MGT only)
+ */
+reg [2:0] loopback [0:MGT_COUNT-1];
 
 always @(posedge sysClk) begin
     /*
@@ -165,6 +163,9 @@ always @(posedge sysClk) begin
     end
     if (sysCsrStrobe && !sysGPIO_OUT[31] && sysGPIO_OUT[25]) begin
         sysRxSlideToggle <= sysRxSlideToggle ^ sysGPIO_OUT[MGT_COUNT-1:0];
+    end
+    if (sysCsrStrobe && !sysGPIO_OUT[31] && sysGPIO_OUT[26]) begin
+        loopback[sysGPIO_OUT[3+:MGT_SEL_WIDTH]] <= sysGPIO_OUT[2:0];
     end
 end
 
@@ -409,7 +410,7 @@ mgt mgt_i (
     //------------------------- Digital Monitor Ports --------------------------
     .gt0_dmonitorout_out            (), // output wire [7:0] gt0_dmonitorout_out
     //----------------------------- Loopback Ports -----------------------------
-    .gt0_loopback_in                (LOOPBACK), // input wire [2:0] gt0_loopback_in
+    .gt0_loopback_in                (loopback[6]), // input wire [2:0] gt0_loopback_in
     //---------------------------- Power-Down Ports ----------------------------
     .gt0_rxpd_in                    ({2{sysRxPowerdown[6]}}), // input wire [1:0] gt0_rxpd_in
     .gt0_txpd_in                    ({2{sysTxPowerdown[6]}}), // input wire [1:0] gt0_txpd_in
@@ -483,7 +484,7 @@ mgt mgt_i (
     //------------------------- Digital Monitor Ports --------------------------
     .gt1_dmonitorout_out            (), // output wire [7:0] gt1_dmonitorout_out
     //----------------------------- Loopback Ports -----------------------------
-    .gt1_loopback_in                (LOOPBACK), // input wire [2:0] gt1_loopback_in
+    .gt1_loopback_in                (loopback[4]), // input wire [2:0] gt1_loopback_in
     //---------------------------- Power-Down Ports ----------------------------
     .gt1_rxpd_in                    ({2{sysRxPowerdown[4]}}), // input wire [1:0] gt1_rxpd_in
     .gt1_txpd_in                    ({2{sysTxPowerdown[4]}}), // input wire [1:0] gt1_txpd_in
@@ -557,7 +558,7 @@ mgt mgt_i (
     //------------------------- Digital Monitor Ports --------------------------
     .gt2_dmonitorout_out            (), // output wire [7:0] gt2_dmonitorout_out
     //----------------------------- Loopback Ports -----------------------------
-    .gt2_loopback_in                (LOOPBACK), // input wire [2:0] gt2_loopback_in
+    .gt2_loopback_in                (loopback[5]), // input wire [2:0] gt2_loopback_in
     //---------------------------- Power-Down Ports ----------------------------
     .gt2_rxpd_in                    ({2{sysRxPowerdown[5]}}), // input wire [1:0] gt2_rxpd_in
     .gt2_txpd_in                    ({2{sysTxPowerdown[5]}}), // input wire [1:0] gt2_txpd_in
@@ -631,7 +632,7 @@ mgt mgt_i (
     //------------------------- Digital Monitor Ports --------------------------
     .gt3_dmonitorout_out            (), // output wire [7:0] gt3_dmonitorout_out
     //----------------------------- Loopback Ports -----------------------------
-    .gt3_loopback_in                (LOOPBACK), // input wire [2:0] gt3_loopback_in
+    .gt3_loopback_in                (loopback[7]), // input wire [2:0] gt3_loopback_in
     //---------------------------- Power-Down Ports ----------------------------
     .gt3_rxpd_in                    ({2{sysRxPowerdown[7]}}), // input wire [1:0] gt3_rxpd_in
     .gt3_txpd_in                    ({2{sysTxPowerdown[7]}}), // input wire [1:0] gt3_txpd_in
@@ -705,7 +706,7 @@ mgt mgt_i (
     //------------------------- Digital Monitor Ports --------------------------
     .gt4_dmonitorout_out            (), // output wire [7:0] gt4_dmonitorout_out
     //----------------------------- Loopback Ports -----------------------------
-    .gt4_loopback_in                (LOOPBACK), // input wire [2:0] gt4_loopback_in
+    .gt4_loopback_in                (loopback[2]), // input wire [2:0] gt4_loopback_in
     //---------------------------- Power-Down Ports ----------------------------
     .gt4_rxpd_in                    ({2{sysRxPowerdown[2]}}), // input wire [1:0] gt4_rxpd_in
     .gt4_txpd_in                    ({2{sysTxPowerdown[2]}}), // input wire [1:0] gt4_txpd_in
@@ -779,7 +780,7 @@ mgt mgt_i (
     //------------------------- Digital Monitor Ports --------------------------
     .gt5_dmonitorout_out            (), // output wire [7:0] gt5_dmonitorout_out
     //----------------------------- Loopback Ports -----------------------------
-    .gt5_loopback_in                (LOOPBACK), // input wire [2:0] gt5_loopback_in
+    .gt5_loopback_in                (loopback[0]), // input wire [2:0] gt5_loopback_in
     //---------------------------- Power-Down Ports ----------------------------
     .gt5_rxpd_in                    ({2{sysRxPowerdown[0]}}), // input wire [1:0] gt5_rxpd_in
     .gt5_txpd_in                    ({2{sysTxPowerdown[0]}}), // input wire [1:0] gt5_txpd_in
@@ -854,7 +855,7 @@ mgt mgt_i (
     //------------------------- Digital Monitor Ports --------------------------
     .gt6_dmonitorout_out            (), // output wire [7:0] gt6_dmonitorout_out
     //----------------------------- Loopback Ports -----------------------------
-    .gt6_loopback_in                (LOOPBACK), // input wire [2:0] gt6_loopback_in
+    .gt6_loopback_in                (loopback[1]), // input wire [2:0] gt6_loopback_in
     //---------------------------- Power-Down Ports ----------------------------
     .gt6_rxpd_in                    ({2{sysRxPowerdown[1]}}), // input wire [1:0] gt6_rxpd_in
     .gt6_txpd_in                    ({2{sysTxPowerdown[1]}}), // input wire [1:0] gt6_txpd_in
@@ -928,7 +929,7 @@ mgt mgt_i (
     //------------------------- Digital Monitor Ports --------------------------
     .gt7_dmonitorout_out            (), // output wire [7:0] gt7_dmonitorout_out
     //----------------------------- Loopback Ports -----------------------------
-    .gt7_loopback_in                (LOOPBACK), // input wire [2:0] gt7_loopback_in
+    .gt7_loopback_in                (loopback[3]), // input wire [2:0] gt7_loopback_in
     //---------------------------- Power-Down Ports ----------------------------
     .gt7_rxpd_in                    ({2{sysRxPowerdown[3]}}), // input wire [1:0] gt7_rxpd_in
     .gt7_txpd_in                    ({2{sysTxPowerdown[3]}}), // input wire [1:0] gt7_txpd_in

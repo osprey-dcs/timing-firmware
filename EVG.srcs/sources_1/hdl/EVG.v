@@ -34,6 +34,10 @@ module EVG #(
     input  wire DDR_REF_CLK_N,
     input  wire MGTREFCLK0_116_P,
     input  wire MGTREFCLK0_116_N,
+    input  wire FMC1_CLK0_M2C_P,
+    input  wire FMC1_CLK0_M2C_N,
+    input  wire FMC1_CLK1_M2C_P,
+    input  wire FMC1_CLK1_M2C_N,
     input  wire CLK20_VCXO,
     output wire VCXO_EN,
 
@@ -71,6 +75,15 @@ module EVG #(
     output wire [CFG_MGT_COUNT-1:0] QSFP_TX_P,
     output wire [CFG_MGT_COUNT-1:0] QSFP_TX_N,
 
+    input  wire PMOD1_0,  // PMOD-IO input 0 or PMOD-GPS 3DFix 
+    input  wire PMOD1_1,  // PMOD-IO input 1 or PMOD-GPS RxD
+    inout  wire PMOD1_2,  // PMOD-IO output 0 or PMOD-GPS TxD
+    inout  wire PMOD1_3,  // PMOD-IO output 1 or PMOD-GPS PPS
+    output wire PMOD1_4,  // PMOD-IO input 2 or unused
+    output wire PMOD1_5,  // PMOD-IO input 3 or unused
+    output wire PMOD1_6,  // PMOD-IO output 2 or unused
+    output wire PMOD1_7,  // PMOD-IO output 3 or unused
+
     input  wire PMOD2_0,
     input  wire PMOD2_1,
     output wire PMOD2_2,
@@ -80,16 +93,8 @@ module EVG #(
     output wire PMOD2_6,
     output wire PMOD2_7,
 
-    input  wire PMOD1_0,  // PMOD-GPS 3DFix
-    output wire PMOD1_1,  // PMOD-GPS RxD
-    input  wire PMOD1_2,  // PMOD-GPS TxD
-    input  wire PMOD1_3,  // PMOD-GPS PPS
-    output wire PMOD1_4,
-    output wire PMOD1_5,
-    output wire PMOD1_6,
-    output wire PMOD1_7,
-
-    input  wire FMC1_PPS_MARKER
+    input  wire        FMC1_PPS,
+    input  wire [15:1] FMC1_DIN
     );
 
 localparam MGT_DATA_WIDTH       = 16;
@@ -130,6 +135,48 @@ sysClkCounters #(.CLK_RATE(CFG_SYSCLK_RATE), .DEBUG("false"))
     .secondsSinceBoot(GPIO_IN[GPIO_IDX_SECONDS_SINCE_BOOT]));
 
 ///////////////////////////////////////////////////////////////////////////////
+// I/O marshalling
+// FMC1, if present, is an RF-input.
+// PMOD1, if present, is a PMOD-IO (for production) or a PMOD-GPS (for testing).
+// PMOD2, if present, is a PMOD-IO.
+
+wire [15:0] evgHwInputs;
+wire [7:0] evrHwOutputs, evrTriStateOut;
+wire pmod1_3o;
+wire [31:0] ioSelectStatus;
+wire isEVG = ioSelectStatus[0];
+wire pmod1IsIO = ioSelectStatus[2];
+wire pmod1IsGPS = ioSelectStatus[3];
+assign GPIO_IN[GPIO_IDX_IO_SELECT] = ioSelectStatus;
+
+ioSelect #(.DEBUG("false"))
+  ioSelect (
+    .sysClk(sysClk),
+    .sysCsrStrobe(GPIO_STROBES[GPIO_IDX_IO_SELECT]),
+    .sysGPIO_OUT(GPIO_OUT),
+    .sysStatus(GPIO_IN[GPIO_IDX_IO_SELECT]),
+    .evgHwInputs(evgHwInputs),
+    .evrHwOutputs(evrHwOutputs),
+    .fmcInputs({FMC1_DIN, 1'b0}),
+    .pmodInputs({PMOD2_5, PMOD2_4, PMOD2_1, PMOD2_0,
+                 PMOD1_5, PMOD1_4, PMOD1_1, 1'b0}));
+
+IOBUF pmod1_2buf (.I(evrHwOutputs[0]),
+                  .O(),
+                  .T(evrTriStateOut[0]),
+                  .IO(PMOD1_2));
+IOBUF pmod1_3buf (.I(evrHwOutputs[1]),
+                  .O(pmod1_3o),
+                  .T(evrTriStateOut[1]),
+                  .IO(PMOD1_3));
+OBUF pmod1_6buf (.I(evrHwOutputs[2]), .O(PMOD1_6));
+OBUF pmod1_7buf (.I(evrHwOutputs[3]), .O(PMOD1_7));
+OBUF pmod2_2buf (.I(evrHwOutputs[4]), .O(PMOD2_2));
+OBUF pmod2_3buf (.I(evrHwOutputs[5]), .O(PMOD2_3));
+OBUF pmod2_6buf (.I(evrHwOutputs[6]), .O(PMOD2_6));
+OBUF pmod2_7buf (.I(evrHwOutputs[7]), .O(PMOD2_7));
+
+///////////////////////////////////////////////////////////////////////////////
 // Generate local PPS
 BUFG bufClk20 (.I(CLK20_VCXO), .O(clk20));
 wire localPPSmarker;
@@ -146,7 +193,7 @@ localPPS #(.DEBUG("false"))
 // Lock clock to PPS marker
 // DAC1 adjusts the 125 MHz MGT reference, DDR reference, and system clocks.
 // DAC2 adjusts the 20 MHz system clock.
-wire ppsValid, clk125PPSmarker, hwPPSmarker_a;
+wire ppsValid, evgPPSmarker, hwPPSmarker_a, evrPPSmarker;
 marbleClockSync #(
     .DEBUG("false"))
   marbleClockSync (
@@ -158,12 +205,12 @@ marbleClockSync #(
     .sysHwInterval(GPIO_IN[GPIO_IDX_MARBLE_VCXO_HW_PPS]),
     .clk125(clk125),
     .clk500(clk500),
-    .ppsPrimary_pin(FMC1_PPS_MARKER),
-    .ppsSecondary_pin(PMOD1_3),
-    .ppsFromFabric(localPPSmarker),  /*FIXME! should be localPPS for EVG and EVR PPS for EVR -- how to distinguish???? */
+    .ppsPrimary_pin(FMC1_PPS),
+    .ppsSecondary_pin(PMOD1_0),
+    .ppsFromFabric(isEVG ? (pmod1IsGPS?pmod1_3o:localPPSmarker) : evrPPSmarker),
     .hwPPSmarker_a(hwPPSmarker_a),
     .hwPPSvalid(ppsValid),
-    .ppsMarker(clk125PPSmarker),
+    .ppsMarker(evgPPSmarker),
     .ppsToggle(),
     .SPI_CLK(WR_DAC_SCLK_T),
     .SPI_SYNCn({WR_DAC2_SYNC_Tn, WR_DAC1_SYNC_Tn}),
@@ -348,19 +395,18 @@ bd bd_i (
     .evgRxClks(mgtRxClks),
     .evgRxChars(mgtRxChars),
     .evgRxCharIsK(mgtRxCharIsK),
-    .ppsMarker_a(clk125PPSmarker),
-    .evgHwInputs_a({PMOD2_1, PMOD2_4, PMOD2_0, PMOD2_5, PMOD2_1, PMOD2_4, PMOD2_0, PMOD2_5, PMOD2_1, PMOD2_4, PMOD2_0, PMOD2_5, PMOD2_1, PMOD2_4, PMOD2_0}), //FIXME: Should come from FMC1
+    .ppsMarker_a(evgPPSmarker),
+    .evgHwInputs_a(evgHwInputs),
 
     .evrClk(mgtRxClks[0]),
     .evrRxChars(mgtRxChars[15:0]),
     .evrRxCharIsK(mgtRxCharIsK[1:0]),
-    .evrBitClk(1'b0),
+    .evrPPSmarker(evrPPSmarker),
     .evrLinkUp(mgtRxLinkUp[0]),
-    .evrHwDriverIn(2'b00),
-
-    .gnssPPS(hwPPSmarker_a),
-    .gnssRxD(PMOD1_2),
-    .gnssTxD(PMOD1_1),
+    .evrHwDriverIn(8'h00),
+    .evrTriStateIn({ {6{1'b0}}, {2{!pmod1IsIO}} }), 
+    .evrTriStateOut(evrTriStateOut),
+    .evrHardwareOutputs(evrHwOutputs),
 
     .console_rxd(FPGA_TxD),
     .console_txd(FPGA_RxD)

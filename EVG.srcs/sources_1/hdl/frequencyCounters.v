@@ -67,7 +67,7 @@ function [3:0] GrayToBinary (input [3:0] gray); begin
 end
 endfunction
 reg [MUXSEL_WIDTH-1:0] acqSelect = 0;
-(*ASYNC_REG="true"*) reg [(CHANNEL_COUNT*GRAY_WIDTH)-1:0] grays_m;
+wire [(CHANNEL_COUNT*GRAY_WIDTH)-1:0] grays_m;
 reg [GRAY_WIDTH-1:0] grayMux, binary_d0, binary_d1, diff;
 reg [OUTPUT_WIDTH-1:0] accumulator;
 reg [OUTPUT_WIDTH-1:0] frequencies [0:CHANNEL_COUNT-1];
@@ -132,18 +132,20 @@ endfunction
 
 genvar i;
 generate
-for (i = 0 ; i < CHANNEL_COUNT ; i = i + 1) begin
+for (i = 0 ; i < CHANNEL_COUNT ; i = i + 1) begin : freqCountGray
 
 // Minimal 4 bit Gray counter updating at measured clock rate
 reg [3:0] gray = 0;
+(*ASYNC_REG="true"*) reg  [3:0] gray_m;
 always @(posedge measuredClocks[i]) begin
     gray <= BinaryToGray(GrayToBinary(gray) + 1);
 end
 
 // Get Gray counter to system clock domain
 always @(posedge clk) begin
-    grays_m[i*GRAY_WIDTH+:GRAY_WIDTH] <= gray;
+    gray_m <= gray;
 end
+assign grays_m[i*GRAY_WIDTH+:GRAY_WIDTH] = gray_m;
 
 end
 endgenerate
