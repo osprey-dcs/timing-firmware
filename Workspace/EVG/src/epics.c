@@ -73,7 +73,6 @@ struct LEEPpacket {
 #define REG_FMC1_PART_NUMBER                54
 #define REG_FMC2_PART_NUMBER                55
 #define REG_MARBLE_MGT_REFCLK_SOURCE        80
-#define REG_MARBLE_PLL_GET_DAC              85
 #define REG_MARBLE_PLL_SET_Y1               86
 #define REG_MARBLE_PLL_SET_Y3               87
 #define REG_MARBLE_PPS_LOCAL_CSR            88
@@ -178,7 +177,6 @@ readReg(int address)
         }
         return 0;
     case REG_MARBLE_MGT_REFCLK_SOURCE: return systemParameters.mgtClkSwitch0;
-    case REG_MARBLE_PLL_GET_DAC:       return clockAdjustGetDAC();
     case REG_MARBLE_PPS_LOCAL_CSR:     return localPPSstatus();
     }
 

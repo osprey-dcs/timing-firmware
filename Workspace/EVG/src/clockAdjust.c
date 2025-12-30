@@ -170,7 +170,8 @@ clockAdjustSetDAC(int dacSelect, int dacValue)
             GPIO_WRITE(GPIO_IDX_MARBLE_VCXO_PLL_CSR, CSR_W_DISABLE);
         }
         GPIO_WRITE(GPIO_IDX_MARBLE_VCXO_PLL_CSR, CSR_W_SET_DAC |
-                                                (dacSelect ? CSR_W_VCXO20 : 0) |                                                (dacValue & CSR_W_DAC_MASK));
+                                                (dacSelect ? CSR_W_VCXO20 : 0) |
+                                                (dacValue & CSR_W_DAC_MASK));
     }
 }
 

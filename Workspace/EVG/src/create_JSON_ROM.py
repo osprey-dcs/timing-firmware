@@ -64,13 +64,6 @@ print("""  "FPGA:powerUp_": {
     "data_width": 32,
     "sign": "unsigned"
   },
-  "Marble:VCXO:DAC": {
-    "access": "rw",
-    "addr_width": 0,
-    "base_addr": 81,
-    "data_width": 16,
-    "sign": "signed"
-  },
   "FPGA:Temperature": {
     "access": "r",
     "addr_width": 0,
@@ -266,13 +259,6 @@ print("""  "FPGA:powerUp_": {
     "base_addr": 324,
     "data_width": 32,
     "sign": "unsigned"
-  },
-  "MARBLE:PLL:GET_DAC": {
-    "access": "r",
-    "addr_width": 0,
-    "base_addr": 85,
-    "data_width": 16,
-    "sign": "signed"
   },
   "MARBLE:PLL:SET_Y1": {
     "access": "w",
