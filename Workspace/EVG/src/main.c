@@ -115,7 +115,7 @@ main(void)
         }
         consoleCrank();
         ospreyUDPcrank();
-        checkEVR();
+        //checkEVR();
     }
     cleanup_platform();
     return 0;
