@@ -1,0 +1,15 @@
+/.Xil/
+/*.cache/
+/*.gen/
+/*.hw/
+/*.runs/
+*.xsa
+
+/Workspace/.analytics
+/Workspace/.metadata/
+/Workspace/*_platform/
+/Workspace/*_system/
+/Workspace/*_app/
+
+*.log
+*.jou
