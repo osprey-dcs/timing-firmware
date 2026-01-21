@@ -1,0 +1,21 @@
+[submodule "marbleClockSync"]
+	path = ip_repo/marbleClockSync
+	url = git@github.com:osprey-dcs/marble-clock-sync-PLL
+[submodule "ip_repo/ospreyEVG"]
+	path = ip_repo/ospreyEVG
+	url = git@github.com:osprey-dcs/ospreyEVG.git
+[submodule "ip_repo/ospreyEVR"]
+	path = ip_repo/ospreyEVR
+	url = git@github.com:osprey-dcs/ospreyEVR.git
+[submodule "ip_repo/ospreyGNSS"]
+	path = ip_repo/ospreyGNSS
+	url = git@github.com:osprey-dcs/ospreyGNSS.git
+[submodule "ip_repo/axiLiteGenericReg"]
+	path = ip_repo/axiLiteGenericReg
+	url = git@github.com:osprey-dcs/axi-lite-generic-reg.git
+[submodule "ip_repo/marbleBootFlash"]
+	path = ip_repo/marbleBootFlash
+	url = git@github.com:osprey-dcs/marble-boot-flash.git
+[submodule "ip_repo/ospreyUDP"]
+	path = ip_repo/ospreyUDP
+	url = git@github.com:osprey-dcs/ospreyUDP.git
