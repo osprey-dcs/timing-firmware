@@ -47,12 +47,12 @@
     <Option Name="ActiveSimSet" Val="sim_1"/>
     <Option Name="DefaultLib" Val="xil_defaultlib"/>
     <Option Name="ProjectType" Val="Default"/>
-    <Option Name="IPRepoPath" Val="$PPRDIR/ip_repo/ospreyEVG"/>
-    <Option Name="IPRepoPath" Val="$PPRDIR/ip_repo/ospreyEVR"/>
-    <Option Name="IPRepoPath" Val="$PPRDIR/ip_repo/ospreyGNSS"/>
-    <Option Name="IPRepoPath" Val="$PPRDIR/ip_repo/axiLiteGenericReg"/>
-    <Option Name="IPRepoPath" Val="$PPRDIR/ip_repo/marbleBootFlash"/>
-    <Option Name="IPRepoPath" Val="$PPRDIR/ip_repo/ospreyUDP"/>
+    <Option Name="IPRepoPath" Val="$PPRDIR/../../ip_repo/ospreyEVG/head"/>
+    <Option Name="IPRepoPath" Val="$PPRDIR/../../ip_repo/ospreyEVR/head"/>
+    <Option Name="IPRepoPath" Val="$PPRDIR/../../ip_repo/ospreyGNSS"/>
+    <Option Name="IPRepoPath" Val="$PPRDIR/../../ip_repo/axiLiteGenericReg/axi_lite_generic_reg_3.0"/>
+    <Option Name="IPRepoPath" Val="$PPRDIR/../../ip_repo/marbleBootFlash/marbleBootFlash_1.0"/>
+    <Option Name="IPRepoPath" Val="$PPRDIR/../../ip_repo/ospreyUDP/head"/>
     <Option Name="IPOutputRepo" Val="$PCACHEDIR/ip"/>
     <Option Name="IPDefaultOutputPath" Val="$PGENDIR/sources_1"/>
     <Option Name="IPCachePermission" Val="read"/>
@@ -186,7 +186,7 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/ip_repo/marbleClockSync/marbleClockSync.v">
+      <File Path="$PPRDIR/../../ip_repo/marbleClockSync/head/marbleClockSync.v">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
