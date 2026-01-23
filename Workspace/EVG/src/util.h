@@ -38,7 +38,6 @@
 #define DEBUGFLAG_EVG                   0x20
 #define DEBUGFLAG_EVR                   0x40
 #define DEBUGFLAG_CLOCKADJUST_SHOW      0x1000
-#define DEBUGFLAG_NMEA                  0x2000
 #define DEBUGFLAG_NTP                   0x8000
 #define DEBUGFLAG_IIC_FPGA_SCAN         0x10000
 #define DEBUGFLAG_MGT_STATUS_SHOW       0x20000
