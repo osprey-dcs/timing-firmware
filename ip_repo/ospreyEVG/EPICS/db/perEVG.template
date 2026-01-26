@@ -1,0 +1,74 @@
+record(longin, "$(P)EVG:status") {
+    field(DESC, "EVG status register")
+    field(DTYP, "FEED Register Read")
+    field(INP, "@name=$(NAME) reg=EVG:status")
+    field(SCAN, "2 second")
+}
+record(longin, "$(P)EVG:onConnect_") {
+    field(DESC, "Process records on FPGA connection")
+    field(DTYP, "FEED On Connect")
+    field(INP, "@name=$(NAME)")
+    field(SCAN, "I/O Intr")
+    field(FLNK, "$(P)EVG:config")
+}
+record(longin, "$(P)EVG:config") {
+    field(DESC, "EVG sequencer configuration")
+    field(DTYP, "FEED Register Read")
+    field(INP, "@name=$(NAME) reg=EVG:config")
+}
+record(longout, "$(P)EVG:SEQ:arm") {
+    field(DESC, "Bitmap of sequencer(s) to arm")
+    field(DTYP, "FEED Register Write")
+    field(OUT,  "@name=$(NAME) reg=EVG:SEQ:arm")
+    field(LOPR, "0")
+    field(HOPR, "15")
+    field(DRVL, "0")
+    field(DRVH, "15")
+}
+record(longout, "$(P)EVG:SEQ:disarm") {
+    field(DESC, "Bitmap of sequencer(s) to disarm")
+    field(DTYP, "FEED Register Write")
+    field(OUT,  "@name=$(NAME) reg=EVG:SEQ:disarm")
+    field(LOPR, "0")
+    field(HOPR, "15")
+    field(DRVL, "0")
+    field(DRVH, "15")
+}
+record(longout, "$(P)EVG:SEQ:swTrig") {
+    field(DESC, "Bitmap of sequencer(s) to trigger")
+    field(DTYP, "FEED Register Write")
+    field(OUT,  "@name=$(NAME) reg=EVG:SEQ:swTrig")
+    field(LOPR, "0")
+    field(HOPR, "15")
+    field(DRVL, "0")
+    field(DRVH, "15")
+}
+record(longout, "$(P)EVG:hbDivisor") {
+    field(DESC, "Heartbeat event divisor")
+    field(DTYP, "FEED Register Write")
+    field(OUT,  "@name=$(NAME) reg=EVG:hbDivisor")
+}
+record(longout, "$(P)EVG:swEvent") {
+    field(DESC, "Event to send")
+    field(DTYP, "FEED Register Write")
+    field(OUT,  "@name=$(NAME) reg=EVG:swEvent")
+    field(LOPR, "0")
+    field(HOPR, "255")
+    field(DRVL, "0")
+    field(DRVH, "255")
+}
+record(longout, "$(P)EVG:SEQ:cancel") {
+    field(DESC, "Immediately cancel active sequence")
+    field(DTYP, "FEED Register Write")
+    field(OUT,  "@name=$(NAME) reg=EVG:SEQ:cancel")
+}
+record(longout, "$(P)EVG:MAP:hwTrigger") {
+    field(DESC, "Map hardware inputs to triggers")
+    field(DTYP, "FEED Register Write")
+    field(OUT,  "@name=$(NAME) reg=EVG:MAP:hwTrig")
+}
+record(longout, "$(P)EVG:MAP:dbus") {
+    field(DESC, "Map hardware inputs to distributed bus")
+    field(DTYP, "FEED Register Write")
+    field(OUT,  "@name=$(NAME) reg=EVG:MAP:dbus")
+}

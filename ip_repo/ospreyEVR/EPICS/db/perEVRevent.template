@@ -1,0 +1,9 @@
+record(longout, "$(P)EVR:EV$(N):action") {
+    field(DESC, "Event code $(N) action bitmap")
+    field(DTYP, "FEED Register Write")
+    field(OUT , "@name=$(PORT) reg=EVR:evnt$(N):action")
+    field(LOPR, "0")
+    field(HOPR, "262143")
+    field(DRVL, "0")
+    field(DRVH, "262143")
+}

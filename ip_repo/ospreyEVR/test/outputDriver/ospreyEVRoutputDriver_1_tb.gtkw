@@ -1,0 +1,66 @@
+[*]
+[*] GTKWave Analyzer v3.4.0 (w)1999-2022 BSI
+[*] Mon Dec  8 00:41:29 2025
+[*]
+[dumpfile] "/Users/eric/src/Osprey/src/ip_repo/ospreyEVR/head/test/trigOut/ospreyEVRoutputDriver_1_tb.fst"
+[dumpfile_mtime] "Mon Dec  8 00:41:09 2025"
+[dumpfile_size] 1743
+[savefile] "/Users/eric/src/Osprey/src/ip_repo/ospreyEVR/head/test/trigOut/ospreyEVRoutputDriver_1_tb.gtkw"
+[timestart] 153610
+[size] 1764 890
+[pos] 1945 0
+*-14.000000 220000 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+[markername] AA
+[markername] BB
+[markername] CC
+[markername] DD
+[markername] EE
+[markername] FF
+[markername] GG
+[markername] HH
+[markername] II
+[markername] JJ
+[markername] KK
+[markername] LL
+[markername] MM
+[markername] NN
+[markername] OO
+[markername] PP
+[markername] QQ
+[markername] RR
+[markername] SS
+[markername] TT
+[markername] UU
+[markername] VV
+[markername] WW
+[markername] XX
+[markername] YY
+[markername] ZZ
+[treeopen] ospreyEVRoutputDriver_tb.
+[treeopen] ospreyEVRoutputDriver_tb.ospreyEVRoutputDriver_i.
+[sst_width] 390
+[signals_width] 177
+[sst_expanded] 1
+[sst_vpaned_height] 260
+@28
+ospreyEVRoutputDriver_tb.evrClk
+ospreyEVRoutputDriver_tb.evrActionIn
+@c00028
+ospreyEVRoutputDriver_tb.ospreyEVRoutputDriver_i.state[1:0]
+@28
+(0)ospreyEVRoutputDriver_tb.ospreyEVRoutputDriver_i.state[1:0]
+(1)ospreyEVRoutputDriver_tb.ospreyEVRoutputDriver_i.state[1:0]
+@1401200
+-group_end
+@22
+ospreyEVRoutputDriver_tb.ospreyEVRoutputDriver_i.delayCounter[32:0]
+@28
+ospreyEVRoutputDriver_tb.ospreyEVRoutputDriver_i.delayCounterDone
+@22
+ospreyEVRoutputDriver_tb.ospreyEVRoutputDriver_i.widthCounter[32:0]
+@28
+ospreyEVRoutputDriver_tb.ospreyEVRoutputDriver_i.widthCounterDone
+ospreyEVRoutputDriver_tb.ospreyEVRoutputDriver_i.serdesWord
+ospreyEVRoutputDriver_tb.evrDriverOut
+[pattern_trace] 1
+[pattern_trace] 0

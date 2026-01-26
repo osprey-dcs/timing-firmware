@@ -1,0 +1,23 @@
+[*]
+[*] GTKWave Analyzer v3.4.0 (w)1999-2022 BSI
+[*] Mon Dec  8 19:04:52 2025
+[*]
+[dumpfile] "/Users/eric/src/Osprey/src/ip_repo/ospreyEVR/head/test/outputDriver/ospreyEVRoutputDriver_8_tb.fst"
+[dumpfile_mtime] "Mon Dec  8 19:03:17 2025"
+[dumpfile_size] 3021
+[savefile] "/Users/eric/src/Osprey/src/ip_repo/ospreyEVR/head/test/outputDriver/Untitled.gtkw"
+[timestart] 374900
+[size] 1333 600
+[pos] 1885 -1
+*-15.000000 -1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+[treeopen] ospreyEVRoutputDriver_tb.
+[sst_width] 255
+[signals_width] 128
+[sst_expanded] 1
+[sst_vpaned_height] 159
+@28
+ospreyEVRoutputDriver_tb.evrClk
+ospreyEVRoutputDriver_tb.evrActionIn
+ospreyEVRoutputDriver_tb.evrDriverOut
+[pattern_trace] 1
+[pattern_trace] 0

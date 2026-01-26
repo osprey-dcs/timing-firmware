@@ -1,0 +1,49 @@
+#   Undefined macros
+#
+# P - Common record name prefix
+# NAME - Device instance name
+
+file "perEVG.template" {
+pattern { P,  NAME }
+  { "\$(P)", "\$(NAME)" }
+}
+file "perEVGtimer.template" {
+pattern { P, NAME,  I }
+  { "\$(P)", "\$(NAME)", "1" }
+  { "\$(P)", "\$(NAME)", "2" }
+  { "\$(P)", "\$(NAME)", "3" }
+  { "\$(P)", "\$(NAME)", "4" }
+}
+file "perEVGlink.template" {
+pattern { P, NAME,  I }
+  { "\$(P)", "\$(NAME)", "1" }
+  { "\$(P)", "\$(NAME)", "2" }
+  { "\$(P)", "\$(NAME)", "3" }
+  { "\$(P)", "\$(NAME)", "4" }
+  { "\$(P)", "\$(NAME)", "5" }
+  { "\$(P)", "\$(NAME)", "6" }
+  { "\$(P)", "\$(NAME)", "7" }
+  { "\$(P)", "\$(NAME)", "8" }
+}
+file "perEVGhwTrigger.template" {
+pattern { P, NAME,  EDGE,   E,  I }
+  { "\$(P)", "\$(NAME)", "rise", "r", 1 }
+  { "\$(P)", "\$(NAME)", "fall", "f", 1 }
+  { "\$(P)", "\$(NAME)", "rise", "r", 2 }
+  { "\$(P)", "\$(NAME)", "fall", "f", 2 }
+  { "\$(P)", "\$(NAME)", "rise", "r", 3 }
+  { "\$(P)", "\$(NAME)", "fall", "f", 3 }
+  { "\$(P)", "\$(NAME)", "rise", "r", 4 }
+  { "\$(P)", "\$(NAME)", "fall", "f", 4 }
+}
+file "perEVGseqBank.template" {
+pattern { P, NAME,  I }
+  { "\$(P)", "\$(NAME)",  1 }
+  { "\$(P)", "\$(NAME)",  2 }
+  { "\$(P)", "\$(NAME)",  3 }
+  { "\$(P)", "\$(NAME)",  4 }
+  { "\$(P)", "\$(NAME)",  5 }
+  { "\$(P)", "\$(NAME)",  6 }
+  { "\$(P)", "\$(NAME)",  7 }
+  { "\$(P)", "\$(NAME)",  8 }
+}

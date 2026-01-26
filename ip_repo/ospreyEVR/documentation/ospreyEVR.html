@@ -1,0 +1,1408 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+  <head>
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+    <title>Osprey EVR</title>
+  </head>
+  <body>
+    <span style="font-weight: bold;"><span style="font-family: Times New
+        Roman, Times, serif;"></span></span>
+    <h1><span style="font-family: Times New Roman, Times, serif;">Osprey
+        EVR</span></h1>
+    <span style="font-family: Times New Roman, Times, serif;">Vivado
+      block design component and driver providing a basic MRF-compatible
+      event receiver.</span><span style="font-family: Times New Roman,
+      Times, serif;">&nbsp; If configured to omit the optional fine
+      resolution for output pulse delays and widths </span><span
+      style="font-family: Times New Roman, Times, serif;">no
+      vendor-specific IP is used so the firmware is portable to any
+      platform providing the required high-speed serial transceivers.<br>
+    </span>
+    <h2><span style="font-family: Times New Roman, Times, serif;">Firmware</span></h2>
+    <div style="margin-left: 80px;"><img src="BlockDesign.svg" alt=""
+        style="width: 629px; height: 457px;"><br>
+      <div style="margin-left: 80px;">&nbsp; <span style="font-family:
+          Times New Roman, Times, serif;"></span><br>
+        <span style="font-family: Times New Roman, Times, serif;"> </span>
+      </div>
+    </div>
+    <div style="margin-left: 120px;"> </div>
+    <div style="margin-left: 80px;"> </div>
+    <table style=" text-align: left; width: 80%;" cellspacing="2"
+      cellpadding="2" border="1">
+      <tbody>
+        <tr>
+          <td style="vertical-align: middle; text-align: center;"
+            rowspan="1" colspan="3"><span style="font-family: Times New
+              Roman, Times, serif;"><span style="font-weight: bold;">Ports</span></span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span></td>
+        </tr>
+        <tr>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;"><span style="font-weight:
+                bold;">Name</span></span><span style="font-family: Times
+              New Roman, Times, serif;"><br>
+            </span></td>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;"><span style="font-weight:
+                bold;">Clock</span></span><span style="font-family:
+              Times New Roman, Times, serif;"><br>
+            </span></td>
+          <td style=" vertical-align: middle; text-align: center;"><span
+              style="font-family: Times New Roman, Times, serif;"><span
+                style="font-weight: bold;">Description</span></span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span></td>
+        </tr>
+        <tr>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">S_AXI</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span></td>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">s_axi_aclk</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span></td>
+          <td style="text-align: left;"><span style="font-family: Times
+              New Roman, Times, serif;">AXI4-Lite port.</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span></td>
+        </tr>
+        <tr>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">s_axi_aclk</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span></td>
+          <td style="text-align: center;">–<br>
+          </td>
+          <td style="text-align: left;"><span style="font-family: Times
+              New Roman, Times, serif;">Clock for AXI4-lite port.</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span></td>
+        </tr>
+        <tr>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">s_axi_aresetn</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span></td>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">s_axi_aclk</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span></td>
+          <td style="text-align: left;"><span style="font-family: Times
+              New Roman, Times, serif;">Active-low reset input.&nbsp;
+              Resets all firmware.</span><span style="font-family: Times
+              New Roman, Times, serif;"><br>
+            </span></td>
+        </tr>
+        <tr>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">evrClk</span></td>
+          <td style="text-align: center;">–</td>
+          <td style=" text-align: left;"><span style="font-family: Times
+              New Roman, Times, serif;">Receiver clock from
+              multi-gigabit transceiver.</span><span style="font-family:
+              Times New Roman, Times, serif;"><br>
+            </span></td>
+        </tr>
+        <tr>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">evrBitClk</span></td>
+          <td style="text-align: center;">–</td>
+          <td style="text-align: left;"><span style="font-family: Times
+              New Roman, Times, serif;"> SERDES bit clock.<br>
+              Unused if SERDES_FACTOR is 1.<br>
+              Otherwise must be aligned with, and (SERDES_FACTOR÷2)
+              times the rate of, evrClk.&nbsp;&nbsp;</span><span
+              style="font-family: Times New Roman, Times, serif;"><span
+                style="font-family: Times New Roman, Times, serif;"><span
+                  style="font-family: Times New Roman, Times, serif;"><span
+                    style="font-family: Times New Roman, Times, serif;"><span
+                      style="font-family: Times New Roman, Times,
+                      serif;"><span style="font-family: Times New Roman,
+                        Times, serif;"></span></span></span>SERDES_FACTOR
+
+
+                  must be small enough to ensure that evrBitClk operates
+                  at 625 MHz or less.<br>
+                </span></span></span></td>
+        </tr>
+        <tr>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">evrLinkUp</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span></td>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">evrClk</span></td>
+          <td style="text-align: left;"><span style="font-family: Times
+              New Roman, Times, serif;"><span style="font-family: Times
+                New Roman, Times, serif;"></span></span><span
+              style="font-family: Times New Roman, Times, serif;"><span
+                style="font-family: Times New Roman, Times, serif;"><span
+                  style="font-family: Times New Roman, Times, serif;"><span
+                    style="font-family: Times New Roman, Times, serif;">Multi-gigabit
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                    transceiver receiver status.<br>
+                  </span></span></span></span></td>
+        </tr>
+        <tr>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">evrRxChars</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span></td>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">evrClk</span></td>
+          <td style="text-align: left;"><span style="font-family: Times
+              New Roman, Times, serif;"><span style="font-family: Times
+                New Roman, Times, serif;">Multi-gigabit transceiver
+                received data.&nbsp; Event codes and K28.5 alignment
+                commas are sent in the most significant eight
+                bits.&nbsp; Distributed bus and distributed data values
+                are sent in the least significant eight bits.</span><span
+                style="font-family: Times New Roman, Times, serif;"><br>
+              </span> </span></td>
+        </tr>
+        <tr>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">evrRxCharIsK</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span><span style="font-family: Times New Roman, Times,
+              serif;"> </span></td>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">evrClk</span></td>
+          <td style="text-align: left;"><span style="font-family: Times
+              New Roman, Times, serif;">M</span><span
+              style="font-family: Times New Roman, Times, serif;"><span
+                style="font-family: Times New Roman, Times, serif;"><span
+                  style="font-family: Times New Roman, Times, serif;">ulti-gigabit
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                  transceiver received data modifiers.</span></span> </span></td>
+        </tr>
+        <tr>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">hwDriverIn_a</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span></td>
+          <td style="text-align: center;">–</td>
+          <td style="vertical-align: top;"><span style="font-family:
+              Times New Roman, Times, serif;"><span style="font-family:
+                Times New Roman, Times, serif;"><span
+                  style="font-family: Times New Roman, Times, serif;">
+                  Each bit can be selected to drive its counterpart in
+                  evrHardwareOutputs.&nbsp;&nbsp; <br>
+                </span></span></span></td>
+        </tr>
+        <tr>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">evrHardwareOutputs</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span></td>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">evrClk</span></td>
+          <td style="text-align: left;"><span style="font-family: Times
+              New Roman, Times, serif;"></span><span style="font-family:
+              Times New Roman, Times, serif;"><span style="font-family:
+                Times New Roman, Times, serif;"><span
+                  style="font-family: Times New Roman, Times, serif;">Hardware
+
+
+
+
+
+
+
+
+
+
+
+
+
+                  output signals.&nbsp; Must connect directly to
+                  top-level output port if</span></span></span><span
+              style="font-family: Times New Roman, Times, serif;"><span
+                style="font-family: Times New Roman, Times, serif;"><span
+                  style="font-family: Times New Roman, Times, serif;"><span
+                    style="font-family: Times New Roman, Times, serif;">
+                    SERDES_FACTOR is greater than 1</span> and </span></span></span><span
+              style="font-family: Times New Roman, Times, serif;"><span
+                style="font-family: Times New Roman, Times, serif;"><span
+                  style="font-family: Times New Roman, Times, serif;"><span
+                    style="font-family: Times New Roman, Times, serif;">ENABLE_TRISTATE_CONTROL</span><span
+                    style="font-family: Times New Roman, Times, serif;">
+                    is 0</span>.&nbsp; </span></span></span><span
+              style="font-family: Times New Roman, Times, serif;"><span
+                style="font-family: Times New Roman, Times, serif;"><span
+                  style="font-family: Times New Roman, Times, serif;"><span
+                    style="font-family: Times New Roman, Times, serif;"><span
+                      style="font-family: Times New Roman, Times,
+                      serif;"><span style="font-family: Times New Roman,
+                        Times, serif;"><span style="font-family: Times
+                          New Roman, Times, serif;"><span
+                            style="font-family: Times New Roman, Times,
+                            serif;">Must drive an output buffer (e.g.
+                            OBUF, OBUFT, or IOBUF) </span></span></span></span></span></span></span></span><span
+              style="font-family: Times New Roman, Times, serif;"><span
+                style="font-family: Times New Roman, Times, serif;"><span
+                  style="font-family: Times New Roman, Times, serif;"><span
+                    style="font-family: Times New Roman, Times, serif;"><span
+                      style="font-family: Times New Roman, Times,
+                      serif;"><span style="font-family: Times New Roman,
+                        Times, serif;"><span style="font-family: Times
+                          New Roman, Times, serif;"><span
+                            style="font-family: Times New Roman, Times,
+                            serif;"><span style="font-family: Times New
+                              Roman, Times, serif;"><span
+                                style="font-family: Times New Roman,
+                                Times, serif;"><span style="font-family:
+                                  Times New Roman, Times, serif;">if</span></span></span><span
+                              style="font-family: Times New Roman,
+                              Times, serif;"><span style="font-family:
+                                Times New Roman, Times, serif;"><span
+                                  style="font-family: Times New Roman,
+                                  Times, serif;"><span
+                                    style="font-family: Times New Roman,
+                                    Times, serif;"> SERDES_FACTOR is
+                                    greater than 1</span> and </span></span></span><span
+                              style="font-family: Times New Roman,
+                              Times, serif;"><span style="font-family:
+                                Times New Roman, Times, serif;"><span
+                                  style="font-family: Times New Roman,
+                                  Times, serif;"><span
+                                    style="font-family: Times New Roman,
+                                    Times, serif;">ENABLE_TRISTATE_CONTROL</span><span
+                                    style="font-family: Times New Roman,
+                                    Times, serif;"> is 1</span>.</span></span></span>&nbsp;
+                          </span></span></span></span></span>Source is <a
+                    href="#HardwareOutputSourceSelection">selectable</a>.</span></span></span><span
+              style="font-family: Times New Roman, Times, serif;"><span
+                style="font-family: Times New Roman, Times, serif;"><span
+                  style="font-family: Times New Roman, Times, serif;"><span
+                    style="font-family: Times New Roman, Times, serif;"><span
+                      style="font-family: Times New Roman, Times,
+                      serif;">&nbsp;&nbsp;</span> </span></span></span></span></td>
+        </tr>
+        <tr>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">evrPPSstrobe</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span></td>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">evrClk</span></td>
+          <td style="text-align: left;"><span style="font-family: Times
+              New Roman, Times, serif;"></span><span style="font-family:
+              Times New Roman, Times, serif;"><span style="font-family:
+                Times New Roman, Times, serif;"><span
+                  style="font-family: Times New Roman, Times, serif;">Asserted
+
+
+
+
+
+
+
+
+
+
+
+
+
+                  for one evrClk cycle upon arrival of pulse-per-second
+                  event.<br>
+                </span></span></span></td>
+        </tr>
+        <tr>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">evrPPSmarker</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span></td>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">evrClk</span></td>
+          <td style="text-align: left;"><span style="font-family: Times
+              New Roman, Times, serif;"></span><span style="font-family:
+              Times New Roman, Times, serif;"><span style="font-family:
+                Times New Roman, Times, serif;"><span
+                  style="font-family: Times New Roman, Times, serif;">Asserted
+
+
+
+
+
+
+
+
+
+
+
+
+
+                  for 257 evrClk cycles upon arrival of pulse-per-second
+                  event.</span></span></span></td>
+        </tr>
+        <tr>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">evrActionStrobes</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span></td>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">evrClk</span></td>
+          <td style="text-align: left;"><span style="font-family: Times
+              New Roman, Times, serif;"></span><span style="font-family:
+              Times New Roman, Times, serif;"><span style="font-family:
+                Times New Roman, Times, serif;"><span
+                  style="font-family: Times New Roman, Times, serif;">Event
+
+
+
+
+
+
+
+
+
+
+
+
+                  action dual-port RAM output least significant
+                  bits.&nbsp; Used to trigger the evrHardwareOutputs
+                  pulse and/or set/reset the hardware output latch.<br>
+                </span></span></span></td>
+        </tr>
+        <tr>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">evrDistributedBus</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span></td>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">evrClk</span></td>
+          <td style="text-align: left;"><span style="font-family: Times
+              New Roman, Times, serif;"></span><span style="font-family:
+              Times New Roman, Times, serif;"><span style="font-family:
+                Times New Roman, Times, serif;"><span
+                  style="font-family: Times New Roman, Times, serif;">Distributed
+
+
+
+
+
+
+
+
+
+
+
+
+                  bus.&nbsp; Updated at one half evrClk rate.<br>
+                </span></span></span></td>
+        </tr>
+        <tr>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">evrTimestampValid</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span></td>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">evrClk</span></td>
+          <td style="text-align: left;"><span style="font-family: Times
+              New Roman, Times, serif;"></span><span style="font-family:
+              Times New Roman, Times, serif;"><span style="font-family:
+                Times New Roman, Times, serif;"><span
+                  style="font-family: Times New Roman, Times, serif;">Asserted
+
+
+
+
+
+
+
+
+
+
+
+
+
+                  when valid time has been received.<br>
+                </span></span></span></td>
+        </tr>
+        <tr>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">evrTimestamp</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span></td>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">evrClk</span></td>
+          <td style="text-align: left;"><span style="font-family: Times
+              New Roman, Times, serif;">Time of day.&nbsp; Most
+              significant 32 bits are POSIX seconds.&nbsp; Least
+              significant 32 bits are the number of evrClk cycles since
+              the </span><span style="font-family: Times New Roman,
+              Times, serif;"><span style="font-family: Times New Roman,
+                Times, serif;"><span style="font-family: Times New
+                  Roman, Times, serif;"><span style="font-family: Times
+                    New Roman, Times, serif;">arrival of most recent
+                    pulse-per-second event.</span></span></span> </span></td>
+        </tr>
+        <tr>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">evrTriStateIn</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span></td>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">evrClk</span></td>
+          <td style="text-align: left;"><span style="font-family: Times
+              New Roman, Times, serif;">Drive the evrTriStateOut ports </span><span
+              style="font-family: Times New Roman, Times, serif;"><span
+                style="font-family: Times New Roman, Times, serif;"><span
+                  style="font-family: Times New Roman, Times, serif;">if
+                </span><span style="font-family: Times New Roman, Times,
+                  serif;"><span style="font-family: Times New Roman,
+                    Times, serif;">ENABLE_TRISTATE_CONTROL is set to 1.</span></span></span></span></td>
+        </tr>
+        <tr>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">evrTriStateOut</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span></td>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">evrClk</span></td>
+          <td style="text-align: left;"><span style="font-family: Times
+              New Roman, Times, serif;">Connect to the T ports of the
+              IOBUF or OBUFT blocks if </span><span style="font-family:
+              Times New Roman, Times, serif;"><span style="font-family:
+                Times New Roman, Times, serif;">ENABLE_TRISTATE_CONTROL
+                is set to 1.</span><span style="font-family: Times New
+                Roman, Times, serif;"><br>
+              </span></span></td>
+        </tr>
+        <tr>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">sysTimestamp</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span></td>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">s_axi_aclk</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span></td>
+          <td style="text-align: left;"><span style="font-family: Times
+              New Roman, Times, serif;">Time of day in system clock
+              domain.&nbsp; Because of the clock domain crossing logic
+              this value will be slightly delayed from the time day in
+              the evrClk domain.<br>
+            </span></td>
+        </tr>
+      </tbody>
+    </table>
+    <div style="margin-left: 80px;"> <br>
+      <br>
+    </div>
+    <div style="margin-left: 40px;"> <span style="font-family: Times
+        New Roman, Times, serif;"></span></div>
+    <table style=" text-align: left; width: 80%;" cellspacing="2"
+      cellpadding="2" border="1">
+      <tbody>
+        <tr>
+          <td style=" text-align: center;" rowspan="1" colspan="2"><span
+              style="font-family: Times New Roman, Times, serif;"><span
+                style="font-weight: bold;">Parameters</span></span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span></td>
+        </tr>
+        <tr>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;"><span style="font-weight:
+                bold;">Name</span></span><span style="font-family: Times
+              New Roman, Times, serif;"><br>
+            </span></td>
+          <td style=" text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;"><span style="font-weight:
+                bold;">Description</span></span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span></td>
+        </tr>
+        <tr>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">HARDWARE_OUTPUT_COUNT</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span></td>
+          <td style="text-align: left;"><span style="font-family: Times
+              New Roman, Times, serif;">Width of evrHardwareOutputs
+              port.</span><span style="font-family: Times New Roman,
+              Times, serif;"><br>
+            </span></td>
+        </tr>
+        <tr>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;"><span style="font-family:
+                Times New Roman, Times, serif;">SERDES_FACTOR</span></span></td>
+          <td style="text-align: left;"><span style="font-family: Times
+              New Roman, Times, serif;">Width of the hardware output
+              OSERDES blocks</span><span style="font-family: Times New
+              Roman, Times, serif;"><span style="font-family: Times New
+                Roman, Times, serif;"></span>.</span><span
+              style="font-family: Times New Roman, Times, serif;"><span
+                style="font-family: Times New Roman, Times, serif;"><span
+                  style="font-family: Times New Roman, Times, serif;"><span
+                    style="font-family: Times New Roman, Times, serif;">&nbsp;
+
+
+                    Output pulse delay and width are adjustable in steps
+                    of 1/2 the evrBitClk interval if </span></span></span><span
+                style="font-family: Times New Roman, Times, serif;"><span
+                  style="font-family: Times New Roman, Times, serif;"><span
+                    style="font-family: Times New Roman, Times, serif;"><span
+                      style="font-family: Times New Roman, Times,
+                      serif;">SERDES_FACTOR is greater than 1 or in
+                      steps of the evrClk interval if SERDES_FACTOR is
+                      1.&nbsp; Valid values are 1, 4, 6, and 8.&nbsp; </span></span></span></span></span><br>
+          </td>
+        </tr>
+        <tr>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;"><span style="font-family:
+                Times New Roman, Times, serif;">DISTRIBUTED_BUFFER_ADDR_WIDTH</span></span></td>
+          <td style="text-align: left;"><span style="font-family: Times
+              New Roman, Times, serif;">Distributed buffer capacity is 2</span><sup><span
+                style="font-family: Times New Roman, Times, serif;"><span
+                  style="font-family: Times New Roman, Times, serif;"><span
+                    style="font-family: Times New Roman, Times, serif;">DISTRIBUTED_BUFFER_ADDR_WIDTH</span></span></span></sup><span
+              style="font-family: Times New Roman, Times, serif;"><span
+                style="font-family: Times New Roman, Times, serif;"><span
+                  style="font-family: Times New Roman, Times, serif;">.</span></span></span></td>
+        </tr>
+        <tr>
+          <td style="vertical-align: middle; text-align: center;"><span
+              style="font-family: Times New Roman, Times, serif;">ENABLE_TRISTATE_CONTROL</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span><span style="font-family: Times New Roman, Times,
+              serif;"> </span></td>
+          <td style="vertical-align: middle; text-align: left;"><span
+              style="font-family: Times New Roman, Times, serif;">Specialized
+              applications may require tri-state control of the output
+              pin.&nbsp; Set this parameter to 1 to enable this mode of
+              operation, controlled by the evrTriStateIn and
+              evrTriStateOut ports.&nbsp; If this parameter is 0, </span><span
+              style="font-family: Times New Roman, Times, serif;"><span
+                style="font-family: Times New Roman, Times, serif;">evrTriStateIn
+                is ignored and </span></span><span style="font-family:
+              Times New Roman, Times, serif;"><span style="font-family:
+                Times New Roman, Times, serif;"><span
+                  style="font-family: Times New Roman, Times, serif;">evrTriStateOut
+                  is always 0.<br>
+                </span></span></span></td>
+        </tr>
+      </tbody>
+    </table>
+    <div style="margin-left: 40px;"><span style="font-family: Times New
+        Roman, Times, serif;"><span style="font-family: Times New Roman,
+          Times, serif;"></span></span><span style="font-family: Times
+        New Roman, Times, serif;"></span><br>
+      <span style="font-family: Times New Roman, Times, serif;"> </span>
+    </div>
+    <h2><span style="font-family: Times New Roman, Times, serif;">Software</span></h2>
+    <p><span style="font-family: Times New Roman, Times, serif;"><span
+          style="caret-color: rgb(0, 0, 0); color: rgb(0, 0, 0);
+          font-size: medium; font-style: normal; font-variant-caps:
+          normal; font-weight: 400; letter-spacing: normal; text-align:
+          start; text-indent: 0px; text-transform: none; white-space:
+          normal; word-spacing: 0px; -moz-text-size-adjust: auto;
+          -webkit-text-stroke-width: 0px; text-decoration: none;
+          display: inline !important; float: none;">A return value of 0
+          indicates success and a return value of -1 indicates failure
+          or all routines unless mentioned otherwise.<br>
+        </span></span></p>
+    <meta charset="UTF-8">
+    <h3 style="caret-color: rgb(0, 0, 0); color: rgb(0, 0, 0);
+      font-style: normal; font-variant-caps: normal; letter-spacing:
+      normal; text-align: start; text-indent: 0px; text-transform: none;
+      white-space: normal; word-spacing: 0px; -moz-text-size-adjust:
+      auto; -webkit-text-stroke-width: 0px; text-decoration: none;"><span
+        style="font-family: Times New Roman, Times, serif;">Initialization<br>
+      </span></h3>
+    <span style="font-family: Times New Roman, Times, serif;"><span
+        style="caret-color: rgb(0, 0, 0); color: rgb(0, 0, 0);
+        font-size: medium; font-style: normal; font-variant-caps:
+        normal; font-weight: 400; letter-spacing: normal; text-align:
+        start; text-indent: 0px; text-transform: none; white-space:
+        normal; word-spacing: 0px; -moz-text-size-adjust: auto;
+        -webkit-text-stroke-width: 0px; text-decoration: none; display:
+        inline !important; float: none;">An application must initialize
+        the the hardware interface before calling any of the other
+        routines.&nbsp; Initialization is performed by invoking</span></span><span
+      style="font-family: Times New Roman, Times, serif;"><br
+        style="caret-color: rgb(0, 0, 0); color: rgb(0, 0, 0);
+        font-style: normal; font-variant-caps: normal; font-weight: 400;
+        letter-spacing: normal; text-align: start; text-indent: 0px;
+        text-transform: none; white-space: normal; word-spacing: 0px;
+        -moz-text-size-adjust: auto; -webkit-text-stroke-width: 0px;
+        text-decoration: none;">
+    </span><span style="font-family: Times New Roman, Times, serif;"><br
+        style="caret-color: rgb(0, 0, 0); color: rgb(0, 0, 0);
+        font-style: normal; font-variant-caps: normal; font-weight: 400;
+        letter-spacing: normal; text-align: start; text-indent: 0px;
+        text-transform: none; white-space: normal; word-spacing: 0px;
+        -moz-text-size-adjust: auto; -webkit-text-stroke-width: 0px;
+        text-decoration: none;">
+    </span><span style="font-family: Times New Roman, Times, serif;"><span
+        style="caret-color: rgb(0, 0, 0); color: rgb(0, 0, 0);
+        font-size: medium; font-style: normal; font-variant-caps:
+        normal; font-weight: 400; letter-spacing: normal; text-align:
+        start; text-indent: 0px; text-transform: none; white-space:
+        normal; word-spacing: 0px; -moz-text-size-adjust: auto;
+        -webkit-text-stroke-width: 0px; text-decoration: none; display:
+        inline !important; float: none;">int <span style="font-weight:
+          bold;">ospreyEVRInit</span>(uint32_t baseAddress);</span></span><span
+      style="font-family: Times New Roman, Times, serif;"><br
+        style="caret-color: rgb(0, 0, 0); color: rgb(0, 0, 0);
+        font-style: normal; font-variant-caps: normal; font-weight: 400;
+        letter-spacing: normal; text-align: start; text-indent: 0px;
+        text-transform: none; white-space: normal; word-spacing: 0px;
+        -moz-text-size-adjust: auto; -webkit-text-stroke-width: 0px;
+        text-decoration: none;">
+    </span><span style="font-family: Times New Roman, Times, serif;"><br
+        style="caret-color: rgb(0, 0, 0); color: rgb(0, 0, 0);
+        font-style: normal; font-variant-caps: normal; font-weight: 400;
+        letter-spacing: normal; text-align: start; text-indent: 0px;
+        text-transform: none; white-space: normal; word-spacing: 0px;
+        -moz-text-size-adjust: auto; -webkit-text-stroke-width: 0px;
+        text-decoration: none;">
+    </span><span style="font-family: Times New Roman, Times, serif;"><span
+        style="caret-color: rgb(0, 0, 0); color: rgb(0, 0, 0);
+        font-size: medium; font-style: normal; font-variant-caps:
+        normal; font-weight: 400; letter-spacing: normal; text-align:
+        start; text-indent: 0px; text-transform: none; white-space:
+        normal; word-spacing: 0px; -moz-text-size-adjust: auto;
+        -webkit-text-stroke-width: 0px; text-decoration: none; display:
+        inline !important; float: none;">The return value is 0 if
+        registration succeeded and -1 otherwise.</span></span><span
+      style="font-family: Times New Roman, Times, serif;"><span
+        style="caret-color: rgb(0, 0, 0); color: rgb(0, 0, 0);
+        font-size: medium; font-style: normal; font-variant-caps:
+        normal; font-weight: 400; letter-spacing: normal; text-align:
+        start; text-indent: 0px; text-transform: none; white-space:
+        normal; word-spacing: 0px; -moz-text-size-adjust: auto;
+        -webkit-text-stroke-width: 0px; text-decoration: none; display:
+        inline !important; float: none;"></span></span><span
+      style="font-family: Times New Roman, Times, serif;">&nbsp; If the
+      block design component name is ospreyEVR</span><span
+      style="font-family: Times New Roman, Times, serif;"></span><span
+      style="font-family: Times New Roman, Times, serif;"> the
+      memory-mapped I/O base address to pass as the argument will be
+      defined in the board support xparameters.h file as
+      XPAR_OSPREYEVR_S_AXI_BASEADDR.</span><span style="font-family:
+      Times New Roman, Times, serif;"><br style="caret-color: rgb(0, 0,
+        0); color: rgb(0, 0, 0); font-style: normal; font-variant-caps:
+        normal; font-weight: 400; letter-spacing: normal; text-align:
+        start; text-indent: 0px; text-transform: none; white-space:
+        normal; word-spacing: 0px; -moz-text-size-adjust: auto;
+        -webkit-text-stroke-width: 0px; text-decoration: none;">
+    </span>
+    <h3 style="caret-color: rgb(0, 0, 0); color: rgb(0, 0, 0);
+      font-style: normal; font-variant-caps: normal; letter-spacing:
+      normal; text-align: start; text-indent: 0px; text-transform: none;
+      white-space: normal; word-spacing: 0px; -moz-text-size-adjust:
+      auto; -webkit-text-stroke-width: 0px; text-decoration: none;"><span
+        style="font-family: Times New Roman, Times, serif;">SERDES Reset</span><span
+        style="font-family: Times New Roman, Times, serif;"><br>
+      </span></h3>
+    <p style="caret-color: rgb(0, 0, 0); color: rgb(0, 0, 0);
+      font-style: normal; font-variant-caps: normal; font-weight: 400;
+      letter-spacing: normal; text-align: start; text-indent: 0px;
+      text-transform: none; white-space: normal; word-spacing: 0px;
+      -moz-text-size-adjust: auto; -webkit-text-stroke-width: 0px;
+      text-decoration: none;"><span style="font-family: Times New Roman,
+        Times, serif;">The OSERDES blocks driving the hardware trigger
+        outputs should be held in their reset state when the
+        multi-gigabit transceiver link is down.&nbsp; Removing the reset
+        after the link is up will ensure that the SERDES timing is
+        correct.<br>
+      </span></p>
+    <p style="caret-color: rgb(0, 0, 0); color: rgb(0, 0, 0);
+      font-style: normal; font-variant-caps: normal; font-weight: 400;
+      letter-spacing: normal; text-align: start; text-indent: 0px;
+      text-transform: none; white-space: normal; word-spacing: 0px;
+      -moz-text-size-adjust: auto; -webkit-text-stroke-width: 0px;
+      text-decoration: none;"><span style="font-family: Times New Roman,
+        Times, serif;">int </span><span style="font-family: Times New
+        Roman, Times, serif;"><span style="font-weight: bold;">ospreyEVRResetSERDES(</span></span><span
+        style="font-family: Times New Roman, Times, serif;">int apply);</span></p>
+    <h3 style="caret-color: rgb(0, 0, 0); color: rgb(0, 0, 0);
+      font-style: normal; font-variant-caps: normal; letter-spacing:
+      normal; text-align: start; text-indent: 0px; text-transform: none;
+      white-space: normal; word-spacing: 0px; -moz-text-size-adjust:
+      auto; -webkit-text-stroke-width: 0px; text-decoration: none;"><span
+        style="font-family: Times New Roman, Times, serif;">Status</span><span
+        style="font-family: Times New Roman, Times, serif;"><br>
+      </span></h3>
+    <p style="caret-color: rgb(0, 0, 0); color: rgb(0, 0, 0);
+      font-style: normal; font-variant-caps: normal; font-weight: 400;
+      letter-spacing: normal; text-align: start; text-indent: 0px;
+      text-transform: none; white-space: normal; word-spacing: 0px;
+      -moz-text-size-adjust: auto; -webkit-text-stroke-width: 0px;
+      text-decoration: none;"><span style="font-family: Times New Roman,
+        Times, serif;">The status of the event receiver is returned by<br>
+      </span></p>
+    <p style="caret-color: rgb(0, 0, 0); color: rgb(0, 0, 0);
+      font-style: normal; font-variant-caps: normal; font-weight: 400;
+      letter-spacing: normal; text-align: start; text-indent: 0px;
+      text-transform: none; white-space: normal; word-spacing: 0px;
+      -moz-text-size-adjust: auto; -webkit-text-stroke-width: 0px;
+      text-decoration: none;"><span style="font-family: Times New Roman,
+        Times, serif;">int </span><span style="font-family: Times New
+        Roman, Times, serif;"><span style="font-weight: bold;">ospreyEVRStatus</span></span><span
+        style="font-family: Times New Roman, Times, serif;">(void);<br>
+      </span></p>
+    <table style=" text-align: left; width: 70%;" cellspacing="2"
+      cellpadding="2" border="1">
+      <tbody>
+        <tr>
+          <td style="text-align: center;"><span style="font-weight:
+              bold;"><span style="font-family: Times New Roman, Times,
+                serif;"></span></span><span style="font-weight: bold;"><span
+                style="font-family: Times New Roman, Times, serif;">Bit(s)</span></span></td>
+          <td style="text-align: center;"><span style="font-weight:
+              bold;"><span style="font-family: Times New Roman, Times,
+                serif;">Name</span></span></td>
+          <td style="text-align: center;"><span style="font-weight:
+              bold;"><span style="font-family: Times New Roman, Times,
+                serif;">Description</span></span></td>
+        </tr>
+        <tr>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">0<br>
+            </span></td>
+          <td style="text-align: left;"><span style="font-family: Times
+              New Roman, Times, serif;">OSPREY_EVR_STATUS_LINK_UP</span><br>
+          </td>
+          <td style="text-align: left;"><span style="font-family: Times
+              New Roman, Times, serif;">Set when evrLinkUp input is
+              asserted.</span></td>
+        </tr>
+        <tr>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">1</span><br>
+          </td>
+          <td style="text-align: left;"><span style="font-family: Times
+              New Roman, Times, serif;">OSPREY_EVR_STATUS_TIMESTAMP_VALID</span></td>
+          <td style="text-align: left;"><span style="font-family: Times
+              New Roman, Times, serif;">Set when time stamps are valid.</span></td>
+        </tr>
+        <tr>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">2</span><br>
+          </td>
+          <td style="text-align: left;"><span style="font-family: Times
+              New Roman, Times, serif;">OSPREY_EVR_STATUS_FIFO_PENDING</span></td>
+          <td style="text-align: left;"><span style="font-family: Times
+              New Roman, Times, serif;">Set when event FIFO is
+              non-empty.</span></td>
+        </tr>
+        <tr>
+          <td style="vertical-align: middle; text-align: center;"><span
+              style="font-family: Times New Roman, Times, serif;">3</span><br>
+          </td>
+          <td style="text-align: left;"><span style="font-family: Times
+              New Roman, Times, serif;">OSPREY_EVR_STATUS_FIFO_OVERFLOW</span></td>
+          <td style="text-align: left;"><span style="font-family: Times
+              New Roman, Times, serif;">Set when event FIFO has
+              overflowed and events have been lost.<br>
+            </span></td>
+        </tr>
+        <tr>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">11–</span><span
+              style="font-family: Times New Roman, Times, serif;">4&nbsp;
+
+
+              <br>
+            </span></td>
+          <td style="text-align: left;"><span style="font-family: Times
+              New Roman, Times, serif;">OSPREY_EVR_STATUS_OUTPUT_COUNT_MASK</span></td>
+          <td style="text-align: left;"><span style="font-family: Times
+              New Roman, Times, serif;">Number of hardware outputs.<br>
+            </span></td>
+        </tr>
+        <tr>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">15–</span><span
+              style="font-family: Times New Roman, Times, serif;">12</span></td>
+          <td style="text-align: left;"><span style="font-family: Times
+              New Roman, Times, serif;">OSPREY_EVR_STATUS_SERDES_FACTOR_MASK</span></td>
+          <td style="text-align: left;"><span style="font-family: Times
+              New Roman, Times, serif;">Hardware output SERDES_FACTOR.</span></td>
+        </tr>
+      </tbody>
+    </table>
+    <br>
+    <h3 style="caret-color: rgb(0, 0, 0); color: rgb(0, 0, 0);
+      font-style: normal; font-variant-caps: normal; letter-spacing:
+      normal; text-align: start; text-indent: 0px; text-transform: none;
+      white-space: normal; word-spacing: 0px; -moz-text-size-adjust:
+      auto; -webkit-text-stroke-width: 0px; text-decoration: none;"><span
+        style="font-family: Times New Roman, Times, serif;">Time of Day</span><span
+        style="font-family: Times New Roman, Times, serif;"><br>
+      </span></h3>
+    <p style="caret-color: rgb(0, 0, 0); color: rgb(0, 0, 0);
+      font-style: normal; font-variant-caps: normal; font-weight: 400;
+      letter-spacing: normal; text-align: start; text-indent: 0px;
+      text-transform: none; white-space: normal; word-spacing: 0px;
+      -moz-text-size-adjust: auto; -webkit-text-stroke-width: 0px;
+      text-decoration: none;"><span style="font-family: Times New Roman,
+        Times, serif;"><span style="font-family: Times New Roman, Times,
+          serif;"><span style="caret-color: rgb(0, 0, 0); color: rgb(0,
+            0, 0); font-size: medium; font-style: normal;
+            font-variant-caps: normal; font-weight: 400; letter-spacing:
+            normal; text-align: start; text-indent: 0px; text-transform:
+            none; white-space: normal; word-spacing: 0px;
+            -moz-text-size-adjust: auto; -webkit-text-stroke-width: 0px;
+            text-decoration: none; display: inline !important; float:
+            none;">The time of day can be read by invoking<br>
+            int <span style="font-weight: bold;">ospreyEVRGetTime</span>(uint32_t
+
+
+
+
+
+
+
+
+
+
+
+
+
+            *seconds, uint32_t *ticks);</span></span></span><span
+        style="font-family: Times New Roman, Times, serif;"></span><span
+        style="font-family: Times New Roman, Times, serif;"><span
+          style="font-weight: bold;"><br>
+        </span>Return value is 0 on success, -1 if the interface has not
+        been initialized or the link is down, or the time stamps are not
+        valid, and -2 if a stable time value could not be read. One or
+        both arguments can be NULL in which case the corresponding value
+        will not be set.</span><br>
+    </p>
+    <h3 style="caret-color: rgb(0, 0, 0); color: rgb(0, 0, 0);
+      font-style: normal; font-variant-caps: normal; letter-spacing:
+      normal; text-align: start; text-indent: 0px; text-transform: none;
+      white-space: normal; word-spacing: 0px; -moz-text-size-adjust:
+      auto; -webkit-text-stroke-width: 0px; text-decoration: none;"><a
+        name="Event_Actions_"></a><span style="font-family: Times New
+        Roman, Times, serif;">Event Actions<br>
+      </span></h3>
+    <p><span style="font-family: Times New Roman, Times, serif;">The
+        action(s) to take on the arrival of an event are set by the
+        following routine. </span><span style="font-family: Times New
+        Roman, Times, serif;"><span style="font-family: Times New Roman,
+          Times, serif;"></span> </span></p>
+    <p><span style="font-family: Times New Roman, Times, serif;"><span
+          style="font-family: Times New Roman, Times, serif;"><span
+            style="caret-color: rgb(0, 0, 0); color: rgb(0, 0, 0);
+            font-size: medium; font-style: normal; font-variant-caps:
+            normal; font-weight: 400; letter-spacing: normal;
+            text-align: start; text-indent: 0px; text-transform: none;
+            white-space: normal; word-spacing: 0px;
+            -moz-text-size-adjust: auto; -webkit-text-stroke-width: 0px;
+            text-decoration: none; display: inline !important; float:
+            none;">int <span style="font-weight: bold;">ospreyEVRSetEventAction</span>(int
+
+
+
+
+
+
+
+
+
+
+
+
+
+            event, int action);</span></span></span><span
+        style="font-family: Times New Roman, Times, serif;"></span><span
+        style="font-family: Times New Roman, Times, serif;"><span
+          style="font-weight: bold;"></span></span></p>
+    <p><span style="font-family: Times New Roman, Times, serif;"><span
+          style="font-weight: bold;"><span style="font-family: Times New
+            Roman, Times, serif;"> </span></span><span
+          style="font-family: Times New Roman, Times, serif;">Event
+          numbers begin at 1.&nbsp; The 'action' argument is a
+          bitmap.&nbsp; The least significant 16 bits specify the </span><span
+          style="font-family: Times New Roman, Times, serif;"><span
+            style="font-family: Times New Roman, Times, serif;">evrActionStrobes
+
+
+            to assert on the arrival of specified event.</span>&nbsp;
+          The action strobes can also affect the hardware outputs as
+          described in the following section.&nbsp; If bit 17
+          (OSPREY_EVR_ACTION_WRITE_FIFO) of the action is set the event
+          code and time stamp will be written to a <a
+            moz-do-not-send="true"
+href="file:///Users/eric/src/Osprey/src/ip_repo/ospreyEVR/head/documentation/ospreyEVR.html#Event_Monitoring">FIFO</a>.&nbsp;
+
+
+
+
+
+          B</span><span style="font-family: Times New Roman, Times,
+          serif;"><span style="font-family: Times New Roman, Times,
+            serif;">it 16 (OSPREY_EVR_ACTION_INTERRUPT) is reserved for
+            use as a future interrupt request.</span></span><span
+          style="font-weight: bold;"><span style="font-family: Times New
+            Roman, Times, serif;"> </span> </span></span></p>
+    <h3 style="caret-color: rgb(0, 0, 0); color: rgb(0, 0, 0);
+      font-style: normal; font-variant-caps: normal; letter-spacing:
+      normal; text-align: start; text-indent: 0px; text-transform: none;
+      white-space: normal; word-spacing: 0px; -moz-text-size-adjust:
+      auto; -webkit-text-stroke-width: 0px; text-decoration: none;"><span
+        style="font-family: Times New Roman, Times, serif;">Hardware
+        Outputs</span></h3>
+    <p><span style="font-family: Times New Roman, Times, serif;">Hardwae
+        outputs are configured using the following routines.&nbsp; An
+        'output' value of 0 corresponds to the first hardware output
+        channel.</span><span style="font-family: Times New Roman, Times,
+        serif;"><span style="font-family: Times New Roman, Times,
+          serif;"></span> </span></p>
+    <p><span style="font-family: Times New Roman, Times, serif;"><span
+          style="font-family: Times New Roman, Times, serif;"><span
+            style="caret-color: rgb(0, 0, 0); color: rgb(0, 0, 0);
+            font-size: medium; font-style: normal; font-variant-caps:
+            normal; font-weight: 400; letter-spacing: normal;
+            text-align: start; text-indent: 0px; text-transform: none;
+            white-space: normal; word-spacing: 0px;
+            -moz-text-size-adjust: auto; -webkit-text-stroke-width: 0px;
+            text-decoration: none; display: inline !important; float:
+            none;">int <span style="font-weight: bold;">ospreyEVRSelectOutputSource</span>(int
+
+
+
+
+
+
+
+
+
+
+
+
+
+            output, int source);</span></span></span><span
+        style="font-family: Times New Roman, Times, serif;"></span><span
+        style="font-family: Times New Roman, Times, serif;"><span
+          style="font-weight: bold;"></span></span><span
+        style="font-family: Times New Roman, Times, serif;"><span
+          style="font-weight: bold;"><span style="font-family: Times New
+            Roman, Times, serif;"><span style="font-family: Times New
+              Roman, Times, serif;"><span style="caret-color: rgb(0, 0,
+                0); color: rgb(0, 0, 0); font-size: medium; font-style:
+                normal; font-variant-caps: normal; font-weight: 400;
+                letter-spacing: normal; text-align: start; text-indent:
+                0px; text-transform: none; white-space: normal;
+                word-spacing: 0px; -moz-text-size-adjust: auto;
+                -webkit-text-stroke-width: 0px; text-decoration: none;
+                display: inline !important; float: none;"><br>
+              </span></span></span></span></span></p>
+    <p style="margin-left: 40px;"><span style="font-family: Times New
+        Roman, Times, serif;"><span style="font-weight: bold;"><span
+            style="font-family: Times New Roman, Times, serif;"><span
+              style="font-family: Times New Roman, Times, serif;"><span
+                style="caret-color: rgb(0, 0, 0); color: rgb(0, 0, 0);
+                font-size: medium; font-style: normal;
+                font-variant-caps: normal; font-weight: 400;
+                letter-spacing: normal; text-align: start; text-indent:
+                0px; text-transform: none; white-space: normal;
+                word-spacing: 0px; -moz-text-size-adjust: auto;
+                -webkit-text-stroke-width: 0px; text-decoration: none;
+                display: inline !important; float: none;"><a
+                  name="HardwareOutputSourceSelection"></a>Outputs can
+                be driven by multiple sources as chosen by the value of
+                'source':<br>
+                &nbsp;&nbsp;&nbsp; 0 – Static 0.<br>
+                &nbsp;&nbsp;&nbsp; 1 – Programmable pulse generator
+                triggered by corresponding eventActionStrobe bit.<br>
+                &nbsp;&nbsp;&nbsp; 2 – Latch set</span></span></span></span></span><span
+        style="font-family: Times New Roman, Times, serif;"><span
+          style="font-weight: bold;"><span style="font-family: Times New
+            Roman, Times, serif;"><span style="font-family: Times New
+              Roman, Times, serif;"><span style="caret-color: rgb(0, 0,
+                0); color: rgb(0, 0, 0); font-size: medium; font-style:
+                normal; font-variant-caps: normal; font-weight: 400;
+                letter-spacing: normal; text-align: start; text-indent:
+                0px; text-transform: none; white-space: normal;
+                word-spacing: 0px; -moz-text-size-adjust: auto;
+                -webkit-text-stroke-width: 0px; text-decoration: none;
+                display: inline !important; float: none;"><span
+                  style="font-family: Times New Roman, Times, serif;"><span
+                    style="font-weight: bold;"><span style="font-family:
+                      Times New Roman, Times, serif;"><span
+                        style="font-family: Times New Roman, Times,
+                        serif;"><span style="caret-color: rgb(0, 0, 0);
+                          color: rgb(0, 0, 0); font-size: medium;
+                          font-style: normal; font-variant-caps: normal;
+                          font-weight: 400; letter-spacing: normal;
+                          text-align: start; text-indent: 0px;
+                          text-transform: none; white-space: normal;
+                          word-spacing: 0px; -moz-text-size-adjust:
+                          auto; -webkit-text-stroke-width: 0px;
+                          text-decoration: none; display: inline
+                          !important; float: none;"> by corresponding
+                          event action bit.&nbsp; Reset by next most
+                          significant event action bit.</span></span></span></span></span><br>
+                '&nbsp;&nbsp; 3 – Corresponding bit in distributed bus
+                (applicable to first eight outputs only).<br>
+                &nbsp;&nbsp;&nbsp; 4 – Corresponding bit in </span></span></span></span></span><span
+        style="font-family: Times New Roman, Times, serif;"><span
+          style="font-weight: bold;"><span style="font-family: Times New
+            Roman, Times, serif;"><span style="font-family: Times New
+              Roman, Times, serif;"><span style="caret-color: rgb(0, 0,
+                0); color: rgb(0, 0, 0); font-size: medium; font-style:
+                normal; font-variant-caps: normal; font-weight: 400;
+                letter-spacing: normal; text-align: start; text-indent:
+                0px; text-transform: none; white-space: normal;
+                word-spacing: 0px; -moz-text-size-adjust: auto;
+                -webkit-text-stroke-width: 0px; text-decoration: none;
+                display: inline !important; float: none;"><span
+                  style="font-family: Times New Roman, Times, serif;">hwDriverIn_a.<br>
+                  &nbsp;&nbsp;&nbsp; 5 – Reserved.<br>
+                  &nbsp;&nbsp;&nbsp; 6 – Reserved.<br>
+                  &nbsp;&nbsp;&nbsp; 7 – Static 1.<br>
+                </span></span></span></span></span></span></p>
+    <span style="font-family: Times New Roman, Times, serif;"><span
+        style="font-family: Times New Roman, Times, serif;"><span
+          style="caret-color: rgb(0, 0, 0); color: rgb(0, 0, 0);
+          font-size: medium; font-style: normal; font-variant-caps:
+          normal; font-weight: 400; letter-spacing: normal; text-align:
+          start; text-indent: 0px; text-transform: none; white-space:
+          normal; word-spacing: 0px; -moz-text-size-adjust: auto;
+          -webkit-text-stroke-width: 0px; text-decoration: none;
+          display: inline !important; float: none;">int <span
+            style="font-weight: bold;">ospreyEVRSetPulseDelay</span>(int
+          output, uint32_t delay);</span></span></span><span
+      style="font-family: Times New Roman, Times, serif;"></span><span
+      style="font-family: Times New Roman, Times, serif;"><span
+        style="font-weight: bold;"><br>
+      </span></span><span style="font-family: Times New Roman, Times,
+      serif;"><span style="font-weight: bold;"><span style="font-family:
+          Times New Roman, Times, serif;"><span style="font-family:
+            Times New Roman, Times, serif;"><span style="caret-color:
+              rgb(0, 0, 0); color: rgb(0, 0, 0); font-size: medium;
+              font-style: normal; font-variant-caps: normal;
+              font-weight: 400; letter-spacing: normal; text-align:
+              start; text-indent: 0px; text-transform: none;
+              white-space: normal; word-spacing: 0px;
+              -moz-text-size-adjust: auto; -webkit-text-stroke-width:
+              0px; text-decoration: none; display: inline !important;
+              float: none;">int <span style="font-weight: bold;">ospreyEVRSetPulseWidth</span>(int
+
+
+
+
+
+
+
+
+
+
+
+
+
+              output, uint32_t width);<br>
+            </span></span></span></span></span><span style="font-family:
+      Times New Roman, Times, serif;"><span style="font-weight: bold;"><span
+          style="font-family: Times New Roman, Times, serif;"><span
+            style="font-family: Times New Roman, Times, serif;"><span
+              style="caret-color: rgb(0, 0, 0); color: rgb(0, 0, 0);
+              font-size: medium; font-style: normal; font-variant-caps:
+              normal; font-weight: 400; letter-spacing: normal;
+              text-align: start; text-indent: 0px; text-transform: none;
+              white-space: normal; word-spacing: 0px;
+              -moz-text-size-adjust: auto; -webkit-text-stroke-width:
+              0px; text-decoration: none; display: inline !important;
+              float: none;"><span style="font-family: Times New Roman,
+                Times, serif;">Delay and width values are in steps of
+                1/8th the evrClk cycle time.&nbsp; The minimum value of
+                pulse width is 8 steps.&nbsp; </span><span
+                style="font-family: Times New Roman, Times, serif;"><span
+                  style="font-family: Times New Roman, Times, serif;">Trigger
+
+
+
+
+
+
+                  requests arriving while a previous request is active
+                  are ignored.</span> </span></span></span></span></span></span>
+    <p style="margin-left: 40px;"><span style="font-family: Times New
+        Roman, Times, serif;"><span style="font-weight: bold;"><span
+            style="font-family: Times New Roman, Times, serif;"><span
+              style="font-family: Times New Roman, Times, serif;"><span
+                style="caret-color: rgb(0, 0, 0); color: rgb(0, 0, 0);
+                font-size: medium; font-style: normal;
+                font-variant-caps: normal; font-weight: 400;
+                letter-spacing: normal; text-align: start; text-indent:
+                0px; text-transform: none; white-space: normal;
+                word-spacing: 0px; -moz-text-size-adjust: auto;
+                -webkit-text-stroke-width: 0px; text-decoration: none;
+                display: inline !important; float: none;"><span
+                  style="font-family: Times New Roman, Times, serif;"> </span></span></span></span></span></span></p>
+    <h3 style="caret-color: rgb(0, 0, 0); color: rgb(0, 0, 0);
+      font-style: normal; font-variant-caps: normal; letter-spacing:
+      normal; text-align: start; text-indent: 0px; text-transform: none;
+      white-space: normal; word-spacing: 0px; -moz-text-size-adjust:
+      auto; -webkit-text-stroke-width: 0px; text-decoration: none;"><span
+        style="font-family: Times New Roman, Times, serif;">Event
+        Monitoring<br>
+      </span></h3>
+    <span style="font-family: Times New Roman, Times, serif;">Event
+      information is read from the event reception <a
+        moz-do-not-send="true" href="#Event_Actions_">FIFO</a></span><span
+      style="font-family: Times New Roman, Times, serif;"><a
+        moz-do-not-send="true" href="#Event_Actions_"><span
+          style="font-family: Times New Roman, Times, serif;"></span></a></span><span
+      style="font-family: Times New Roman, Times, serif;"> using<br>
+    </span><br>
+    <span style="font-family: Times New Roman, Times, serif;"><span
+        style="font-family: Times New Roman, Times, serif;"><span
+          style="font-family: Times New Roman, Times, serif;"><span
+            style="caret-color: rgb(0, 0, 0); color: rgb(0, 0, 0);
+            font-size: medium; font-style: normal; font-variant-caps:
+            normal; font-weight: 400; letter-spacing: normal;
+            text-align: start; text-indent: 0px; text-transform: none;
+            white-space: normal; word-spacing: 0px;
+            -moz-text-size-adjust: auto; -webkit-text-stroke-width: 0px;
+            text-decoration: none; display: inline !important; float:
+            none;">int <span style="font-weight: bold;">ospreyEVRGetFifoEvent</span>(uint32_t
+
+
+
+
+
+
+
+
+
+
+
+
+
+            *seconds, uint32_t *ticks);</span></span></span><span
+        style="font-family: Times New Roman, Times, serif;"></span><span
+        style="font-family: Times New Roman, Times, serif;"><span
+          style="font-weight: bold;"><br>
+        </span><br>
+        Return value is is the event code read from the FIFO, or 0 if
+        the FIFO is empty, or -1 if the interface has not been
+        initialized. One or both arguments can be NULL in which case the
+        corresponding value will not be set.</span><br>
+    </span>
+    <p><span style="font-family: Times New Roman, Times, serif;"><span
+          style="font-weight: bold;"><span style="font-family: Times New
+            Roman, Times, serif;"><span style="font-weight: bold;"> </span></span>
+        </span></span></p>
+    <p><span style="font-family: Times New Roman, Times, serif;"><span
+          style="font-weight: bold;"> <br>
+        </span></span></p>
+    <h3>FEED Support</h3>
+    <p><span style=" font-family: Times New Roman, Times, serif;">The
+        FEED JSON file fragment for the event generator I/O is produced
+        by the ospreyEVR.py script included with the driver.&nbsp; The
+        script can be invoked from the command line or from another
+        python script as:</span></p>
+    <pre style="margin-left: 40px;"><code><span style="font-family: Times New Roman, Times, serif;"><font size="+1">import ospreyEVR<br>ospreyEVR.ospreyEVR_emitJSON(EVR_REG_BASE=1100000, hwOutputCount=8)</font></span></code><br></pre>
+    <p><span style=" font-family: Times New Roman, Times, serif;"></span><span
+        style=" font-family: Times New Roman, Times, serif;">The
+        functions described below are wrappers around the functions
+        mentioned in the previous section to simplify their use in a
+        FEED driver environment.<br>
+      </span></p>
+    <p><span style=" font-family: Times New Roman, Times, serif;">int <span
+          style="font-weight: bold;">ospreyEVR_FEEDwrite</span>(int
+        offset, uint32_t value);<br>
+        uint32_t <span style="font-weight: bold;">ospreyEVR_FEEDread</span>(int
+
+
+
+
+
+
+
+
+
+
+        offset);</span></p>
+    <p><span style=" font-family: Times New Roman, Times, serif;">The <span
+          style="font-style: italic;">offset</span> values are relative
+        to the EVR_REG_BASE in the python script, so a typical
+        invocation from a FEED driver for the </span><span style="
+        font-family: Times New Roman, Times, serif;"><span style="
+          font-family: Times New Roman, Times, serif;">EVR_REG_BASE
+          shown above </span>might be:</span></p>
+    <pre style="margin-left: 40px;"><code><span style="font-family: Times New Roman, Times, serif;"><font size="+1">#define REG_EVR_START                     1100000<br>#define REG_EVR_END                         1110000<br>. . .<br>    if ((address &gt;= REG_EVR_START) &amp;&amp; (address &lt; REG_EVR_END)) {<br>        return ospreyEVR_FEEDread(address - REG_EVR_START);<br>    }<br></font></span></code></pre>
+    <span style=" font-family: Times New Roman, Times, serif;"></span><span
+      style=" font-family: Times New Roman, Times, serif;"></span> <span
+      style=" font-family: Times New Roman, Times, serif;">The value
+      returned by ospreyEVR_FEEDwrite() is 0 if the <span
+        style="font-style: italic;">offset</span> is that of a supported
+      register and -1 otherwise.<br>
+      <br>
+    </span>
+    <h2><span style="font-family: Times New Roman, Times, serif;">EPICS</span></h2>
+    <span style="font-family: Times New Roman, Times, serif;"><span
+        style="caret-color: rgb(0, 0, 0); color: rgb(0, 0, 0);
+        font-size: medium; font-style: normal; font-variant-caps:
+        normal; font-weight: 400; letter-spacing: normal; text-align:
+        start; text-indent: 0px; text-transform: none; white-space:
+        normal; word-spacing: 0px; -moz-text-size-adjust: auto;
+        -webkit-text-stroke-width: 0px; text-decoration: none; display:
+        inline !important; float: none;">Example EPICS database entries
+        to control the event receiver are included in the
+        distribution.&nbsp; The entries use the FEED driver to
+        communicate with the FPGA.</span></span><span
+      style="font-family: Times New Roman, Times, serif;">&nbsp; All
+      record names in the example database begin with a <span
+        style="font-weight: bold;">$(P)</span> macro.&nbsp; This prefix
+      is not included in the record names below.</span><span
+      style="font-family: Times New Roman, Times, serif;"></span><span
+      style="font-family: Times New Roman, Times, serif;"><br
+        style="caret-color: rgb(0, 0, 0); color: rgb(0, 0, 0);
+        font-style: normal; font-variant-caps: normal; font-weight: 400;
+        letter-spacing: normal; text-align: start; text-indent: 0px;
+        text-transform: none; white-space: normal; word-spacing: 0px;
+        -moz-text-size-adjust: auto; -webkit-text-stroke-width: 0px;
+        text-decoration: none;">
+    </span><br>
+    <span style="font-family: Times New Roman, Times, serif;">To include
+      the EPICS database in an EPICS application:<br>
+    </span>
+    <ul>
+      <li><span style="font-family: Times New Roman, Times, serif;">Add
+          an OSPREY_EVR entry to the application configure/RELEASE or
+          configure/RELEASE.local.<br>
+          The entry should refer to the EPICS directory in the ospreyEVR
+          support module.</span></li>
+      <li><span style=" font-family: Times New Roman, Times, serif;">Add
+          two lines to the application Db/Makefile:<br>
+        </span><span style="font-family: Courier New, Courier,
+          monospace;">USR_VPATH += $(OSPREY_EVR)/db</span><span
+          style="font-family: Courier New, Courier, monospace;"><br>
+        </span><span style="font-family: Courier New, Courier,
+          monospace;"> DB += ospreyEVR.db</span></li>
+    </ul>
+    <br>
+    <span style="font-family: Times New Roman, Times, serif;">The event
+      receiver is configured through the following EPICS records.&nbsp;
+    </span><span style="font-family: Times New Roman, Times, serif;"><span
+        style="font-family: Times New Roman, Times, serif;">Hardware
+        output numbers (<span style="font-weight: bold;"><span
+            style="font-style: italic;">i</span></span>) begin at 1 and
+        continue to the number of hardware outputs configured in the
+        event receiver module.&nbsp; Delay and width values are in steps
+        of one-eighth of an evrClk period.&nbsp; With an evrClk rate at
+        its typical value of 125 MHz this results in delay and width
+        steps of 1 ns.&nbsp; The minimum output pulse width is eight
+        steps (one evrClk period).</span></span><br>
+    <div style="margin-left: 40px;"><span style="font-family: Times New
+        Roman, Times, serif;"><span style="font-family: Times New Roman,
+          Times, serif;"></span></span><br>
+      <span style="font-family: Times New Roman, Times, serif;"><span
+          style="font-family: Times New Roman, Times, serif;"> </span></span>
+    </div>
+    <table style="text-align: left; width: 80%; margin-left: 40px;"
+      cellspacing="2" cellpadding="2" border="1">
+      <tbody>
+        <tr>
+          <td style="text-align: center;"><span style="font-weight:
+              bold;"><span style="font-family: Times New Roman, Times,
+                serif;"><span style="font-family: Times New Roman,
+                  Times, serif;">Name</span></span></span></td>
+          <td style="text-align: center;"><span style="font-weight:
+              bold;"><span style="font-family: Times New Roman, Times,
+                serif;"><span style="font-family: Times New Roman,
+                  Times, serif;">Type</span></span></span></td>
+          <td style="text-align: center;"><span style="font-weight:
+              bold;"><span style="font-family: Times New Roman, Times,
+                serif;"><span style="font-family: Times New Roman,
+                  Times, serif;">Description</span></span></span></td>
+        </tr>
+        <tr>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">EVR:EVENT:<span
+                style="font-style: italic;">nnn</span>:action </span></td>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">longout</span></td>
+          <td style="text-align: left;"><span style="font-family: Times
+              New Roman, Times, serif;">The evrActionStrobes bit(s) to
+              assert for one evrClk interval on the arrival of the
+              specified event (</span><span style="font-family: Times
+              New Roman, Times, serif;"><span style="font-family: Times
+                New Roman, Times, serif;"><span style="font-style:
+                  italic;">nnn</span> is a three digit value from 001 to
+                126)<span style="text-decoration: underline;">.</span></span><br>
+            </span></td>
+        </tr>
+        <tr>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;"><span style="font-family:
+                Times New Roman, Times, serif;">EVR:OUT:<span
+                  style="font-style: italic;">i</span>:source</span></span>
+          </td>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;"><span style="font-family:
+                Times New Roman, Times, serif;">mbbo</span></span> </td>
+          <td style="text-align: left;"><span style="font-family: Times
+              New Roman, Times, serif;">Signal <a
+                href="#HardwareOutputSourceSelection">source</a> for the
+              specified hardware output.</span> </td>
+        </tr>
+        <tr>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">EVR:OUT:<span
+                style="font-style: italic;">i</span>:delay</span> </td>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">longout</span> </td>
+          <td style="text-align: left;"><span style="font-family: Times
+              New Roman, Times, serif;">Delay from the assertion of the
+              corresponding event action strobe to the rising edge of
+              the hardware output pulse</span> </td>
+        </tr>
+        <tr>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;"><span style="font-family:
+                Times New Roman, Times, serif;">EVR:OUT:<span
+                  style="font-style: italic;">i</span>:width</span></span></td>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">longout</span></td>
+          <td style="text-align: left;"><span style="font-family: Times
+              New Roman, Times, serif;">Hardware output pulse width.<br>
+            </span></td>
+        </tr>
+      </tbody>
+    </table>
+    <br>
+  </body>
+</html>

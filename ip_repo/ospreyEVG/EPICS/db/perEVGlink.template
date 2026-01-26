@@ -1,0 +1,12 @@
+record(ai, "$(P)EVG:LINK:$(I):latency") {
+    field(DESC, "EVG link $(I) round-trip time")
+    field(DTYP, "FEED Register Read")
+    field(INP,  "@name=$(NAME) reg=EVG:LINK:$(I):latency")
+    field(SCAN, "10 second")
+    field(LINR, "SLOPE")
+    field(ESLO, "0.1")
+    field(EGU,  "ns")
+    field(PREC, "2")
+    field(LOPR, "0")
+    field(HOPR, "1000")
+}

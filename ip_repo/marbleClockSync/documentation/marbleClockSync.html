@@ -1,0 +1,928 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+  <head>
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+    <title>marbleClockSync Module</title>
+  </head>
+  <body>
+    <h1><span style="font-family: Times New Roman, Times, serif;">Marble
+        Clock Synchronization Module</span></h1>
+    <span style="font-family: Times New Roman, Times, serif;">This
+      module provides a phase detector and loop filter to create a
+      phase-locked loop to synchronize a Marble Voltage Controlled
+      Crystal Oscillator (VCXO) with an external pulse-per-second (PPS)
+      marker.</span><span style="font-family: Times New Roman, Times,
+      serif;">&nbsp; Ports are provided for optional control and
+      monitoring by an embedded processor system.&nbsp; Phase detection
+      and locking are performed to a resolution of 1 ns.&nbsp; The
+      module adapts to low or high jitter PPS sources.<br>
+    </span><br>
+    <br>
+    <div style="margin-left: 40px;"> <img moz-do-not-send="true"
+        src="BlockDiagram.svg" alt="" style=" width: 492px; height:
+        368px;"> </div>
+    <div style="margin-left: 40px;"><br>
+      <br>
+    </div>
+    <table style=" text-align: left; width: 95%;" cellspacing="2"
+      cellpadding="2" border="1">
+      <tbody>
+        <tr>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;"><span style="font-weight:
+                bold;">Name</span></span><span style="font-family: Times
+              New Roman, Times, serif;"><span style="font-weight: bold;"><br>
+              </span></span></td>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;"><span style="font-weight:
+                bold;">Dir</span></span><span style="font-family: Times
+              New Roman, Times, serif;"><span style="font-weight: bold;"><br>
+              </span></span></td>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;"><span style="font-weight:
+                bold;">Width</span></span><span style="font-family:
+              Times New Roman, Times, serif;"><span style="font-weight:
+                bold;"><br>
+              </span></span></td>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;"><span style="font-weight:
+                bold;">Clk</span></span><span style="font-family: Times
+              New Roman, Times, serif;"><span style="font-weight: bold;"><br>
+              </span></span></td>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;"><span style="font-weight:
+                bold;">Description</span></span><span
+              style="font-family: Times New Roman, Times, serif;"><span
+                style="font-weight: bold;"><br>
+              </span></span></td>
+        </tr>
+        <tr>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">sysClk</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span></td>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">I</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span></td>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">1</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span></td>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">–</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span></td>
+          <td style="text-align: left;"><span style="font-family: Times
+              New Roman, Times, serif;">Control/status register clock</span><span
+              style="font-family: Times New Roman, Times, serif;"> from
+              optional embedded processor system.<br>
+            </span></td>
+        </tr>
+        <tr>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">sysGPIO_OUT</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span></td>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">I</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span></td>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">32</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span></td>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">sysClk</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span></td>
+          <td style="text-align: left;"><span style="font-family: Times
+              New Roman, Times, serif;">Register write data</span><span
+              style="font-family: Times New Roman, Times, serif;">.&nbsp;
+
+
+
+              Must be valid when sysCsrStrobe is asserted.<br>
+            </span></td>
+        </tr>
+        <tr>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">sysCsrStrobe</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span></td>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">I</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span></td>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">1</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span></td>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">sysClk</span></td>
+          <td style="text-align: left;"><span style="font-family: Times
+              New Roman, Times, serif;">Assert for one cycle to write
+              sysGPIO_OUT to control register.</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span></td>
+        </tr>
+        <tr>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">sysStatus</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span></td>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">O</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span></td>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">32</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span></td>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">–</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span></td>
+          <td style="text-align: left;"><span style="font-family: Times
+              New Roman, Times, serif;">Status register</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span></td>
+        </tr>
+        <tr>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">sysAuxStatus</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span></td>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">O</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span></td>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">32</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span></td>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">–</span></td>
+          <td style="text-align: left;"><span style="font-family: Times
+              New Roman, Times, serif;">Auxiliary status register</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span></td>
+        </tr>
+        <tr>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">sysHwInterval</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span></td>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">O</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span></td>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">32</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span></td>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">–</span></td>
+          <td style="text-align: left;"><span style="font-family: Times
+              New Roman, Times, serif;">PPS marker status</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span></td>
+        </tr>
+        <tr>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">clk125</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span></td>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">I</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span><span style="font-family: Times New Roman, Times,
+              serif;"> </span></td>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">1</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span></td>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">–</span></td>
+          <td style="text-align: left;"><span style="font-family: Times
+              New Roman, Times, serif;">Clock to be synchronized to the
+              PPS marker.</span><span style="font-family: Times New
+              Roman, Times, serif;">&nbsp; Should be output of MMCM
+              driven by Marble VCXO.&nbsp; Provides CLKDIV to internal
+              ISERDES blocks.<br>
+            </span></td>
+        </tr>
+        <tr>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">clk500</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span></td>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">I</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span></td>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">1</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span></td>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">–</span></td>
+          <td style="text-align: left;"><span style="font-family: Times
+              New Roman, Times, serif;"> CLK/CLKB to internal ISERDES
+              blocks.&nbsp; </span><span style="font-family: Times New
+              Roman, Times, serif;">Should be another output of the MMCM
+              providing clk125 and aligned to clk125. </span></td>
+        </tr>
+        <tr>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">ppsPrimary_pin</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span></td>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">I</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span></td>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">1</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span></td>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">–</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span></td>
+          <td style="text-align: left;"><span style="font-family: Times
+              New Roman, Times, serif;">Primary PPS marker.&nbsp;
+              Connection from FPGA pin through some type of input buffer
+              (IBUF, IBUFDS, IBUF_IBUFDISABLE).</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span></td>
+        </tr>
+        <tr>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">ppsSecondary_pin</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span></td>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">I</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span></td>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">1</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span></td>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">–</span></td>
+          <td style="text-align: left;"><span style="font-family: Times
+              New Roman, Times, serif;">Secondary PPS marker.</span><span
+              style="font-family: Times New Roman, Times, serif;"><span
+                style="font-family: Times New Roman, Times, serif;">&nbsp;
+
+                Connection from FPGA pin through some type of input
+                buffer (IBUF, IBUFDS, IBUF_IBUFDISABLE).</span><span
+                style="font-family: Times New Roman, Times, serif;"><br>
+              </span></span></td>
+        </tr>
+        <tr>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">ppsFromFabric</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span></td>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">I</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span></td>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">1</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span></td>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">–</span></td>
+          <td style="text-align: left;"><span style="font-family: Times
+              New Roman, Times, serif;">PPS marker from FPGA
+              fabric.&nbsp; </span><span style="font-family: Times New
+              Roman, Times, serif;">Typically this is the output from a
+              timing system event receiver.<br>
+            </span></td>
+        </tr>
+        <tr>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">hwPPSmarker_a</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span></td>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">O</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span></td>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">1</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span></td>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">–</span></td>
+          <td style="text-align: left;"><span style="font-family: Times
+              New Roman, Times, serif;">Copy of currently selected input
+              PPS marker.</span><span style="font-family: Times New
+              Roman, Times, serif;"><br>
+            </span></td>
+        </tr>
+        <tr>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">hwPPSvalid</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span></td>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">O</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span></td>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">1</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span></td>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">clk125</span></td>
+          <td style="text-align: left;"><span style="font-family: Times
+              New Roman, Times, serif;">Asserted when at least one of
+              the PPS markers is valid.</span><span style="font-family:
+              Times New Roman, Times, serif;"><br>
+            </span></td>
+        </tr>
+        <tr>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">ppsMarker</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span></td>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">O</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span></td>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">1</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span></td>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">clk125</span></td>
+          <td style="text-align: left;"><span style="font-family: Times
+              New Roman, Times, serif;">PPS output asserted for about 10
+              µs.&nbsp; Driven by clk125 counter overflow when PLL is
+              locked otherwise by the currently selected PPS marker
+              input.</span><span style="font-family: Times New Roman,
+              Times, serif;"><br>
+            </span></td>
+        </tr>
+        <tr>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">ppsToggle</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span></td>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">O</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span></td>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">1</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span></td>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">clk125</span></td>
+          <td style="text-align: left;"><span style="font-family: Times
+              New Roman, Times, serif;">Toggled at each rising edge of
+              ppsMarker.</span><span style="font-family: Times New
+              Roman, Times, serif;"><br>
+            </span></td>
+        </tr>
+        <tr>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">SPI_CLK</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span></td>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">O</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span></td>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">1</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span></td>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">–</span></td>
+          <td style="text-align: left;"><span style="font-family: Times
+              New Roman, Times, serif;">Clock to VCXO serial peripheral
+              interface DACs.</span><span style="font-family: Times New
+              Roman, Times, serif;"><br>
+            </span></td>
+        </tr>
+        <tr>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">SPI_SYNCn</span></td>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">O</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span></td>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">2</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span></td>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">–</span></td>
+          <td style="text-align: left;"><span style="font-family: Times
+              New Roman, Times, serif;">SYNC* to VCXO serial peripheral
+              interface DACs.</span></td>
+        </tr>
+        <tr>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">SPI_SDI</span></td>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">O</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span></td>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">1</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span></td>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">–</span></td>
+          <td style="text-align: left;"><span style="font-family: Times
+              New Roman, Times, serif;">Data to VCXO serial peripheral
+              interface DACs.</span></td>
+        </tr>
+      </tbody>
+    </table>
+    <br>
+    <br>
+    <h2><span style="font-family: Times New Roman, Times, serif;">Processor
+
+
+
+
+
+
+        Interface</span></h2>
+    <span style="font-family: Times New Roman, Times, serif;"> </span>
+    <p><span style="font-family: Times New Roman, Times, serif;">Nets
+        with names beginning with 'sys' are provided to connect the
+        module to an optional embedded processor system.&nbsp; Note that
+        the assorted status outputs have signals in other clock domains
+        and so need to be read until stable.</span><span
+        style="font-family: Times New Roman, Times, serif;"><br>
+      </span> </p>
+    <span style="font-family: Times New Roman, Times, serif;"> </span>
+    <h3><span style="font-family: Times New Roman, Times, serif;">Control
+
+
+
+
+
+        Register</span></h3>
+    <div style="margin-left: 40px;"> <span style="font-family: Times
+        New Roman, Times, serif;"> </span> </div>
+    <div style="margin-left: 80px;"> </div>
+    <div style="margin-left: 40px;"> </div>
+    <table style="text-align: left; width: 60%; margin-left: 40px;"
+      cellspacing="2" cellpadding="2" border="1">
+      <tbody>
+        <tr>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;"><span style="font-weight:
+                bold;">Bit</span></span><span style="font-family: Times
+              New Roman, Times, serif;"><br>
+            </span> </td>
+          <td style="vertical-align: middle; text-align: center;"><span
+              style="font-family: Times New Roman, Times, serif;"><span
+                style="font-weight: bold;">Description</span></span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span> </td>
+        </tr>
+        <tr>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">31</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span> </td>
+          <td style="vertical-align: top;"><span style="font-family:
+              Times New Roman, Times, serif;">Enable PLL closed-loop
+              operation.</span><span style="font-family: Times New
+              Roman, Times, serif;"><br>
+            </span> </td>
+        </tr>
+        <tr>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">30</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span> </td>
+          <td style="vertical-align: top;"><span style="font-family:
+              Times New Roman, Times, serif;">Disable PLL closed-loop
+              operation (Overrides bit 31 if both are set).</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span> </td>
+        </tr>
+        <tr>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">29</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span> </td>
+          <td style="vertical-align: top;"><span style="font-family:
+              Times New Roman, Times, serif;">Load DAC selected by&nbsp;
+              bit 16 with value in bits 15 to 0 when in open-loop mode.</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span> </td>
+        </tr>
+        <tr>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">28</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span> </td>
+          <td style="vertical-align: top;"><span style="font-family:
+              Times New Roman, Times, serif;">DAC is driven with data in
+              offset-binary format.&nbsp; DACs on old Marble hardware
+              require data in this format.</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span> </td>
+        </tr>
+        <tr>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">27</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span> </td>
+          <td style="vertical-align: top;"><span style="font-family:
+              Times New Roman, Times, serif;">DAC is driven with data in
+              twos-complement format.&nbsp; This is the default.</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span> </td>
+        </tr>
+        <tr>
+          <td style="vertical-align: middle; text-align: center;"><span
+              style="font-family: Times New Roman, Times, serif;">16</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span></td>
+          <td style="vertical-align: middle; text-align: left;">&nbsp;<span
+              style="font-family: Times New Roman, Times, serif;">Select
+              DAC to be written.&nbsp; 0/1–Y1(25 MHz VCXO)/Y3(20 MHz
+              VCXO).<br>
+            </span></td>
+        </tr>
+        <tr>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">15–0</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span> </td>
+          <td style="vertical-align: middle; text-align: left;"><span
+              style="font-family: Times New Roman, Times, serif;">Data
+              to be written to DAC when PLL is in open-loop mode and bit
+              29 is asserted.&nbsp; Twos-complement format, regardless
+              of DAC style.</span><span style="font-family: Times New
+              Roman, Times, serif;"><br>
+            </span> </td>
+        </tr>
+      </tbody>
+    </table>
+    <div style="margin-left: 40px;"> </div>
+    <div style="margin-left: 80px;"> <br>
+      <br>
+    </div>
+    <h3><span style="font-family: Times New Roman, Times, serif;">Status
+        Register</span></h3>
+    <div style="margin-left: 40px;"> </div>
+    <div style="margin-left: 80px;"><span style="font-family: Times New
+        Roman, Times, serif;"> </span></div>
+    <div style="margin-left: 40px;"> </div>
+    <div style="margin-left: 120px;"> </div>
+    <div style="margin-left: 40px;"> </div>
+    <div style="margin-left: 80px;"><span style="font-family: Times New
+        Roman, Times, serif;"> </span></div>
+    <div style="margin-left: 40px;"> </div>
+    <table style="text-align: left; width: 60%; margin-left: 40px;"
+      cellspacing="2" cellpadding="2" border="1">
+      <tbody>
+        <tr>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;"><span style="font-weight:
+                bold;">Bit</span></span><span style="font-family: Times
+              New Roman, Times, serif;"></span><br>
+            <span style="font-family: Times New Roman, Times, serif;"> </span>
+          </td>
+          <td style="vertical-align: middle; text-align: center;"><span
+              style="font-family: Times New Roman, Times, serif;"><span
+                style="font-weight: bold;">Description</span></span><span
+              style="font-family: Times New Roman, Times, serif;"></span><br>
+            <span style="font-family: Times New Roman, Times, serif;"> </span>
+          </td>
+        </tr>
+        <tr>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">31</span><span
+              style="font-family: Times New Roman, Times, serif;"></span><br>
+            <span style="font-family: Times New Roman, Times, serif;"> </span>
+          </td>
+          <td style="text-align: left;"><span style="font-family: Times
+              New Roman, Times, serif;">PLL is enabled and locked.</span><span
+              style="font-family: Times New Roman, Times, serif;"></span><br>
+            <span style="font-family: Times New Roman, Times, serif;"> </span>
+          </td>
+        </tr>
+        <tr>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">30</span><span
+              style="font-family: Times New Roman, Times, serif;"></span><br>
+            <span style="font-family: Times New Roman, Times, serif;"> </span>
+          </td>
+          <td style="text-align: left;"><span style="font-family: Times
+              New Roman, Times, serif;">Toggles state on each DAC update
+              (open or closed loop).</span><span style="font-family:
+              Times New Roman, Times, serif;"></span><br>
+            <span style="font-family: Times New Roman, Times, serif;"> </span>
+          </td>
+        </tr>
+        <tr>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">29</span><span
+              style="font-family: Times New Roman, Times, serif;"></span><br>
+            <span style="font-family: Times New Roman, Times, serif;"> </span>
+          </td>
+          <td style="text-align: left;"><span style="font-family: Times
+              New Roman, Times, serif;">Closed-loop PLL operation is
+              enabled.</span><span style="font-family: Times New Roman,
+              Times, serif;"></span><br>
+            <span style="font-family: Times New Roman, Times, serif;"> </span>
+          </td>
+        </tr>
+        <tr>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">28</span><span
+              style="font-family: Times New Roman, Times, serif;"></span><br>
+            <span style="font-family: Times New Roman, Times, serif;"> </span>
+          </td>
+          <td style="text-align: left;"><span style="font-family: Times
+              New Roman, Times, serif;">The currently selected PPS
+              marker input has high jitter.</span><span
+              style="font-family: Times New Roman, Times, serif;">&nbsp;
+              See auxiliary status register notes for details.</span><br>
+            <span style="font-family: Times New Roman, Times, serif;"> </span>
+          </td>
+        </tr>
+        <tr>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">27</span><span
+              style="font-family: Times New Roman, Times, serif;"></span><br>
+            <span style="font-family: Times New Roman, Times, serif;"> </span>
+          </td>
+          <td style="text-align: left;"><span style="font-family: Times
+              New Roman, Times, serif;">At least one of the PPS marker
+              inputs is valid</span><span style="font-family: Times New
+              Roman, Times, serif;"><span style="font-family: Times New
+                Roman, Times, serif;">.</span></span><br>
+            <span style="font-family: Times New Roman, Times, serif;"><span
+                style="font-family: Times New Roman, Times, serif;"></span></span></td>
+        </tr>
+        <tr>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">26</span><span
+              style="font-family: Times New Roman, Times, serif;"></span><br>
+            <span style="font-family: Times New Roman, Times, serif;"> </span></td>
+          <td style="text-align: left;"><span style="font-family: Times
+              New Roman, Times, serif;"><span style="font-family: Times
+                New Roman, Times, serif;">Toggles state on rising edge
+                of </span><span style="font-family: Times New Roman,
+                Times, serif;">currently selected PPS marker input.</span>
+            </span></td>
+        </tr>
+        <tr>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">25</span><span
+              style="font-family: Times New Roman, Times, serif;"></span><br>
+            <span style="font-family: Times New Roman, Times, serif;"> </span></td>
+          <td style="text-align: left;"><span style="font-family: Times
+              New Roman, Times, serif;"><span style="font-family: Times
+                New Roman, Times, serif;">Offset-binary DAC data format
+                is selected.</span><span style="font-family: Times New
+                Roman, Times, serif;"></span></span><br>
+            <span style="font-family: Times New Roman, Times, serif;"><span
+                style="font-family: Times New Roman, Times, serif;"> </span>
+            </span></td>
+        </tr>
+        <tr>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">24</span><span
+              style="font-family: Times New Roman, Times, serif;"></span><br>
+            <span style="font-family: Times New Roman, Times, serif;"> </span></td>
+          <td style="text-align: left;"><span style="font-family: Times
+              New Roman, Times, serif;">DAC is busy with data update.</span><span
+              style="font-family: Times New Roman, Times, serif;"></span><br>
+            <span style="font-family: Times New Roman, Times, serif;"> </span></td>
+        </tr>
+        <tr>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">23–0</span><span
+              style="font-family: Times New Roman, Times, serif;"></span><br>
+            <span style="font-family: Times New Roman, Times, serif;"> </span>
+          </td>
+          <td style="text-align: left;"><span style="font-family: Times
+              New Roman, Times, serif;">Twos-complement value of phase
+              difference, in nanoseconds, between the internal PPS
+              marker and the </span><span style="font-family: Times New
+              Roman, Times, serif;">currently selected PPS marker input.</span>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <div style="margin-left: 40px;"> </div>
+    <div style="margin-left: 80px;"><span style="font-family: Times New
+        Roman, Times, serif;"> </span></div>
+    <div style="margin-left: 40px;"> </div>
+    <div style="margin-left: 120px;"> </div>
+    <div style="margin-left: 40px;"> </div>
+    <h3><span style="font-family: Times New Roman, Times, serif;">Auxiliary
+
+
+
+
+
+        Status Register</span></h3>
+    <div style="margin-left: 40px;"><span style="font-family: Times New
+        Roman, Times, serif;"> </span></div>
+    <div style="margin-left: 80px;"> </div>
+    <div style="margin-left: 40px;"><span style="font-family: Times New
+        Roman, Times, serif;"> </span></div>
+    <table style="text-align: left; width: 60%; margin-left: 40px;"
+      cellspacing="2" cellpadding="2" border="1">
+      <tbody>
+        <tr>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;"><span style="font-weight:
+                bold;">Bit</span></span><span style="font-family: Times
+              New Roman, Times, serif;"><br>
+            </span> </td>
+          <td style="vertical-align: middle; text-align: center;"><span
+              style="font-family: Times New Roman, Times, serif;"><span
+                style="font-weight: bold;">Description</span></span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span> </td>
+        </tr>
+        <tr>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">31</span><span
+              style="font-family: Times New Roman, Times, serif;">–16<br>
+            </span> </td>
+          <td style="text-align: left;"><span style="font-family: Times
+              New Roman, Times, serif;">Provide estimate of jitter, in
+              units of 1/4 ns per count, </span><span
+              style="font-family: Times New Roman, Times, serif;">between
+
+
+
+
+
+              the </span><span style="font-family: Times New Roman,
+              Times, serif;"><span style="font-family: Times New Roman,
+                Times, serif;">internal PPS marker and the </span><span
+                style="font-family: Times New Roman, Times, serif;">currently
+
+
+
+
+
+                selected PPS marker input.&nbsp; If this value is too
+                large status register bit 28 will be set and the PLL
+                will use a slower loop filter.</span> </span> </td>
+        </tr>
+        <tr>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">15–0</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span> </td>
+          <td style="text-align: left;"><span style="font-family: Times
+              New Roman, Times, serif;">Value most recently written to the
+              DAC.&nbsp; Twos-complement format, regardless of DAC
+              style.</span><span style="font-family: Times New Roman,
+              Times, serif;"><br>
+            </span><span style="font-family: Times New Roman, Times,
+              serif;"></span> </td>
+        </tr>
+      </tbody>
+    </table>
+    <div style="margin-left: 40px;"><span style="font-family: Times New
+        Roman, Times, serif;"> </span></div>
+    <div style="margin-left: 80px;"> </div>
+    <div style="margin-left: 40px;"><span style="font-family: Times New
+        Roman, Times, serif;"> </span><br>
+    </div>
+    <h3><span style="font-family: Times New Roman, Times, serif;">PPS
+        Marker Status Register</span></h3>
+    <div style="margin-left: 40px;"> </div>
+    <div style="margin-left: 80px;"><span style="font-family: Times New
+        Roman, Times, serif;"> </span></div>
+    <div style="margin-left: 40px;"> </div>
+    <div style="margin-left: 120px;"> </div>
+    <div style="margin-left: 40px;"> </div>
+    <div style="margin-left: 80px;"><span style="font-family: Times New
+        Roman, Times, serif;"> </span></div>
+    <div style="margin-left: 40px;"> </div>
+    <table style="text-align: left; width: 60%; margin-left: 40px;"
+      cellspacing="2" cellpadding="2" border="1">
+      <tbody>
+        <tr>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;"><span style="font-weight:
+                bold;">Bit</span></span><span style="font-family: Times
+              New Roman, Times, serif;"><br>
+            </span> </td>
+          <td style="vertical-align: middle; text-align: center;"><span
+              style="font-family: Times New Roman, Times, serif;"><span
+                style="font-weight: bold;">Description</span></span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span> </td>
+        </tr>
+        <tr>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">31</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span> </td>
+          <td style="text-align: left;"><span style="font-family: Times
+              New Roman, Times, serif;">At least one of the PPS marker
+              inputs is valid</span><span style="font-family: Times New
+              Roman, Times, serif;"><span style="font-family: Times New
+                Roman, Times, serif;"> (same as status register bit 27)</span>.</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span> </td>
+        </tr>
+        <tr>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">30</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span> </td>
+          <td style="text-align: left;"><span style="font-family: Times
+              New Roman, Times, serif;">Fabric (Tertiary) PPS marker is
+              valid.</span><span style="font-family: Times New Roman,
+              Times, serif;"><br>
+            </span></td>
+        </tr>
+        <tr>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">29</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span> </td>
+          <td style="text-align: left;"><span style="font-family: Times
+              New Roman, Times, serif;"> Secondary hardware PPS marker
+              is valid.</span><span style="font-family: Times New Roman,
+              Times, serif;"><br>
+            </span><span style="font-family: Times New Roman, Times,
+              serif;"> </span> </td>
+        </tr>
+        <tr>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">28</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span> </td>
+          <td style="text-align: left;"><span style="font-family: Times
+              New Roman, Times, serif;"><span style="font-family: Times
+                New Roman, Times, serif;">Primary hardware PPS marker is
+                valid.</span><span style="font-family: Times New Roman,
+                Times, serif;"><br>
+              </span> </span><span style="font-family: Times New Roman,
+              Times, serif;"> </span> </td>
+        </tr>
+        <tr>
+          <td style="vertical-align: middle; text-align: center;"><span
+              style="font-family: Times New Roman, Times, serif;">27</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span></td>
+          <td style="vertical-align: middle; text-align: left;"><span
+              style="font-family: Times New Roman, Times, serif;"><span
+                style="font-family: Times New Roman, Times, serif;">Toggles
+
+                state on rising edge of </span><span
+                style="font-family: Times New Roman, Times, serif;">currently
+
+                selected PPS marker input (same as status register bit
+                26).</span><span style="font-family: Times New Roman,
+                Times, serif;"> </span> </span></td>
+        </tr>
+        <tr>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">26–0</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span> </td>
+          <td style="text-align: left;"><span style="font-family: Times
+              New Roman, Times, serif;">The number of clk125 cycles
+              between the most recent rising edges of the </span><span
+              style="font-family: Times New Roman, Times, serif;">currently
+
+
+
+
+
+              selected PPS marker input.&nbsp; Valid only if bit 31 is
+              set.</span><span style="font-family: Times New Roman,
+              Times, serif;"></span> </td>
+        </tr>
+      </tbody>
+    </table>
+    <div style="margin-left: 40px;"> </div>
+    <div style="margin-left: 80px;"><span style="font-family: Times New
+        Roman, Times, serif;"> </span></div>
+    <div style="margin-left: 40px;"> </div>
+    <div style="margin-left: 120px;"> </div>
+    <div style="margin-left: 40px;"> </div>
+    <div style="margin-left: 80px;"><span style="font-family: Times New
+        Roman, Times, serif;"> </span><br>
+    </div>
+  </body>
+</html>

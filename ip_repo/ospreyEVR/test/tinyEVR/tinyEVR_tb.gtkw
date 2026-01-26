@@ -1,0 +1,25 @@
+[*]
+[*] GTKWave Analyzer v3.4.0 (w)1999-2022 BSI
+[*] Thu Dec  4 17:50:15 2025
+[*]
+[dumpfile] "/Users/eric/src/Osprey/src/ip_repo/ospreyEVR/head/test/tinyEVR/tinyEVR_tb.fst"
+[dumpfile_mtime] "Thu Dec  4 17:48:13 2025"
+[dumpfile_size] 10340
+[savefile] "/Users/eric/src/Osprey/src/ip_repo/ospreyEVR/head/test/tinyEVR/Untitled.gtkw"
+[timestart] 0
+[size] 1333 600
+[pos] 1943 -1
+*-5.000000 -1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+[treeopen] tinyEVR_tb.
+[treeopen] tinyEVR_tb.tinyEVR.
+[sst_width] 255
+[signals_width] 152
+[sst_expanded] 1
+[sst_vpaned_height] 159
+@28
+tinyEVR_tb.evrClk
+tinyEVR_tb.evrCharIsK[1:0]
+@22
+tinyEVR_tb.evrRxWord[15:0]
+[pattern_trace] 1
+[pattern_trace] 0

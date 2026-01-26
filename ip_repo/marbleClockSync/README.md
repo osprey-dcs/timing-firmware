@@ -1,0 +1,2 @@
+# Marble Clock Synchronization Module
+This module provides a phase detector and loop filter to create a phase-locked loop to synchronize a Marble Voltage Controlled Crystal Oscillator (VCXO) with an external or internal pulse-per-second (PPS) marker.  Phase detection and locking are performed to a resolution of 1 ns.  The module adapts to low or high jitter PPS sources.  Ports are provided for optional control and monitoring by an embedded processor system.

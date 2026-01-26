@@ -1,0 +1,82 @@
+[*]
+[*] GTKWave Analyzer v3.4.0 (w)1999-2022 BSI
+[*] Fri Sep 19 18:31:08 2025
+[*]
+[dumpfile] "ospreyEVGsequencer_tb.fst"
+[dumpfile_mtime] "Fri Sep 19 18:26:17 2025"
+[dumpfile_size] 95438
+[savefile] "ospreyEVGsequencer_tb.gtkw"
+[timestart] 0
+[size] 1634 649
+[pos] 1884 2
+*-13.000000 5000 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+[markername] AA
+[markername] BB
+[markername] CC
+[markername] DD
+[markername] EE
+[markername] FF
+[markername] GG
+[markername] HH
+[markername] II
+[markername] JJ
+[markername] KK
+[markername] LL
+[markername] MM
+[markername] NN
+[markername] OO
+[markername] PP
+[markername] QQ
+[markername] RR
+[markername] SS
+[markername] TT
+[markername] UU
+[markername] VV
+[markername] WW
+[markername] XX
+[markername] YY
+[markername] ZZ
+[treeopen] ospreyEVGsequencer_tb.
+[treeopen] ospreyEVGsequencer_tb.ospreyEVGsequencer_i.
+[sst_width] 255
+[signals_width] 304
+[sst_expanded] 1
+[sst_vpaned_height] 176
+@28
+ospreyEVGsequencer_tb.sysClk
+@29
+ospreyEVGsequencer_tb.sysGPIO_OUT[31:0]
+@28
+ospreyEVGsequencer_tb.ospreyEVGsequencer_i.sysCsrStrobe
+ospreyEVGsequencer_tb.sysAddressCodeStrobe
+ospreyEVGsequencer_tb.sysGapStrobe
+@22
+ospreyEVGsequencer_tb.sysStatus[31:0]
+@28
+ospreyEVGsequencer_tb.ospreyEVGsequencer_i.evgClk
+@22
+ospreyEVGsequencer_tb.ospreyEVGsequencer_i.evgHwTriggerRising[7:0]
+@c00022
+ospreyEVGsequencer_tb.ospreyEVGsequencer_i.evgHwTriggerFalling[7:0]
+@28
+(0)ospreyEVGsequencer_tb.ospreyEVGsequencer_i.evgHwTriggerFalling[7:0]
+(1)ospreyEVGsequencer_tb.ospreyEVGsequencer_i.evgHwTriggerFalling[7:0]
+(2)ospreyEVGsequencer_tb.ospreyEVGsequencer_i.evgHwTriggerFalling[7:0]
+(3)ospreyEVGsequencer_tb.ospreyEVGsequencer_i.evgHwTriggerFalling[7:0]
+(4)ospreyEVGsequencer_tb.ospreyEVGsequencer_i.evgHwTriggerFalling[7:0]
+(5)ospreyEVGsequencer_tb.ospreyEVGsequencer_i.evgHwTriggerFalling[7:0]
+(6)ospreyEVGsequencer_tb.ospreyEVGsequencer_i.evgHwTriggerFalling[7:0]
+(7)ospreyEVGsequencer_tb.ospreyEVGsequencer_i.evgHwTriggerFalling[7:0]
+@1401200
+-group_end
+@22
+ospreyEVGsequencer_tb.ospreyEVGsequencer_i.evgHwTriggers[3:0]
+ospreyEVGsequencer_tb.ospreyEVGsequencer_i.evgTriggered[3:0]
+@28
+ospreyEVGsequencer_tb.ospreyEVGsequencer_i.evgStart
+@22
+ospreyEVGsequencer_tb.ospreyEVGsequencer_i.evgStartedBitmap[3:0]
+@28
+ospreyEVGsequencer_tb.ospreyEVGsequencer_i.evgActive
+[pattern_trace] 1
+[pattern_trace] 0

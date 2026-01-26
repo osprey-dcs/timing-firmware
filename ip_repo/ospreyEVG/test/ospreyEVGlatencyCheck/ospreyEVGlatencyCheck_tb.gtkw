@@ -1,0 +1,90 @@
+[*]
+[*] GTKWave Analyzer v3.4.0 (w)1999-2022 BSI
+[*] Sat Sep 27 20:52:15 2025
+[*]
+[dumpfile] "ospreyEVGlatencyCheck_tb.fst"
+[dumpfile_mtime] "Sat Sep 27 20:50:02 2025"
+[dumpfile_size] 152929
+[savefile] "ospreyEVGlatencyCheck_tb.gtkw"
+[timestart] 1057600
+[size] 1333 600
+[pos] 1942 0
+*-16.000000 1204000 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+[markername] AA
+[markername] BB
+[markername] CC
+[markername] DD
+[markername] EE
+[markername] FF
+[markername] GG
+[markername] HH
+[markername] II
+[markername] JJ
+[markername] KK
+[markername] LL
+[markername] MM
+[markername] NN
+[markername] OO
+[markername] PP
+[markername] QQ
+[markername] RR
+[markername] SS
+[markername] TT
+[markername] UU
+[markername] VV
+[markername] WW
+[markername] XX
+[markername] YY
+[markername] ZZ
+[treeopen] ospreyEVGlatencyCheck_tb.
+[treeopen] ospreyEVGlatencyCheck_tb.ospreyEVGlatencyCheck_i.
+[treeopen] ospreyEVGlatencyCheck_tb.ospreyEVGlatencyCheck_i.genblk1[0].
+[treeopen] ospreyEVGlatencyCheck_tb.ospreyEVGlatencyCheck_i.genblk1[0].ospreyEVGlatencyFindRisingDone.
+[sst_width] 255
+[signals_width] 169
+[sst_expanded] 1
+[sst_vpaned_height] 159
+@28
+ospreyEVGlatencyCheck_tb.sysClk
+ospreyEVGlatencyCheck_tb.sysCsrStrobe
+@22
+ospreyEVGlatencyCheck_tb.sysGPIO_OUT[31:0]
+ospreyEVGlatencyCheck_tb.sysStatus[31:0]
+@28
+ospreyEVGlatencyCheck_tb.txClk
+@c00022
+ospreyEVGlatencyCheck_tb.txChars[15:0]
+@28
+(0)ospreyEVGlatencyCheck_tb.txChars[15:0]
+(1)ospreyEVGlatencyCheck_tb.txChars[15:0]
+(2)ospreyEVGlatencyCheck_tb.txChars[15:0]
+(3)ospreyEVGlatencyCheck_tb.txChars[15:0]
+(4)ospreyEVGlatencyCheck_tb.txChars[15:0]
+(5)ospreyEVGlatencyCheck_tb.txChars[15:0]
+(6)ospreyEVGlatencyCheck_tb.txChars[15:0]
+(7)ospreyEVGlatencyCheck_tb.txChars[15:0]
+(8)ospreyEVGlatencyCheck_tb.txChars[15:0]
+(9)ospreyEVGlatencyCheck_tb.txChars[15:0]
+(10)ospreyEVGlatencyCheck_tb.txChars[15:0]
+(11)ospreyEVGlatencyCheck_tb.txChars[15:0]
+(12)ospreyEVGlatencyCheck_tb.txChars[15:0]
+(13)ospreyEVGlatencyCheck_tb.txChars[15:0]
+(14)ospreyEVGlatencyCheck_tb.txChars[15:0]
+(15)ospreyEVGlatencyCheck_tb.txChars[15:0]
+@1401200
+-group_end
+@28
+ospreyEVGlatencyCheck_tb.rxClk
+@22
+ospreyEVGlatencyCheck_tb.rxChars[15:0]
+ospreyEVGlatencyCheck_tb.ospreyEVGlatencyCheck_i.ospreyEVGlatencyFindRisingStart.txFine[7:0]
+@28
+ospreyEVGlatencyCheck_tb.ospreyEVGlatencyCheck_i.smpStartStrobe
+@22
+ospreyEVGlatencyCheck_tb.ospreyEVGlatencyCheck_i.genblk1[0].filter[17:0]
+@28
+ospreyEVGlatencyCheck_tb.ospreyEVGlatencyCheck_i.genblk1[0].overflow
+@23
+ospreyEVGlatencyCheck_tb.ospreyEVGlatencyCheck_i.genblk1[0].ospreyEVGlatencyFindRisingDone.txFine[7:0]
+[pattern_trace] 1
+[pattern_trace] 0
