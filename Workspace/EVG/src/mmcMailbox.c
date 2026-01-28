@@ -237,7 +237,7 @@ uint32_t
 mmcMailboxFetchSysmon(int index)
 {
     switch (index) {
-    case 0: return mmcMailboxRead16(MADDR_U29_TEMP) << 16;
+    case 0: return mmcMailboxRead16(MADDR_U29_TEMP) & 0xFFFF;
     case 1: return mmcMailboxRead16(MADDR_U28_TEMP) & 0xFFFF;
     }
     return 0;

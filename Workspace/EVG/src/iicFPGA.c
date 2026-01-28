@@ -88,7 +88,7 @@ setMux(unsigned char c)
  * This happens when no device is present or the EEPROM is busy (NAK).
  * However, when a device is present or the EEPROM is finished (ACK) the
  * following appears on the bus:
- *      START DeviceAddress(write) ACK FirsByte ACK/NAK STOP
+ *      START DeviceAddress(write) ACK FirstByte ACK/NAK STOP
  *
  * Thus this code depends upon IIC devices accepting (i.e. ignoring) a
  * single byte of write data following the Device Address.
@@ -379,7 +379,8 @@ iicFPGAeepromRead(int idx, uint32_t address, uint32_t length, void *buf)
 /*
  * Write n bytes to EEPROM
  */
-int iicFPGAeepromWrite(int idx, uint32_t address, uint32_t length,
+int
+iicFPGAeepromWrite(int idx, uint32_t address, uint32_t length,
                                                                 const void *buf)
 {
     int address7;
