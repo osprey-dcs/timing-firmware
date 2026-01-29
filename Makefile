@@ -33,3 +33,5 @@ createWorkspace:
 
 application:
 	cd Workspace/EVG/build ; make
+	cp ./Workspace/EVG/build/EVG.bit \
+           "EVG-$(git log -n1 --format=format:%cd-%h HEAD --date=format:%Y%m%d).bit"
