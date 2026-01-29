@@ -13,7 +13,7 @@ all: verilogHeader EVG.runs/impl_1/EVG.bit
 everything: prepareFirmware firmware XSA createWorkspace application
 
 prepareFirmware:
-	cd Workspace/EVG/src ; make verilogHeader
+	$(MAKE) -C Workspace/EVG/src verilogHeader
 	vivado -mode batch -source BuildScripts/PrepareFirmware.tcl
 
 firmware:
@@ -28,10 +28,12 @@ createWorkspace:
 	-xsct BuildScripts/CreateWorkspace.tcl
 	tar xfv svSrc.tar
 	rm svSrc.tar
-	cd Workspace/EVG/src ; make
+	$(MAKE) -C Workspace/EVG/src
 	-xsct BuildScripts/BuildApplication.tcl
 
 application:
-	cd Workspace/EVG/build ; make
+	$(MAKE) -C Workspace/EVG/build
 	cp ./Workspace/EVG/build/EVG.bit \
            "EVG-$(git log -n1 --format=format:%cd-%h HEAD --date=format:%Y%m%d).bit"
+
+.PHONY: noTarget all everything prepareFirmware firmware XSAcreateWorkspace application
