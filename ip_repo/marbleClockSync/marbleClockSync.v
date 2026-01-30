@@ -48,6 +48,8 @@ module marbleClockSync #(
     input  wire        ppsSecondary_pin,
     input  wire        ppsFromFabric,
     output wire        hwPPSmarker_a,
+    output wire        ppsPrimary_out,
+    output wire        ppsSecondary_out,
     (*MARK_DEBUG=DEBUG*) output reg        hwPPSvalid = 0,
     (*MARK_DEBUG=DEBUG*) output wire       ppsMarker,
     (*MARK_DEBUG=DEBUG*) output reg        ppsToggle = 0,
@@ -99,13 +101,13 @@ end
 //////////////////////////////////////////////////////////////////////////////
 // Select PPS reference
 
-wire ppsPrimary_a, ppsSecondary_a, ppsTertiary_a;
+wire ppsTertiary_a;
 wire ppsPrimaryStrobe, ppsPrimaryIsValid;
 wire ppsSecondaryStrobe, ppsSecondaryIsValid;
 wire ppsTertiaryStrobe, ppsTertiaryIsValid;
 
-assign hwPPSmarker_a = ppsPrimaryIsValid ? ppsPrimary_a :
-                      (ppsSecondaryIsValid ? ppsSecondary_a :
+assign hwPPSmarker_a = ppsPrimaryIsValid ? ppsPrimary_out :
+                      (ppsSecondaryIsValid ? ppsSecondary_out :
                       (ppsTertiaryIsValid ? ppsTertiary_a : 0));
 
 wire signed[FINE_ERROR_WIDTH-1:0] phaseErrorFinePrimary,
@@ -160,7 +162,7 @@ marbleClockSyncIsPPSvalid #(
     .clk500(clk500),
     .pps_ibuf(ppsPrimary_pin),
     .pps_idelay(1'b0),
-    .pps_a(ppsPrimary_a),
+    .pps_a(ppsPrimary_out),
     .ppsStrobe(ppsPrimaryStrobe),
     .ppsIsValid(ppsPrimaryIsValid),
     .phaseErrorFine(phaseErrorFinePrimary));
@@ -174,7 +176,7 @@ marbleClockSyncIsPPSvalid #(
     .clk125(clk125),
     .clk500(clk500),
     .pps_ibuf(ppsSecondary_pin),
-    .pps_a(ppsSecondary_a),
+    .pps_a(ppsSecondary_out),
     .pps_idelay(1'b0),
     .ppsStrobe(ppsSecondaryStrobe),
     .ppsIsValid(ppsSecondaryIsValid),

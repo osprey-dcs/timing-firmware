@@ -148,6 +148,7 @@ wire isEVG = ioSelectStatus[0];
 wire pmod1IsIO = ioSelectStatus[2];
 wire pmod1IsGPS = ioSelectStatus[3];
 assign GPIO_IN[GPIO_IDX_IO_SELECT] = ioSelectStatus;
+wire ppsPrimary_out, ppsSecondary_out;
 
 ioSelect #(.DEBUG("false"))
   ioSelect (
@@ -156,10 +157,14 @@ ioSelect #(.DEBUG("false"))
     .sysGPIO_OUT(GPIO_OUT),
     .sysStatus(GPIO_IN[GPIO_IDX_IO_SELECT]),
     .evgHwInputs(evgHwInputs),
-    .evrHwOutputs(evrHwOutputs),
-    .fmcInputs({FMC1_DIN, 1'b0}),
+    .fmcInputs({FMC1_DIN, ppsPrimary_out}),
     .pmodInputs({PMOD2_5, PMOD2_4, PMOD2_1, PMOD2_0,
-                 PMOD1_5, PMOD1_4, PMOD1_1, 1'b0}));
+                 PMOD1_5, PMOD1_4, PMOD1_1, ppsSecondary_out}));
+
+assign GPIO_IN[GPIO_IDX_PMOD_FMC_MONITOR] = {8'b0, 
+                                    PMOD2_5, PMOD2_4, PMOD2_1, PMOD2_0,
+                                    PMOD1_5, PMOD1_4, PMOD1_1, ppsSecondary_out,
+                                    FMC1_DIN, ppsPrimary_out};
 
 IOBUF pmod1_2buf (.I(evrHwOutputs[0]),
                   .O(),
@@ -209,6 +214,8 @@ marbleClockSync #(
     .ppsSecondary_pin(PMOD1_0),
     .ppsFromFabric(isEVG ? (pmod1IsGPS?pmod1_3o:localPPSmarker) : evrPPSmarker),
     .hwPPSmarker_a(hwPPSmarker_a),
+    .ppsPrimary_out(ppsPrimary_out),
+    .ppsSecondary_out(ppsSecondary_out),
     .hwPPSvalid(ppsValid),
     .ppsMarker(evgPPSmarker),
     .ppsToggle(),

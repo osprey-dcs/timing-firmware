@@ -102,6 +102,7 @@
 
 
 
+
               Must be valid when sysCsrStrobe is asserted.<br>
             </span></td>
         </tr>
@@ -277,6 +278,7 @@
               style="font-family: Times New Roman, Times, serif;"><span
                 style="font-family: Times New Roman, Times, serif;">&nbsp;
 
+
                 Connection from FPGA pin through some type of input
                 buffer (IBUF, IBUFDS, IBUF_IBUFDISABLE).</span><span
                 style="font-family: Times New Roman, Times, serif;"><br>
@@ -320,9 +322,51 @@
           <td style="text-align: center;"><span style="font-family:
               Times New Roman, Times, serif;">–</span></td>
           <td style="text-align: left;"><span style="font-family: Times
-              New Roman, Times, serif;">Copy of currently selected input
-              PPS marker.</span><span style="font-family: Times New
+              New Roman, Times, serif;">Combinatorial copy of currently
+              selected input PPS marker.</span><span style="font-family:
+              Times New Roman, Times, serif;"><br>
+            </span></td>
+        </tr>
+        <tr>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">ppsPrimary_out</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span></td>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">O</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span></td>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">1</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span></td>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">–</span></td>
+          <td style="text-align: left;"><span style="font-family: Times
+              New Roman, Times, serif;">Combinatorial copy of
+              ppsPrimary_pin.</span><span style="font-family: Times New
               Roman, Times, serif;"><br>
+            </span></td>
+        </tr>
+        <tr>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">ppsSecondary_out</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span></td>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">O</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span></td>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">1</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span></td>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">–</span></td>
+          <td style="text-align: left;"><span style="font-family: Times
+              New Roman, Times, serif;">Combinatorial copy of
+              ppsSecondary_pin.</span><span style="font-family: Times
+              New Roman, Times, serif;"><br>
             </span></td>
         </tr>
         <tr>
@@ -456,6 +500,7 @@
 
 
 
+
         Interface</span></h2>
     <span style="font-family: Times New Roman, Times, serif;"> </span>
     <p><span style="font-family: Times New Roman, Times, serif;">Nets
@@ -467,6 +512,7 @@
       </span> </p>
     <span style="font-family: Times New Roman, Times, serif;"> </span>
     <h3><span style="font-family: Times New Roman, Times, serif;">Control
+
 
 
 
@@ -735,6 +781,7 @@
 
 
 
+
         Status Register</span></h3>
     <div style="margin-left: 40px;"><span style="font-family: Times New
         Roman, Times, serif;"> </span></div>
@@ -770,10 +817,12 @@
 
 
 
+
               the </span><span style="font-family: Times New Roman,
               Times, serif;"><span style="font-family: Times New Roman,
                 Times, serif;">internal PPS marker and the </span><span
                 style="font-family: Times New Roman, Times, serif;">currently
+
 
 
 
@@ -789,8 +838,8 @@
               style="font-family: Times New Roman, Times, serif;"><br>
             </span> </td>
           <td style="text-align: left;"><span style="font-family: Times
-              New Roman, Times, serif;">Value most recently written to the
-              DAC.&nbsp; Twos-complement format, regardless of DAC
+              New Roman, Times, serif;">Value most recently written to
+              the DAC.&nbsp; Twos-complement format, regardless of DAC
               style.</span><span style="font-family: Times New Roman,
               Times, serif;"><br>
             </span><span style="font-family: Times New Roman, Times,
@@ -888,8 +937,10 @@
               style="font-family: Times New Roman, Times, serif;"><span
                 style="font-family: Times New Roman, Times, serif;">Toggles
 
+
                 state on rising edge of </span><span
                 style="font-family: Times New Roman, Times, serif;">currently
+
 
                 selected PPS marker input (same as status register bit
                 26).</span><span style="font-family: Times New Roman,
@@ -904,6 +955,7 @@
               New Roman, Times, serif;">The number of clk125 cycles
               between the most recent rising edges of the </span><span
               style="font-family: Times New Roman, Times, serif;">currently
+
 
 
 

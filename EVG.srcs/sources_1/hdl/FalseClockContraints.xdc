@@ -50,6 +50,3 @@ set_false_path -from [get_clocks mgtWrapper_i/mgt_i/inst/mgt_i/gt7_mgt_i/gtxe2_i
 set_false_path -from [get_clocks -of_objects [get_pins bd_i/clk_wiz_1/inst/mmcm_adv_inst/CLKOUT0]] -to [get_clocks -of_objects [get_pins bd_i/evrMMCM/inst/mmcm_adv_inst/CLKOUT0]]
 set_false_path -from [get_clocks -of_objects [get_pins bd_i/clk_wiz_1/inst/mmcm_adv_inst/CLKOUT0]] -to [get_clocks -of_objects [get_pins bd_i/clk_wiz_1/inst/mmcm_adv_inst/CLKOUT3]]
 set_false_path -from [get_clocks -of_objects [get_pins bd_i/evrMMCM/inst/mmcm_adv_inst/CLKOUT0]] -to [get_clocks -of_objects [get_pins bd_i/clk_wiz_1/inst/mmcm_adv_inst/CLKOUT0]]
-
-
-set_bus_skew -from [get_cells {*freqCountGray*/*gray_reg[*]}] -to [get_cells {*freqCountGray*/*gray_m_reg[*]}] 0.800

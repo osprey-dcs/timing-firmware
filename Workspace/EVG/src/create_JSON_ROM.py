@@ -92,14 +92,14 @@ print("""  "FPGA:powerUp_": {
     "data_width": 16,
     "sign": "unsigned"
   },
-  "Marble:U29": {
+  "Marble:U29:Temp": {
     "access": "r",
     "addr_width": 0,
     "base_addr": 132,
     "data_width": 16,
     "sign": "unsigned"
   },
-  "Marble:U28": {
+  "Marble:U28:Temp": {
     "access": "r",
     "addr_width": 0,
     "base_addr": 133,
@@ -111,7 +111,7 @@ print("""  "FPGA:powerUp_": {
     "addr_width": 0,
     "base_addr": 164,
     "data_width": 16,
-    "sign": "unsigned"
+    "sign": "signed"
   },
   "MARBLE:FMC1:P12V": {
     "access": "r",
@@ -125,7 +125,7 @@ print("""  "FPGA:powerUp_": {
     "addr_width": 0,
     "base_addr": 166,
     "data_width": 16,
-    "sign": "unsigned"
+    "sign": "signed"
   },
   "MARBLE:FMC2:P12V": {
     "access": "r",
@@ -279,6 +279,20 @@ print("""  "FPGA:powerUp_": {
     "addr_width": 0,
     "base_addr": 88,
     "data_width": 32,
+    "sign": "unsigned"
+  },
+  "MARBLE:FMC:inputs": {
+    "access": "r",
+    "addr_width": 0,
+    "base_addr": 70,
+    "data_width": 16,
+    "sign": "unsigned"
+  },
+  "MARBLE:PMOD:inputs": {
+    "access": "r",
+    "addr_width": 0,
+    "base_addr": 71,
+    "data_width": 8,
     "sign": "unsigned"
   }
 }""")

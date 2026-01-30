@@ -35,13 +35,6 @@
  */
 #define SYSMON_BUF_CAPACITY ((2*3) + (2*2) + (1*4*2))
 
-/*
- * Indices that require clipping negative values
- */
-#define SYSMON_INDEX_INA219_0_I 0
-#define SYSMON_INDEX_INA219_1_I 2
-#define SYSMON_INDEX_INA219_2_I 4
-
 #define IIC_MUX_ADDRESS 0x70
 
 /*
@@ -508,20 +501,7 @@ iicFPGAfetchSysmon(int index)
         }
     }
     if ((index >= 0) && (index < SYSMON_BUF_CAPACITY)) {
-        uint32_t v = sysmonBuf[index];
-        /*
-         * Clip negative current readings to 0.
-         */
-        if (v & 0x8000) {
-            switch(index) {
-            case SYSMON_INDEX_INA219_0_I:
-            case SYSMON_INDEX_INA219_1_I:
-            case SYSMON_INDEX_INA219_2_I:
-                v = 0;
-                break;
-            }
-        }
-        return v;
+        return sysmonBuf[index];
     }
     return 0;
 }

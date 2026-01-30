@@ -39,7 +39,6 @@ module ioSelect #(
     output wire [31:0] sysStatus,
 
     output wire  [EVG_HW_INPUT_COUNT-1:0] evgHwInputs,
-    input  wire [EVR_HW_OUTPUT_COUNT-1:0] evrHwOutputs,
 
     input  wire   [FMC_INPUT_COUNT-1:0] fmcInputs,
     input  wire  [PMOD_INPUT_COUNT-1:0] pmodInputs);
