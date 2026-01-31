@@ -34,6 +34,6 @@ createWorkspace:
 application:
 	$(MAKE) -C Workspace/EVG/build
 	cp ./Workspace/EVG/build/EVG.bit \
-           "EVG-$(git log -n1 --format=format:%cd-%h HEAD --date=format:%Y%m%d).bit"
+           "EVG-$(shell git log -n1 --format=format:%cd-%h HEAD --date=format:%Y%m%d).bit"
 
 .PHONY: noTarget all everything prepareFirmware firmware XSAcreateWorkspace application
