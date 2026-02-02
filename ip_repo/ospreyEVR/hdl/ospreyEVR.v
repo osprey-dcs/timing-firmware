@@ -427,10 +427,12 @@ reg [C_S_AXI_DATA_WIDTH-1:0] regMux, readData;
 reg [C_S_AXI_DATA_WIDTH-1:0] controlReg;
 assign s_axi_rdata = readData;
 
-wire [3:0] serdesFactor = SERDES_FACTOR;
-wire [7:0] hwOutputCount = HARDWARE_OUTPUT_COUNT;
-wire [31:0] sysStatus = {{32-HARDWARE_OUTPUT_COUNT-4-8-4{1'b0}}, 
+wire        activeLowOutputs = ACTIVE_LOW_OUTPUTS;
+wire  [3:0] serdesFactor = SERDES_FACTOR;
+wire  [4:0] hwOutputCount = HARDWARE_OUTPUT_COUNT;
+wire [31:0] sysStatus = {{32-HARDWARE_OUTPUT_COUNT-1-4-5-4{1'b0}}, 
                         evrTriStateIn,
+                        activeLowOutputs,
                         serdesFactor,
                         hwOutputCount,
                         fifoOverflow, !fifoEmpty, evrTimestampValid, evrLinkUp};
