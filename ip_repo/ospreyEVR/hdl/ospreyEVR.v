@@ -37,6 +37,7 @@ module ospreyEVR_v1_0 #(
     parameter SERDES_FACTOR                 = 8,
     parameter ACTION_STROBES_WIDTH          = 16,
     parameter ENABLE_TRISTATE_CONTROL       = 0,
+    parameter ACTIVE_LOW_OUTPUTS            = 0,
     parameter DEBUG                         = "false",
     ////////////////////// AXI-Lite Boilerplate Parameters ///////////////////
     parameter C_S_AXI_DATA_WIDTH = 32,
@@ -302,6 +303,7 @@ for (i = 0 ; i < HARDWARE_OUTPUT_COUNT ; i = i + 1) begin : outputDriver
         .DATA_WIDTH(32),
         .SERDES_FACTOR(SERDES_FACTOR),
         .ENABLE_TRISTATE_CONTROL(ENABLE_TRISTATE_CONTROL),
+        .ACTIVE_LOW_OUTPUTS(ACTIVE_LOW_OUTPUTS),
         .DEBUG(DEBUG))
       ospreyEVRoutputDriver_i (
         .sysControlUpdateToggle(sysControlUpdateToggles[i]),

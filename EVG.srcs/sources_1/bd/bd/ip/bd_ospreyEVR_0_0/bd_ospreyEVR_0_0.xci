@@ -3,8 +3,8 @@
   "ip_inst": {
     "xci_name": "bd_ospreyEVR_0_0",
     "cell_name": "ospreyEVR",
-    "component_reference": "ospreydcs.com:osprey:ospreyEVR:2.0",
-    "ip_revision": "6",
+    "component_reference": "ospreydcs.com:osprey:ospreyEVR:2.1",
+    "ip_revision": "2",
     "gen_directory": "../../../../../../EVG.gen/sources_1/bd/bd/ip/bd_ospreyEVR_0_0",
     "parameters": {
       "component_parameters": {
@@ -18,7 +18,8 @@
         "ACTION_STROBES_WIDTH": [ { "value": "16", "resolve_type": "user", "format": "long", "usage": "all" } ],
         "HARDWARE_OUTPUT_COUNT": [ { "value": "8", "value_src": "user", "resolve_type": "user", "format": "long", "usage": "all" } ],
         "SERDES_FACTOR": [ { "value": "8", "value_src": "user", "resolve_type": "user", "format": "long", "usage": "all" } ],
-        "ENABLE_TRISTATE_CONTROL": [ { "value": "1", "value_src": "user", "resolve_type": "user", "format": "long", "usage": "all" } ]
+        "ENABLE_TRISTATE_CONTROL": [ { "value": "1", "value_src": "user", "resolve_type": "user", "format": "long", "usage": "all" } ],
+        "ACTIVE_LOW_OUTPUTS": [ { "value": "true", "value_src": "user", "resolve_type": "user", "format": "bool", "usage": "all" } ]
       },
       "model_parameters": {
         "C_S_AXI_DATA_WIDTH": [ { "value": "32", "resolve_type": "generated", "format": "long", "usage": "all" } ],
@@ -28,7 +29,8 @@
         "ACTION_STROBES_WIDTH": [ { "value": "16", "resolve_type": "generated", "format": "long", "usage": "all" } ],
         "HARDWARE_OUTPUT_COUNT": [ { "value": "8", "resolve_type": "generated", "format": "long", "usage": "all" } ],
         "SERDES_FACTOR": [ { "value": "8", "resolve_type": "generated", "format": "long", "usage": "all" } ],
-        "ENABLE_TRISTATE_CONTROL": [ { "value": "1", "resolve_type": "generated", "format": "long", "usage": "all" } ]
+        "ENABLE_TRISTATE_CONTROL": [ { "value": "1", "resolve_type": "generated", "format": "long", "usage": "all" } ],
+        "ACTIVE_LOW_OUTPUTS": [ { "value": "true", "resolve_type": "generated", "format": "bool", "usage": "all" } ]
       },
       "project_parameters": {
         "ARCHITECTURE": [ { "value": "kintex7" } ],
@@ -45,7 +47,7 @@
       },
       "runtime_parameters": {
         "IPCONTEXT": [ { "value": "IP_Integrator" } ],
-        "IPREVISION": [ { "value": "6" } ],
+        "IPREVISION": [ { "value": "2" } ],
         "MANAGED": [ { "value": "TRUE" } ],
         "OUTPUTDIR": [ { "value": "../../../../../../EVG.gen/sources_1/bd/bd/ip/bd_ospreyEVR_0_0" } ],
         "SELECTEDSIMMODEL": [ { "value": "" } ],

@@ -28,6 +28,7 @@ module ospreyEVRoutputDriver #(
     parameter DATA_WIDTH              = 32,
     parameter SERDES_FACTOR           = 8,
     parameter ENABLE_TRISTATE_CONTROL = 0,
+    parameter ACTIVE_LOW_OUTPUTS      = 0,
     parameter DEBUG                   = "false"
     ) (
     input  wire                  sysControlUpdateToggle,
@@ -203,7 +204,9 @@ else begin
   /////////////////////////////////////////////////////////////////////////////
   // Output serializer to get finer delay/width control
   // Based on wizard-generated example
-  wire [7:0] serdesPad = {{8-SERDES_FACTOR{1'b0}}, serdesWord};
+  wire [7:0] serdesPad = ACTIVE_LOW_OUTPUTS ?
+                                         ~{{8-SERDES_FACTOR{1'b0}}, serdesWord}
+                                        : {{8-SERDES_FACTOR{1'b0}}, serdesWord};
   wire evrSERDESout, evrSERDEStriOut;
   OSERDESE2 #(
     .DATA_RATE_OQ   ("DDR"),

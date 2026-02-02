@@ -2053,11 +2053,14 @@
         }
       },
       "ospreyEVR": {
-        "vlnv": "ospreydcs.com:osprey:ospreyEVR:2.0",
+        "vlnv": "ospreydcs.com:osprey:ospreyEVR:2.1",
         "xci_name": "bd_ospreyEVR_0_0",
         "xci_path": "ip/bd_ospreyEVR_0_0/bd_ospreyEVR_0_0.xci",
         "inst_hier_path": "ospreyEVR",
         "parameters": {
+          "ACTIVE_LOW_OUTPUTS": {
+            "value": "true"
+          },
           "ENABLE_TRISTATE_CONTROL": {
             "value": "1"
           },
