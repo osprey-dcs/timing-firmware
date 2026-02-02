@@ -43,22 +43,22 @@ set_property -dict {PACKAGE_PIN AC21 IOSTANDARD LVCMOS25} [get_ports FPGA_MISO]
 # PMOD1 -- J12
 set_property -dict {PACKAGE_PIN C24 IOSTANDARD LVCMOS25} [get_ports PMOD1_0]
 set_property -dict {PACKAGE_PIN C22 IOSTANDARD LVCMOS25} [get_ports PMOD1_1]
-set_property -dict {PACKAGE_PIN L23 IOSTANDARD LVCMOS25} [get_ports PMOD1_2]
-set_property -dict {PACKAGE_PIN D21 IOSTANDARD LVCMOS25} [get_ports PMOD1_3]
+set_property -dict {PACKAGE_PIN L23 IOSTANDARD LVCMOS25 PULLUP true} [get_ports PMOD1_2]
+set_property -dict {PACKAGE_PIN D21 IOSTANDARD LVCMOS25 PULLUP true} [get_ports PMOD1_3]
 set_property -dict {PACKAGE_PIN K21 IOSTANDARD LVCMOS25} [get_ports PMOD1_4]
 set_property -dict {PACKAGE_PIN C18 IOSTANDARD LVCMOS25} [get_ports PMOD1_5]
-set_property -dict {PACKAGE_PIN C19 IOSTANDARD LVCMOS25} [get_ports PMOD1_6]
-set_property -dict {PACKAGE_PIN C17 IOSTANDARD LVCMOS25} [get_ports PMOD1_7]
+set_property -dict {PACKAGE_PIN C19 IOSTANDARD LVCMOS25 PULLUP true} [get_ports PMOD1_6]
+set_property -dict {PACKAGE_PIN C17 IOSTANDARD LVCMOS25 PULLUP true} [get_ports PMOD1_7]
 
 # PMOD2 -- J13
 set_property -dict {PACKAGE_PIN AE7 IOSTANDARD LVCMOS15} [get_ports PMOD2_0]
 set_property -dict {PACKAGE_PIN V7 IOSTANDARD LVCMOS15} [get_ports PMOD2_1]
-set_property -dict {PACKAGE_PIN Y7 IOSTANDARD LVCMOS15} [get_ports PMOD2_2]
-set_property -dict {PACKAGE_PIN AF7 IOSTANDARD LVCMOS15} [get_ports PMOD2_3]
+set_property -dict {PACKAGE_PIN Y7 IOSTANDARD LVCMOS15 PULLUP true} [get_ports PMOD2_2]
+set_property -dict {PACKAGE_PIN AF7 IOSTANDARD LVCMOS15 PULLUP true} [get_ports PMOD2_3]
 set_property -dict {PACKAGE_PIN V8 IOSTANDARD LVCMOS15} [get_ports PMOD2_4]
 set_property -dict {PACKAGE_PIN AA8 IOSTANDARD LVCMOS15} [get_ports PMOD2_5]
-set_property -dict {PACKAGE_PIN Y8 IOSTANDARD LVCMOS15} [get_ports PMOD2_6]
-set_property -dict {PACKAGE_PIN W9 IOSTANDARD LVCMOS15} [get_ports PMOD2_7]
+set_property -dict {PACKAGE_PIN Y8 IOSTANDARD LVCMOS15 PULLUP true} [get_ports PMOD2_6]
+set_property -dict {PACKAGE_PIN W9 IOSTANDARD LVCMOS15 PULLUP true} [get_ports PMOD2_7]
 
 # VCXO adjust
 # DAC 1 affects DDR_REF_CLK and MGT clock crosspoint input 2 (FPGA_REF_CLK0)
