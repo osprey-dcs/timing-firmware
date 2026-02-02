@@ -79,8 +79,8 @@ module EVG #(
     input  wire PMOD1_1,  // PMOD-IO input 1 or PMOD-GPS RxD
     inout  wire PMOD1_2,  // PMOD-IO output 0 or PMOD-GPS TxD
     inout  wire PMOD1_3,  // PMOD-IO output 1 or PMOD-GPS PPS
-    output wire PMOD1_4,  // PMOD-IO input 2 or unused
-    output wire PMOD1_5,  // PMOD-IO input 3 or unused
+    input  wire PMOD1_4,  // PMOD-IO input 2 or unused
+    input  wire PMOD1_5,  // PMOD-IO input 3 or unused
     output wire PMOD1_6,  // PMOD-IO output 2 or unused
     output wire PMOD1_7,  // PMOD-IO output 3 or unused
 
