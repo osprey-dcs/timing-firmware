@@ -1,7 +1,7 @@
 record(mbbo, "$(P)EVR:OUT:$(N):source") {
     field(DESC, "Hardware output $(N) source")
     field(DTYP, "FEED Register Write")
-    field(OUT , "@name=$(PORT) reg=EVR:out$(N):source")
+    field(OUT , "@name=$(NAME) reg=EVR:out$(N):source")
     field(ZRVL, "0")
     field(ZRST, "Static 0")
     field(ONVL, "1")
@@ -18,7 +18,7 @@ record(mbbo, "$(P)EVR:OUT:$(N):source") {
 record(ao, "$(P)EVR:OUT:$(N):delay") {
     field(DESC, "Hardware output $(N) pulse delay")
     field(DTYP, "FEED Register Write")
-    field(OUT , "@name=$(PORT) reg=EVR:pls$(N):delay")
+    field(OUT , "@name=$(NAME) reg=EVR:pls$(N):delay")
     field(EGU , "ns")
     field(LINR, "LINEAR")
     field(ESLO, "1")
@@ -31,7 +31,7 @@ record(ao, "$(P)EVR:OUT:$(N):delay") {
 record(ao, "$(P)EVR:OUT:$(N):width") {
     field(DESC, "Hardware output $(N) pulse width")
     field(DTYP, "FEED Register Write")
-    field(OUT , "@name=$(PORT) reg=EVR:pls$(N):width")
+    field(OUT , "@name=$(NAME) reg=EVR:pls$(N):width")
     field(EGU , "ns")
     field(LINR, "LINEAR")
     field(ESLO, "1")

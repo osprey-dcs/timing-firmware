@@ -124,6 +124,7 @@
                         Times, serif;"></span></span></span>SERDES_FACTOR
 
 
+
                   must be small enough to ensure that evrBitClk operates
                   at 625 MHz or less.<br>
                 </span></span></span></td>
@@ -142,6 +143,7 @@
                 style="font-family: Times New Roman, Times, serif;"><span
                   style="font-family: Times New Roman, Times, serif;"><span
                     style="font-family: Times New Roman, Times, serif;">Multi-gigabit
+
 
 
 
@@ -205,6 +207,7 @@
 
 
 
+
                   transceiver received data modifiers.</span></span> </span></td>
         </tr>
         <tr>
@@ -233,6 +236,7 @@
               Times New Roman, Times, serif;"><span style="font-family:
                 Times New Roman, Times, serif;"><span
                   style="font-family: Times New Roman, Times, serif;">Hardware
+
 
 
 
@@ -301,6 +305,7 @@
                                     Times, serif;">ENABLE_TRISTATE_CONTROL</span><span
                                     style="font-family: Times New Roman,
                                     Times, serif;"> is 1</span>.</span></span></span>&nbsp;
+
                           </span></span></span></span></span>Source is <a
                     href="#HardwareOutputSourceSelection">selectable</a>.</span></span></span><span
               style="font-family: Times New Roman, Times, serif;"><span
@@ -322,6 +327,7 @@
               Times New Roman, Times, serif;"><span style="font-family:
                 Times New Roman, Times, serif;"><span
                   style="font-family: Times New Roman, Times, serif;">Asserted
+
 
 
 
@@ -364,6 +370,7 @@
 
 
 
+
                   for 257 evrClk cycles upon arrival of pulse-per-second
                   event.</span></span></span></td>
         </tr>
@@ -379,6 +386,7 @@
               Times New Roman, Times, serif;"><span style="font-family:
                 Times New Roman, Times, serif;"><span
                   style="font-family: Times New Roman, Times, serif;">Event
+
 
 
 
@@ -420,6 +428,7 @@
 
 
 
+
                   bus.&nbsp; Updated at one half evrClk rate.<br>
                 </span></span></span></td>
         </tr>
@@ -435,6 +444,7 @@
               Times New Roman, Times, serif;"><span style="font-family:
                 Times New Roman, Times, serif;"><span
                   style="font-family: Times New Roman, Times, serif;">Asserted
+
 
 
 
@@ -572,6 +582,7 @@
                     style="font-family: Times New Roman, Times, serif;">&nbsp;
 
 
+
                     Output pulse delay and width are adjustable in steps
                     of 1/2 the evrBitClk interval if </span></span></span><span
                 style="font-family: Times New Roman, Times, serif;"><span
@@ -604,18 +615,33 @@
               serif;"> </span></td>
           <td style="vertical-align: middle; text-align: left;"><span
               style="font-family: Times New Roman, Times, serif;">Specialized
+
               applications may require tri-state control of the output
               pin.&nbsp; Set this parameter to 1 to enable this mode of
               operation, controlled by the evrTriStateIn and
               evrTriStateOut ports.&nbsp; If this parameter is 0, </span><span
               style="font-family: Times New Roman, Times, serif;"><span
                 style="font-family: Times New Roman, Times, serif;">evrTriStateIn
+
                 is ignored and </span></span><span style="font-family:
               Times New Roman, Times, serif;"><span style="font-family:
                 Times New Roman, Times, serif;"><span
                   style="font-family: Times New Roman, Times, serif;">evrTriStateOut
-                  is always 0.<br>
+
+                  is always 0<br>
                 </span></span></span></td>
+        </tr>
+        <tr>
+          <td style="vertical-align: middle; text-align: center;"><span
+              style="font-family: Times New Roman, Times, serif;">ACTIVE_LOW_OUTPUTS</span><span
+              style="font-family: Times New Roman, Times, serif;"><br>
+            </span></td>
+          <td style="vertical-align: middle; text-align: left;"><span
+              style="font-family: Times New Roman, Times, serif;"><span
+                style="font-family: Times New Roman, Times, serif;">When
+                set to 1 </span>values sent to hardware outputs will be
+              inverted.<br>
+            </span></td>
         </tr>
       </tbody>
     </table>
@@ -778,7 +804,7 @@
         Roman, Times, serif;"><span style="font-weight: bold;">ospreyEVRStatus</span></span><span
         style="font-family: Times New Roman, Times, serif;">(void);<br>
       </span></p>
-    <table style=" text-align: left; width: 70%;" cellspacing="2"
+    <table style=" text-align: left; width: 75%;" cellspacing="2"
       cellpadding="2" border="1">
       <tbody>
         <tr>
@@ -800,7 +826,7 @@
           <td style="text-align: left;"><span style="font-family: Times
               New Roman, Times, serif;">OSPREY_EVR_STATUS_LINK_UP</span><br>
           </td>
-          <td style="text-align: left;"><span style="font-family: Times
+          <td style=" text-align: left;"><span style="font-family: Times
               New Roman, Times, serif;">Set when evrLinkUp input is
               asserted.</span></td>
         </tr>
@@ -824,8 +850,8 @@
               non-empty.</span></td>
         </tr>
         <tr>
-          <td style="vertical-align: middle; text-align: center;"><span
-              style="font-family: Times New Roman, Times, serif;">3</span><br>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">3</span><br>
           </td>
           <td style="text-align: left;"><span style="font-family: Times
               New Roman, Times, serif;">OSPREY_EVR_STATUS_FIFO_OVERFLOW</span></td>
@@ -836,8 +862,9 @@
         </tr>
         <tr>
           <td style="text-align: center;"><span style="font-family:
-              Times New Roman, Times, serif;">11–</span><span
+              Times New Roman, Times, serif;">8–</span><span
               style="font-family: Times New Roman, Times, serif;">4&nbsp;
+
 
 
               <br>
@@ -850,12 +877,35 @@
         </tr>
         <tr>
           <td style="text-align: center;"><span style="font-family:
-              Times New Roman, Times, serif;">15–</span><span
-              style="font-family: Times New Roman, Times, serif;">12</span></td>
+              Times New Roman, Times, serif;">12–9</span><span
+              style="font-family: Times New Roman, Times, serif;"></span></td>
           <td style="text-align: left;"><span style="font-family: Times
               New Roman, Times, serif;">OSPREY_EVR_STATUS_SERDES_FACTOR_MASK</span></td>
           <td style="text-align: left;"><span style="font-family: Times
               New Roman, Times, serif;">Hardware output SERDES_FACTOR.</span></td>
+        </tr>
+        <tr>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">13</span><br>
+          </td>
+          <td style="text-align: left;"><span style="font-family: Times
+              New Roman, Times, serif;">OSPREY_EVR_STATUS_ACTIVE_LOW_OUTPUTS</span></td>
+          <td style="text-align: left;"><span style="font-family: Times
+              New Roman, Times, serif;">Value of ACTIVE_LOW_OUTPUTS
+              parameter when module was built.<br>
+            </span></td>
+        </tr>
+        <tr>
+          <td style="text-align: center;"><span style="font-family:
+              Times New Roman, Times, serif;">21–14</span></td>
+          <td style="text-align: left;"><span style="font-family: Times
+              New Roman, Times, serif;">OSPREY_EVR_STATUS_TRISTATE_MASK</span></td>
+          <td style="text-align: left;"><span style="font-family: Times
+              New Roman, Times, serif;">State of </span><span
+              style="font-family: Times New Roman, Times, serif;"><span
+                style="font-family: Times New Roman, Times, serif;">evrTriStateIn.</span><span
+                style="font-family: Times New Roman, Times, serif;"><br>
+              </span></span></td>
         </tr>
       </tbody>
     </table>
@@ -884,6 +934,7 @@
             text-decoration: none; display: inline !important; float:
             none;">The time of day can be read by invoking<br>
             int <span style="font-weight: bold;">ospreyEVRGetTime</span>(uint32_t
+
 
 
 
@@ -943,6 +994,7 @@
 
 
 
+
             event, int action);</span></span></span><span
         style="font-family: Times New Roman, Times, serif;"></span><span
         style="font-family: Times New Roman, Times, serif;"><span
@@ -957,6 +1009,7 @@
             style="font-family: Times New Roman, Times, serif;">evrActionStrobes
 
 
+
             to assert on the arrival of specified event.</span>&nbsp;
           The action strobes can also affect the hardware outputs as
           described in the following section.&nbsp; If bit 17
@@ -964,6 +1017,7 @@
           code and time stamp will be written to a <a
             moz-do-not-send="true"
 href="file:///Users/eric/src/Osprey/src/ip_repo/ospreyEVR/head/documentation/ospreyEVR.html#Event_Monitoring">FIFO</a>.&nbsp;
+
 
 
 
@@ -998,6 +1052,7 @@ href="file:///Users/eric/src/Osprey/src/ip_repo/ospreyEVR/head/documentation/osp
             -moz-text-size-adjust: auto; -webkit-text-stroke-width: 0px;
             text-decoration: none; display: inline !important; float:
             none;">int <span style="font-weight: bold;">ospreyEVRSelectOutputSource</span>(int
+
 
 
 
@@ -1131,6 +1186,7 @@ href="file:///Users/eric/src/Osprey/src/ip_repo/ospreyEVR/head/documentation/osp
 
 
 
+
               output, uint32_t width);<br>
             </span></span></span></span></span><span style="font-family:
       Times New Roman, Times, serif;"><span style="font-weight: bold;"><span
@@ -1149,6 +1205,7 @@ href="file:///Users/eric/src/Osprey/src/ip_repo/ospreyEVR/head/documentation/osp
                 pulse width is 8 steps.&nbsp; </span><span
                 style="font-family: Times New Roman, Times, serif;"><span
                   style="font-family: Times New Roman, Times, serif;">Trigger
+
 
 
 
@@ -1210,6 +1267,7 @@ href="file:///Users/eric/src/Osprey/src/ip_repo/ospreyEVR/head/documentation/osp
 
 
 
+
             *seconds, uint32_t *ticks);</span></span></span><span
         style="font-family: Times New Roman, Times, serif;"></span><span
         style="font-family: Times New Roman, Times, serif;"><span
@@ -1244,6 +1302,7 @@ href="file:///Users/eric/src/Osprey/src/ip_repo/ospreyEVR/head/documentation/osp
           style="font-weight: bold;">ospreyEVR_FEEDwrite</span>(int
         offset, uint32_t value);<br>
         uint32_t <span style="font-weight: bold;">ospreyEVR_FEEDread</span>(int
+
 
 
 

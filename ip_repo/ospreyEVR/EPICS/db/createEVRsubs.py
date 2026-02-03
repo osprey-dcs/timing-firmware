@@ -9,12 +9,12 @@ outputDriverCount = 8
 
 # Create FEED-compatible substitution file
 print(r'file "perEVRevent.template" {')
-print(r'  pattern {P, PORT,   N }')
+print(r'  pattern {P, NAME,   E }')
 for e in range(1,127):
-    print(r"  { \$(P),\$(PORT), %03d }" % (e))
+    print(r'  { "\$(P)","\$(NAME)", "%03d" }' % (e))
 print(r'}')
 print(r'file "perEVRoutputDriver.template" {')
-print(r'  pattern {P, PORT, N }')
+print(r'  pattern {P, NAME, N }')
 for o in range(1,outputDriverCount+1):
-    print(r"  { \$(P),\$(PORT), %d }" % (o))
+    print(r'  { "\$(P)","\$(NAME)", "%d" }' % (o))
 print(r'}')
