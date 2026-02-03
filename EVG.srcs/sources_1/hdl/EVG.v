@@ -150,8 +150,8 @@ wire pmod1IsGPS = ioSelectStatus[3];
 assign GPIO_IN[GPIO_IDX_IO_SELECT] = ioSelectStatus;
 wire ppsPrimary_out, ppsSecondary_out;
 
-wire [7:0] pmodIn = { ~PMOD2_5, ~PMOD2_4, ~PMOD2_1, ~PMOD2_0,
-                      ~PMOD1_5, ~PMOD1_4, ~PMOD1_1, ppsSecondary_out };
+wire [7:0] pmodIn = { ~PMOD2_5, ~PMOD2_1, ~PMOD2_4, ~PMOD2_0,
+                      ~PMOD1_5, ~PMOD1_1, ~PMOD1_4, ppsSecondary_out };
 wire [15:0] fmc1In = {FMC1_DIN, ppsPrimary_out};
 
 ioSelect #(.DEBUG("false"))
@@ -170,15 +170,16 @@ IOBUF pmod1_2buf (.I(evrHwOutputs[0]),
                   .O(),
                   .T(evrTriStateOut[0]),
                   .IO(PMOD1_2));
-IOBUF pmod1_3buf (.I(evrHwOutputs[1]),
+OBUF pmod1_6buf (.I(evrHwOutputs[1]), .O(PMOD1_6));
+IOBUF pmod1_3buf (.I(evrHwOutputs[2]),
                   .O(pmod1_3o),
-                  .T(evrTriStateOut[1]),
+                  .T(evrTriStateOut[4]),
                   .IO(PMOD1_3));
-OBUF pmod1_6buf (.I(evrHwOutputs[2]), .O(PMOD1_6));
 OBUF pmod1_7buf (.I(evrHwOutputs[3]), .O(PMOD1_7));
+
 OBUF pmod2_2buf (.I(evrHwOutputs[4]), .O(PMOD2_2));
-OBUF pmod2_3buf (.I(evrHwOutputs[5]), .O(PMOD2_3));
-OBUF pmod2_6buf (.I(evrHwOutputs[6]), .O(PMOD2_6));
+OBUF pmod2_6buf (.I(evrHwOutputs[5]), .O(PMOD2_6));
+OBUF pmod2_3buf (.I(evrHwOutputs[6]), .O(PMOD2_3));
 OBUF pmod2_7buf (.I(evrHwOutputs[7]), .O(PMOD2_7));
 
 ///////////////////////////////////////////////////////////////////////////////
