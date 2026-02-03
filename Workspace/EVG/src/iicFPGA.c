@@ -36,6 +36,7 @@
 #define SYSMON_BUF_CAPACITY ((2*3) + (2*2) + (1*4*2))
 
 #define IIC_MUX_ADDRESS 0x70
+#define NAMESTRING_CAPACITY 64
 
 /*
  * IIC devices
@@ -62,7 +63,7 @@ static struct iicMap {
 #define FMC_COUNT 2
 static uint32_t serialNumber[FMC_COUNT];
 static uint32_t partNumber[FMC_COUNT];
-static char nameString[FMC_COUNT][64];
+static char nameString[FMC_COUNT][NAMESTRING_CAPACITY];
 
 static int
 setMux(unsigned char c)
@@ -110,7 +111,7 @@ static void
 showIPMI(int device)
 {
     uint8_t cbuf[128];
-    char strBuf[64];
+    char strBuf[NAMESTRING_CAPACITY];
     int i, field;
     int offset, length;
     int index = device - IIC_FPGA_IDX_FMC1_EEPROM;
@@ -158,7 +159,7 @@ showIPMI(int device)
         i = 0;
         while (fieldLength--) {
             char c = cbuf[offset++];
-            if (i < 63) {
+            if (i < (NAMESTRING_CAPACITY-1)) {
                 strBuf[i++] = c;
             }
             if ((c >= '0') && (c <= '9')) {
