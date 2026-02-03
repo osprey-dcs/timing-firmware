@@ -166,21 +166,15 @@ ioSelect #(.DEBUG("false"))
 
 assign GPIO_IN[GPIO_IDX_PMOD_FMC_MONITOR] = {8'b0, pmodIn, fmc1In};
 
-IOBUF pmod1_2buf (.I(evrHwOutputs[0]),
-                  .O(),
-                  .T(evrTriStateOut[0]),
-                  .IO(PMOD1_2));
-OBUF pmod1_6buf (.I(evrHwOutputs[1]), .O(PMOD1_6));
-IOBUF pmod1_3buf (.I(evrHwOutputs[2]),
-                  .O(pmod1_3o),
-                  .T(evrTriStateOut[4]),
-                  .IO(PMOD1_3));
-OBUF pmod1_7buf (.I(evrHwOutputs[3]), .O(PMOD1_7));
-
-OBUF pmod2_2buf (.I(evrHwOutputs[4]), .O(PMOD2_2));
-OBUF pmod2_6buf (.I(evrHwOutputs[5]), .O(PMOD2_6));
-OBUF pmod2_3buf (.I(evrHwOutputs[6]), .O(PMOD2_3));
-OBUF pmod2_7buf (.I(evrHwOutputs[7]), .O(PMOD2_7));
+IOBUF pmod1_2buf(.I(evrHwOutputs[0]), .T(evrTriStateOut[0]), .IO(PMOD1_2));
+IOBUF pmod1_6buf(.I(evrHwOutputs[1]), .T(evrTriStateOut[1]), .IO(PMOD1_6));
+IOBUF pmod1_3buf(.I(evrHwOutputs[2]), .T(evrTriStateOut[2]), .IO(PMOD1_3),
+                                                                  .O(pmod1_3o));
+IOBUF pmod1_7buf(.I(evrHwOutputs[3]), .T(evrTriStateOut[3]), .IO(PMOD1_7));
+IOBUF pmod2_2buf(.I(evrHwOutputs[4]), .T(evrTriStateOut[4]), .IO(PMOD2_2));
+IOBUF pmod2_6buf(.I(evrHwOutputs[5]), .T(evrTriStateOut[5]), .IO(PMOD2_6));
+IOBUF pmod2_3buf(.I(evrHwOutputs[6]), .T(evrTriStateOut[6]), .IO(PMOD2_3));
+IOBUF pmod2_7buf(.I(evrHwOutputs[7]), .T(evrTriStateOut[7]), .IO(PMOD2_7));
 
 ///////////////////////////////////////////////////////////////////////////////
 // Generate local PPS

@@ -264,6 +264,19 @@ smallEVR #(
     .sysActionData(s_axi_wdata[8+:ACTION_STROBES_WIDTH+2]));
 
 /*
+ * Startup sequencing
+ */
+reg evrResetSERDES = 1, evrResetSERDES_d = 1;
+reg [HARDWARE_OUTPUT_COUNT-1:0] evrTriState = {HARDWARE_OUTPUT_COUNT{1'b1}};
+always @(posedge evrClk) begin
+    evrResetSERDES   <= 0;
+    evrResetSERDES_d <= evrResetSERDES;
+    if (evrResetSERDES_d == 0) begin
+        evrTriState <= evrTriStateIn;
+    end
+end
+
+/*
  * Generate active-HIGH resets in evrClk domain
  */
 (*ASYNC_REG="true"*) reg evrReset_m = 1;
@@ -271,12 +284,6 @@ smallEVR #(
 always @(posedge evrClk) begin
     evrReset_m <= ~s_axi_aresetn;
     evrReset   <= evrReset_m;
-end
-(*ASYNC_REG="true"*) reg evrResetSERDES_m = 1;
-(*MARK_DEBUG=DEBUG*) reg evrResetSERDES = 1;
-always @(posedge evrClk) begin
-    evrResetSERDES_m <= ~evrLinkUp;
-    evrResetSERDES   <= evrResetSERDES_m;
 end
 
 /*
@@ -315,12 +322,13 @@ for (i = 0 ; i < HARDWARE_OUTPUT_COUNT ; i = i + 1) begin : outputDriver
         .evrClk(evrClk),
         .evrBitClk(evrBitClk),
         .evrResetSERDES(evrResetSERDES),
+        .evrLinkUp(evrLinkUp),
         .evrActionIn(evrRawActions[i]),
         .evrDbusIn((i<8) ? evrDistributedBus[i] : 1'b0),
         .evrSetIn(evrRawActions[i]), // FIXME -- need to handle this better!
         .evrResetIn(evrRawActions[i+1]),
         .extIn_a(hwDriverIn_a[i]),
-        .evrTriStateIn(evrTriStateIn[i]),
+        .evrTriStateIn(evrTriState[i]),
         .evrTriStateOut(evrTriStateOut[i]),
         .evrDriverOut(evrHardwareOutputs[i]));
 end

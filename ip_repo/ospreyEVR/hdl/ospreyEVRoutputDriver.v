@@ -41,6 +41,7 @@ module ospreyEVRoutputDriver #(
     input  wire evrClk,
     input  wire evrBitClk,
     input  wire evrResetSERDES,
+    input  wire evrLinkUp,
     input  wire evrActionIn,
     input  wire evrDbusIn,
     input  wire evrSetIn,
@@ -147,7 +148,7 @@ always @(posedge evrClk) begin
     end
     S_ARMED: begin
         if (srcSel == SRCSEL_PULSE) begin
-            if (evrActionIn) begin
+            if (evrActionIn && evrLinkUp) begin
                 delayCounter <= delayCounter - 1;
                 if (delayCounterDone) begin
                     serdesWord <= firstWord;
