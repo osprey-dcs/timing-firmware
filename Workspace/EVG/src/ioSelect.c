@@ -36,12 +36,8 @@
 
 #define FMC_NAME "RF-IN"
 
-#define CSR_W_SET_PMOD1_IS_GPS      0x800
-#define CSR_W_SET_PMOD1_IS_IO       0x400
 #define CSR_W_SET_FMC_IS_PRESENT    0x200
 #define CSR_W_SET_SET_IS_EVG        0x100
-#define CSR_RW_PMOD1_IS_GPS         0x8
-#define CSR_RW_PMOD1_IS_IO          0x4
 #define CSR_RW_FMC_IS_PRESENT       0x2
 #define CSR_RW_IS_EVG               0x1
 
@@ -51,25 +47,8 @@ ioSelectShow(void)
     int status = ioSelectStatus();
     if (status & CSR_RW_IS_EVG) {
         printf("Operating as Event Generator.\n");
-        if (status & CSR_RW_FMC_IS_PRESENT) {
-            printf("Obtaining PPS and hardware inputs from FMC module.\n"); 
-        }
-        else {
-            switch (status & (CSR_RW_PMOD1_IS_GPS | CSR_RW_PMOD1_IS_IO)) {
-            default:
-                printf("WARNING -- PMOD1 not configured!\n");
-                break;
-            case CSR_RW_PMOD1_IS_GPS | CSR_RW_PMOD1_IS_IO:
-                printf("WARNING -- PMOD1 both PMOD-GPS *AND* PMOD-IO!\n");
-                break;
-            case CSR_RW_PMOD1_IS_GPS:
-                printf("Obtaining PPS from PMOD-GPS.\n");
-                /* Fall through to */
-            case CSR_RW_PMOD1_IS_IO:
-                printf("Obtaining hardware inputs from PMOD-IO.\n");
-                break;
-            }
-        }
+        printf("Obtaining PPS and hardware inputs from %s.\n;",
+                    (status & CSR_RW_FMC_IS_PRESENT) ? "FMC RF-IN" : "PMOD-IO");
     }
 }
 
@@ -90,11 +69,6 @@ ioSelectInit(void)
                                                                        fmcName);
         }
     }
-    GPIO_WRITE(GPIO_IDX_IO_SELECT, CSR_W_SET_PMOD1_IS_GPS |
-                                   CSR_W_SET_PMOD1_IS_IO |
-                                   ((debugFlags & DEBUGFLAG_PMOD1_IS_GPS) ?
-                                                           CSR_RW_PMOD1_IS_GPS :
-                                                           CSR_RW_PMOD1_IS_IO));
     ioSelectShow();
     if (!systemParameters.ntpServer) {
         mgtSetLoopback(0, MGT_LOOPBACK_FAR_PMA);

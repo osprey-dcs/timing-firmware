@@ -125,6 +125,7 @@
 
 
 
+
                   must be small enough to ensure that evrBitClk operates
                   at 625 MHz or less.<br>
                 </span></span></span></td>
@@ -143,6 +144,7 @@
                 style="font-family: Times New Roman, Times, serif;"><span
                   style="font-family: Times New Roman, Times, serif;"><span
                     style="font-family: Times New Roman, Times, serif;">Multi-gigabit
+
 
 
 
@@ -208,6 +210,7 @@
 
 
 
+
                   transceiver received data modifiers.</span></span> </span></td>
         </tr>
         <tr>
@@ -250,64 +253,20 @@
 
 
 
-                  output signals.&nbsp; Must connect directly to
-                  top-level output port if</span></span></span><span
-              style="font-family: Times New Roman, Times, serif;"><span
-                style="font-family: Times New Roman, Times, serif;"><span
-                  style="font-family: Times New Roman, Times, serif;"><span
-                    style="font-family: Times New Roman, Times, serif;">
-                    SERDES_FACTOR is greater than 1</span> and </span></span></span><span
-              style="font-family: Times New Roman, Times, serif;"><span
-                style="font-family: Times New Roman, Times, serif;"><span
-                  style="font-family: Times New Roman, Times, serif;"><span
-                    style="font-family: Times New Roman, Times, serif;">ENABLE_TRISTATE_CONTROL</span><span
-                    style="font-family: Times New Roman, Times, serif;">
-                    is 0</span>.&nbsp; </span></span></span><span
-              style="font-family: Times New Roman, Times, serif;"><span
-                style="font-family: Times New Roman, Times, serif;"><span
-                  style="font-family: Times New Roman, Times, serif;"><span
-                    style="font-family: Times New Roman, Times, serif;"><span
-                      style="font-family: Times New Roman, Times,
-                      serif;"><span style="font-family: Times New Roman,
-                        Times, serif;"><span style="font-family: Times
-                          New Roman, Times, serif;"><span
-                            style="font-family: Times New Roman, Times,
-                            serif;">Must drive an output buffer (e.g.
-                            OBUF, OBUFT, or IOBUF) </span></span></span></span></span></span></span></span><span
-              style="font-family: Times New Roman, Times, serif;"><span
-                style="font-family: Times New Roman, Times, serif;"><span
-                  style="font-family: Times New Roman, Times, serif;"><span
-                    style="font-family: Times New Roman, Times, serif;"><span
-                      style="font-family: Times New Roman, Times,
-                      serif;"><span style="font-family: Times New Roman,
-                        Times, serif;"><span style="font-family: Times
-                          New Roman, Times, serif;"><span
-                            style="font-family: Times New Roman, Times,
-                            serif;"><span style="font-family: Times New
-                              Roman, Times, serif;"><span
-                                style="font-family: Times New Roman,
-                                Times, serif;"><span style="font-family:
-                                  Times New Roman, Times, serif;">if</span></span></span><span
-                              style="font-family: Times New Roman,
-                              Times, serif;"><span style="font-family:
-                                Times New Roman, Times, serif;"><span
-                                  style="font-family: Times New Roman,
-                                  Times, serif;"><span
-                                    style="font-family: Times New Roman,
-                                    Times, serif;"> SERDES_FACTOR is
-                                    greater than 1</span> and </span></span></span><span
-                              style="font-family: Times New Roman,
-                              Times, serif;"><span style="font-family:
-                                Times New Roman, Times, serif;"><span
-                                  style="font-family: Times New Roman,
-                                  Times, serif;"><span
-                                    style="font-family: Times New Roman,
-                                    Times, serif;">ENABLE_TRISTATE_CONTROL</span><span
-                                    style="font-family: Times New Roman,
-                                    Times, serif;"> is 1</span>.</span></span></span>&nbsp;
 
-                          </span></span></span></span></span>Source is <a
-                    href="#HardwareOutputSourceSelection">selectable</a>.</span></span></span><span
+                  output signals.&nbsp; Must connect directly to
+                  top-level output port</span></span></span><span
+              style="font-family: Times New Roman, Times, serif;"><span
+                style="font-family: Times New Roman, Times, serif;"><span
+                  style="font-family: Times New Roman, Times, serif;"><span
+                    style="font-family: Times New Roman, Times, serif;"><span
+                      style="font-family: Times New Roman, Times,
+                      serif;"><span style="font-family: Times New Roman,
+                        Times, serif;"><span style="font-family: Times
+                          New Roman, Times, serif;"><span
+                            style="font-family: Times New Roman, Times,
+                            serif;">.&nbsp; </span></span></span></span></span>Source
+                  is <a href="#HardwareOutputSourceSelection">selectable</a>.</span></span></span><span
               style="font-family: Times New Roman, Times, serif;"><span
                 style="font-family: Times New Roman, Times, serif;"><span
                   style="font-family: Times New Roman, Times, serif;"><span
@@ -327,6 +286,7 @@
               Times New Roman, Times, serif;"><span style="font-family:
                 Times New Roman, Times, serif;"><span
                   style="font-family: Times New Roman, Times, serif;">Asserted
+
 
 
 
@@ -371,6 +331,7 @@
 
 
 
+
                   for 257 evrClk cycles upon arrival of pulse-per-second
                   event.</span></span></span></td>
         </tr>
@@ -386,6 +347,7 @@
               Times New Roman, Times, serif;"><span style="font-family:
                 Times New Roman, Times, serif;"><span
                   style="font-family: Times New Roman, Times, serif;">Event
+
 
 
 
@@ -429,6 +391,7 @@
 
 
 
+
                   bus.&nbsp; Updated at one half evrClk rate.<br>
                 </span></span></span></td>
         </tr>
@@ -444,6 +407,7 @@
               Times New Roman, Times, serif;"><span style="font-family:
                 Times New Roman, Times, serif;"><span
                   style="font-family: Times New Roman, Times, serif;">Asserted
+
 
 
 
@@ -487,7 +451,7 @@
           <td style="text-align: center;"><span style="font-family:
               Times New Roman, Times, serif;">evrClk</span></td>
           <td style="text-align: left;"><span style="font-family: Times
-              New Roman, Times, serif;">Drive the evrTriStateOut ports </span><span
+              New Roman, Times, serif;">Control the IOBUF T ports </span><span
               style="font-family: Times New Roman, Times, serif;"><span
                 style="font-family: Times New Roman, Times, serif;"><span
                   style="font-family: Times New Roman, Times, serif;">if
@@ -503,13 +467,9 @@
           <td style="text-align: center;"><span style="font-family:
               Times New Roman, Times, serif;">evrClk</span></td>
           <td style="text-align: left;"><span style="font-family: Times
-              New Roman, Times, serif;">Connect to the T ports of the
-              IOBUF or OBUFT blocks if </span><span style="font-family:
-              Times New Roman, Times, serif;"><span style="font-family:
-                Times New Roman, Times, serif;">ENABLE_TRISTATE_CONTROL
-                is set to 1.</span><span style="font-family: Times New
-                Roman, Times, serif;"><br>
-              </span></span></td>
+              New Roman, Times, serif;">IOBUF I ports.</span><span
+              style="font-family: Times New Roman, Times, serif;"><span
+                style="font-family: Times New Roman, Times, serif;"> </span></span></td>
         </tr>
         <tr>
           <td style="text-align: center;"><span style="font-family:
@@ -583,6 +543,7 @@
 
 
 
+
                     Output pulse delay and width are adjustable in steps
                     of 1/2 the evrBitClk interval if </span></span></span><span
                 style="font-family: Times New Roman, Times, serif;"><span
@@ -616,19 +577,17 @@
           <td style="vertical-align: middle; text-align: left;"><span
               style="font-family: Times New Roman, Times, serif;">Specialized
 
+
               applications may require tri-state control of the output
               pin.&nbsp; Set this parameter to 1 to enable this mode of
-              operation, controlled by the evrTriStateIn and
-              evrTriStateOut ports.&nbsp; If this parameter is 0, </span><span
-              style="font-family: Times New Roman, Times, serif;"><span
-                style="font-family: Times New Roman, Times, serif;">evrTriStateIn
-
-                is ignored and </span></span><span style="font-family:
+              operation, controlled by the evrTriStateIn ports.&nbsp; If
+              this parameter is 0 </span><span style="font-family:
               Times New Roman, Times, serif;"><span style="font-family:
-                Times New Roman, Times, serif;"><span
-                  style="font-family: Times New Roman, Times, serif;">evrTriStateOut
-
-                  is always 0<br>
+                Times New Roman, Times, serif;">evrTriStateIn is
+                ignored.</span></span><span style="font-family: Times
+              New Roman, Times, serif;"><span style="font-family: Times
+                New Roman, Times, serif;"><span style="font-family:
+                  Times New Roman, Times, serif;"><br>
                 </span></span></span></td>
         </tr>
         <tr>
@@ -838,6 +797,7 @@
 
 
 
+
               <br>
             </span></td>
           <td style="text-align: left;"><span style="font-family: Times
@@ -919,6 +879,7 @@
 
 
 
+
             *seconds, uint32_t *ticks);</span></span></span><span
         style="font-family: Times New Roman, Times, serif;"></span><span
         style="font-family: Times New Roman, Times, serif;"><span
@@ -966,6 +927,7 @@
 
 
 
+
             event, int action);</span></span></span><span
         style="font-family: Times New Roman, Times, serif;"></span><span
         style="font-family: Times New Roman, Times, serif;"><span
@@ -981,6 +943,7 @@
 
 
 
+
             to assert on the arrival of specified event.</span>&nbsp;
           The action strobes can also affect the hardware outputs as
           described in the following section.&nbsp; If bit 17
@@ -988,6 +951,7 @@
           code and time stamp will be written to a <a
             moz-do-not-send="true"
 href="file:///Users/eric/src/Osprey/src/ip_repo/ospreyEVR/head/documentation/ospreyEVR.html#Event_Monitoring">FIFO</a>.&nbsp;
+
 
 
 
@@ -1023,6 +987,7 @@ href="file:///Users/eric/src/Osprey/src/ip_repo/ospreyEVR/head/documentation/osp
             -moz-text-size-adjust: auto; -webkit-text-stroke-width: 0px;
             text-decoration: none; display: inline !important; float:
             none;">int <span style="font-weight: bold;">ospreyEVRSelectOutputSource</span>(int
+
 
 
 
@@ -1158,6 +1123,7 @@ href="file:///Users/eric/src/Osprey/src/ip_repo/ospreyEVR/head/documentation/osp
 
 
 
+
               output, uint32_t width);<br>
             </span></span></span></span></span><span style="font-family:
       Times New Roman, Times, serif;"><span style="font-weight: bold;"><span
@@ -1176,6 +1142,7 @@ href="file:///Users/eric/src/Osprey/src/ip_repo/ospreyEVR/head/documentation/osp
                 pulse width is 8 steps.&nbsp; </span><span
                 style="font-family: Times New Roman, Times, serif;"><span
                   style="font-family: Times New Roman, Times, serif;">Trigger
+
 
 
 
@@ -1239,6 +1206,7 @@ href="file:///Users/eric/src/Osprey/src/ip_repo/ospreyEVR/head/documentation/osp
 
 
 
+
             *seconds, uint32_t *ticks);</span></span></span><span
         style="font-family: Times New Roman, Times, serif;"></span><span
         style="font-family: Times New Roman, Times, serif;"><span
@@ -1273,6 +1241,7 @@ href="file:///Users/eric/src/Osprey/src/ip_repo/ospreyEVR/head/documentation/osp
           style="font-weight: bold;">ospreyEVR_FEEDwrite</span>(int
         offset, uint32_t value);<br>
         uint32_t <span style="font-weight: bold;">ospreyEVR_FEEDread</span>(int
+
 
 
 

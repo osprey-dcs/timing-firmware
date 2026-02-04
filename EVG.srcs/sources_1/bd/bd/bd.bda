@@ -310,7 +310,7 @@
                 "SX": "/ospreyEVR",
                 "SI": "S_AXI",
                 "SS": "S_AXI_reg",
-                "SV": "ospreydcs.com:osprey:ospreyEVR:2.1",
+                "SV": "ospreydcs.com:osprey:ospreyEVR:2.2",
                 "TM": "data",
                 "TU": "register"
             },

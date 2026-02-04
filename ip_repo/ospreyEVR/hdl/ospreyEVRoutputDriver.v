@@ -28,6 +28,8 @@ module ospreyEVRoutputDriver #(
     parameter DATA_WIDTH              = 32,
     parameter SERDES_FACTOR           = 8,
     parameter ENABLE_TRISTATE_CONTROL = 0,
+    parameter TRISTATE_INIT_STATE     = 0,
+    parameter TRISTATE_RESET_STATE    = 0,
     parameter ACTIVE_LOW_OUTPUTS      = 0,
     parameter DEBUG                   = "false"
     ) (
@@ -49,7 +51,7 @@ module ospreyEVRoutputDriver #(
     input  wire extIn_a,
     input  wire evrTriStateIn,
     output wire evrTriStateOut,
-    output wire evrDriverOut);
+    inout  wire evrPin);
 
 ///////////////////////////////////////////////////////////////////////////////
 // Clock crossing
@@ -191,15 +193,11 @@ always @(posedge evrClk) begin
     endcase
 end
 
+wire iobufI, iobufT;
 generate
 if (SERDES_FACTOR == 1) begin
-  assign evrDriverOut = serdesWord;
-  if (ENABLE_TRISTATE_CONTROL) begin
-    assign evrTriStateOut = evrTriStateIn;
-  end
-  else begin
-    assign evrTriStateOut = 1'b0;
-  end
+  assign iobufI = serdesWord;
+  assign iobufT = ENABLE_TRISTATE_CONTROL ? evrTriStateIn : 1'b0;
 end
 else begin
   /////////////////////////////////////////////////////////////////////////////
@@ -208,7 +206,6 @@ else begin
   wire [7:0] serdesPad = ACTIVE_LOW_OUTPUTS ?
                                          ~{{8-SERDES_FACTOR{1'b0}}, serdesWord}
                                         : {{8-SERDES_FACTOR{1'b0}}, serdesWord};
-  wire evrSERDESout, evrSERDEStriOut;
   OSERDESE2 #(
     .DATA_RATE_OQ   ("DDR"),
     .DATA_RATE_TQ   ("SDR"),
@@ -216,8 +213,8 @@ else begin
     .TRISTATE_WIDTH (1),
     .INIT_OQ(ACTIVE_LOW_OUTPUTS),
     .SRVAL_OQ(ACTIVE_LOW_OUTPUTS),
-    .INIT_TQ(ENABLE_TRISTATE_CONTROL),
-    .SRVAL_TQ(ENABLE_TRISTATE_CONTROL),
+    .INIT_TQ(TRISTATE_INIT_STATE),
+    .SRVAL_TQ(TRISTATE_INIT_STATE),
     .SERDES_MODE    ("MASTER"))
   evrDriverSERDES (
     .D1             (serdesPad[0]),
@@ -239,25 +236,20 @@ else begin
     .OCE            (1'b1),
     .CLK            (evrBitClk),
     .CLKDIV         (evrClk),
-    .OQ             (evrSERDESout),
-    .TQ             (evrSERDEStriOut),
+    .OQ             (iobufI),
+    .TQ             (iobufT),
     .OFB            (),
     .TFB            (),
     .TBYTEIN        (1'b0),
     .TBYTEOUT       (),
     .TCE            (ENABLE_TRISTATE_CONTROL),
     .RST            (evrResetSERDES));
-  if (ENABLE_TRISTATE_CONTROL) begin
-    assign evrDriverOut = evrSERDESout;
-    assign evrTriStateOut = evrSERDEStriOut;
-  end
-  else begin
-    OBUF evrHwObuf(.I(evrSERDESout), .O(evrDriverOut));
-    assign evrTriStateOut = 1'b0;
-  end
 end
 endgenerate
-
+IOBUF evrHwObuf(.I(iobufI),
+                .O(evrTriStateOut),
+                .T(iobufT),
+                .IO(evrPin));
 endmodule
 
 ///////////////////////////////////////////////////////////////////////////////

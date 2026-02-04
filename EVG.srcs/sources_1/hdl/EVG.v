@@ -75,14 +75,14 @@ module EVG #(
     output wire [CFG_MGT_COUNT-1:0] QSFP_TX_P,
     output wire [CFG_MGT_COUNT-1:0] QSFP_TX_N,
 
-    input  wire PMOD1_0,  // PMOD-IO input 0 or PMOD-GPS 3DFix 
-    input  wire PMOD1_1,  // PMOD-IO input 1 or PMOD-GPS RxD
-    inout  wire PMOD1_2,  // PMOD-IO output 0 or PMOD-GPS TxD
-    inout  wire PMOD1_3,  // PMOD-IO output 1 or PMOD-GPS PPS
-    input  wire PMOD1_4,  // PMOD-IO input 2 or unused
-    input  wire PMOD1_5,  // PMOD-IO input 3 or unused
-    output wire PMOD1_6,  // PMOD-IO output 2 or unused
-    output wire PMOD1_7,  // PMOD-IO output 3 or unused
+    input  wire PMOD1_0,
+    input  wire PMOD1_1,
+    output wire PMOD1_2,
+    output wire PMOD1_3,
+    input  wire PMOD1_4,
+    input  wire PMOD1_5,
+    output wire PMOD1_6,
+    output wire PMOD1_7,
 
     input  wire PMOD2_0,
     input  wire PMOD2_1,
@@ -141,12 +141,8 @@ sysClkCounters #(.CLK_RATE(CFG_SYSCLK_RATE), .DEBUG("false"))
 // PMOD2, if present, is a PMOD-IO.
 
 wire [15:0] evgHwInputs;
-wire [7:0] evrHwOutputs, evrTriStateOut;
-wire pmod1_3o;
 wire [31:0] ioSelectStatus;
 wire isEVG = ioSelectStatus[0];
-wire pmod1IsIO = ioSelectStatus[2];
-wire pmod1IsGPS = ioSelectStatus[3];
 assign GPIO_IN[GPIO_IDX_IO_SELECT] = ioSelectStatus;
 wire ppsPrimary_out, ppsSecondary_out;
 
@@ -166,15 +162,6 @@ ioSelect #(.DEBUG("false"))
 
 assign GPIO_IN[GPIO_IDX_PMOD_FMC_MONITOR] = {8'b0, pmodIn, fmc1In};
 
-IOBUF pmod1_2buf(.I(evrHwOutputs[0]), .T(evrTriStateOut[0]), .IO(PMOD1_2));
-IOBUF pmod1_6buf(.I(evrHwOutputs[1]), .T(evrTriStateOut[1]), .IO(PMOD1_6));
-IOBUF pmod1_3buf(.I(evrHwOutputs[2]), .T(evrTriStateOut[2]), .IO(PMOD1_3),
-                                                                  .O(pmod1_3o));
-IOBUF pmod1_7buf(.I(evrHwOutputs[3]), .T(evrTriStateOut[3]), .IO(PMOD1_7));
-IOBUF pmod2_2buf(.I(evrHwOutputs[4]), .T(evrTriStateOut[4]), .IO(PMOD2_2));
-IOBUF pmod2_6buf(.I(evrHwOutputs[5]), .T(evrTriStateOut[5]), .IO(PMOD2_6));
-IOBUF pmod2_3buf(.I(evrHwOutputs[6]), .T(evrTriStateOut[6]), .IO(PMOD2_3));
-IOBUF pmod2_7buf(.I(evrHwOutputs[7]), .T(evrTriStateOut[7]), .IO(PMOD2_7));
 
 ///////////////////////////////////////////////////////////////////////////////
 // Generate local PPS
@@ -207,7 +194,7 @@ marbleClockSync #(
     .clk500(clk500),
     .ppsPrimary_pin(FMC1_PPS),
     .ppsSecondary_pin(~PMOD1_0),
-    .ppsFromFabric(isEVG ? (pmod1IsGPS?pmod1_3o:localPPSmarker) : evrPPSmarker),
+    .ppsFromFabric(isEVG ? localPPSmarker : evrPPSmarker),
     .hwPPSmarker_a(hwPPSmarker_a),
     .ppsPrimary_out(ppsPrimary_out),
     .ppsSecondary_out(ppsSecondary_out),
@@ -406,9 +393,8 @@ bd bd_i (
     .evrPPSmarker(evrPPSmarker),
     .evrLinkUp(mgtRxLinkUp[0]),
     .evrHwDriverIn(8'h00),
-    .evrTriStateIn({ {6{1'b0}}, {2{!pmod1IsIO}} }), 
-    .evrTriStateOut(evrTriStateOut),
-    .evrHardwareOutputs(evrHwOutputs),
+    .evrHardwareOutputs({PMOD2_7, PMOD2_3, PMOD2_6, PMOD2_2,
+                         PMOD1_7, PMOD1_3, PMOD1_6, PMOD1_2}),
 
     .console_rxd(FPGA_TxD),
     .console_txd(FPGA_RxD)

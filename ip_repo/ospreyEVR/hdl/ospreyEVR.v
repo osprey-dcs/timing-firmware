@@ -37,6 +37,8 @@ module ospreyEVR_v1_0 #(
     parameter SERDES_FACTOR                 = 8,
     parameter ACTION_STROBES_WIDTH          = 16,
     parameter ENABLE_TRISTATE_CONTROL       = 0,
+    parameter TRISTATE_INIT_STATE           = 0,
+    parameter TRISTATE_RESET_STATE          = 0,
     parameter ACTIVE_LOW_OUTPUTS            = 0,
     parameter DEBUG                         = "false",
     ////////////////////// AXI-Lite Boilerplate Parameters ///////////////////
@@ -54,9 +56,9 @@ module ospreyEVR_v1_0 #(
     input  wire  [1:0] evrRxCharIsK,
 
     /*
-     * Hardware outputs -- must connect directly to [I]OBUF.
+     * Hardware outputs -- must connect directly to pin.
      */
-    output wire [HARDWARE_OUTPUT_COUNT-1:0] evrHardwareOutputs,
+    inout  wire [HARDWARE_OUTPUT_COUNT-1:0] evrHardwareOutputs,
     input  wire [HARDWARE_OUTPUT_COUNT-1:0] hwDriverIn_a,
 
     /*
@@ -313,6 +315,8 @@ for (i = 0 ; i < HARDWARE_OUTPUT_COUNT ; i = i + 1) begin : outputDriver
         .DATA_WIDTH(32),
         .SERDES_FACTOR(SERDES_FACTOR),
         .ENABLE_TRISTATE_CONTROL(ENABLE_TRISTATE_CONTROL),
+        .TRISTATE_INIT_STATE(TRISTATE_INIT_STATE[i]),
+        .TRISTATE_RESET_STATE(TRISTATE_RESET_STATE[i]),
         .ACTIVE_LOW_OUTPUTS(ACTIVE_LOW_OUTPUTS),
         .DEBUG(DEBUG))
       ospreyEVRoutputDriver_i (
@@ -333,7 +337,7 @@ for (i = 0 ; i < HARDWARE_OUTPUT_COUNT ; i = i + 1) begin : outputDriver
         .extIn_a(hwDriverIn_a[i]),
         .evrTriStateIn(evrTriState[i]),
         .evrTriStateOut(evrTriStateOut[i]),
-        .evrDriverOut(evrHardwareOutputs[i]));
+        .evrPin(evrHardwareOutputs[i]));
 end
 endgenerate
 

@@ -3,7 +3,7 @@
   <spirit:vendor>ospreydcs.com</spirit:vendor>
   <spirit:library>osprey</spirit:library>
   <spirit:name>ospreyEVR</spirit:name>
-  <spirit:version>2.1</spirit:version>
+  <spirit:version>2.2</spirit:version>
   <spirit:busInterfaces>
     <spirit:busInterface>
       <spirit:name>S_AXI</spirit:name>
@@ -266,7 +266,7 @@
         <spirit:parameters>
           <spirit:parameter>
             <spirit:name>viewChecksum</spirit:name>
-            <spirit:value>98f9101d</spirit:value>
+            <spirit:value>95a7d9f4</spirit:value>
           </spirit:parameter>
         </spirit:parameters>
       </spirit:view>
@@ -282,7 +282,7 @@
         <spirit:parameters>
           <spirit:parameter>
             <spirit:name>viewChecksum</spirit:name>
-            <spirit:value>98f9101d</spirit:value>
+            <spirit:value>95a7d9f4</spirit:value>
           </spirit:parameter>
         </spirit:parameters>
       </spirit:view>
@@ -296,7 +296,7 @@
         <spirit:parameters>
           <spirit:parameter>
             <spirit:name>viewChecksum</spirit:name>
-            <spirit:value>0d071491</spirit:value>
+            <spirit:value>b7476b7c</spirit:value>
           </spirit:parameter>
         </spirit:parameters>
       </spirit:view>
@@ -310,7 +310,7 @@
         <spirit:parameters>
           <spirit:parameter>
             <spirit:name>viewChecksum</spirit:name>
-            <spirit:value>be1245b9</spirit:value>
+            <spirit:value>0625d6c2</spirit:value>
           </spirit:parameter>
         </spirit:parameters>
       </spirit:view>
@@ -951,6 +951,16 @@
         <spirit:displayName>Active Low Outputs</spirit:displayName>
         <spirit:value spirit:format="bool" spirit:resolve="generated" spirit:id="MODELPARAM_VALUE.ACTIVE_LOW_OUTPUTS">false</spirit:value>
       </spirit:modelParameter>
+      <spirit:modelParameter spirit:dataType="integer">
+        <spirit:name>TRISTATE_INIT_STATE</spirit:name>
+        <spirit:displayName>Tristate Init State</spirit:displayName>
+        <spirit:value spirit:format="long" spirit:resolve="generated" spirit:id="MODELPARAM_VALUE.TRISTATE_INIT_STATE">0</spirit:value>
+      </spirit:modelParameter>
+      <spirit:modelParameter spirit:dataType="integer">
+        <spirit:name>TRISTATE_RESET_STATE</spirit:name>
+        <spirit:displayName>Tristate Reset State</spirit:displayName>
+        <spirit:value spirit:format="long" spirit:resolve="generated" spirit:id="MODELPARAM_VALUE.TRISTATE_RESET_STATE">0</spirit:value>
+      </spirit:modelParameter>
     </spirit:modelParameters>
   </spirit:model>
   <spirit:choices>
@@ -995,7 +1005,7 @@
       <spirit:file>
         <spirit:name>hdl/ospreyEVR.v</spirit:name>
         <spirit:fileType>verilogSource</spirit:fileType>
-        <spirit:userFileType>CHECKSUM_046d2dcf</spirit:userFileType>
+        <spirit:userFileType>CHECKSUM_4b26e301</spirit:userFileType>
       </spirit:file>
     </spirit:fileSet>
     <spirit:fileSet>
@@ -1052,9 +1062,9 @@
     <spirit:fileSet>
       <spirit:name>xilinx_xpgui_view_fileset</spirit:name>
       <spirit:file>
-        <spirit:name>xgui/ospreyEVR_v2_1.tcl</spirit:name>
+        <spirit:name>xgui/ospreyEVR_v2_2.tcl</spirit:name>
         <spirit:fileType>tclSource</spirit:fileType>
-        <spirit:userFileType>CHECKSUM_be1245b9</spirit:userFileType>
+        <spirit:userFileType>CHECKSUM_0625d6c2</spirit:userFileType>
         <spirit:userFileType>XGUI_VERSION_2</spirit:userFileType>
       </spirit:file>
     </spirit:fileSet>
@@ -1157,6 +1167,16 @@
       <spirit:displayName>Active Low Outputs</spirit:displayName>
       <spirit:value spirit:format="bool" spirit:resolve="user" spirit:id="PARAM_VALUE.ACTIVE_LOW_OUTPUTS">false</spirit:value>
     </spirit:parameter>
+    <spirit:parameter>
+      <spirit:name>TRISTATE_INIT_STATE</spirit:name>
+      <spirit:displayName>Tristate Init State</spirit:displayName>
+      <spirit:value spirit:format="long" spirit:resolve="user" spirit:id="PARAM_VALUE.TRISTATE_INIT_STATE">0</spirit:value>
+    </spirit:parameter>
+    <spirit:parameter>
+      <spirit:name>TRISTATE_RESET_STATE</spirit:name>
+      <spirit:displayName>Tristate Reset State</spirit:displayName>
+      <spirit:value spirit:format="long" spirit:resolve="user" spirit:id="PARAM_VALUE.TRISTATE_RESET_STATE">0</spirit:value>
+    </spirit:parameter>
   </spirit:parameters>
   <spirit:vendorExtensions>
     <xilinx:coreExtensions>
@@ -1185,22 +1205,23 @@
       <xilinx:xpmLibraries>
         <xilinx:xpmLibrary>XPM_FIFO</xilinx:xpmLibrary>
       </xilinx:xpmLibraries>
-      <xilinx:coreRevision>2</xilinx:coreRevision>
+      <xilinx:coreRevision>1</xilinx:coreRevision>
       <xilinx:upgrades>
         <xilinx:canUpgradeFrom>user.org:user:ospreyEVR:1.0</xilinx:canUpgradeFrom>
         <xilinx:canUpgradeFrom>ospreydcs.com:osprey:ospreyEVR:1.0</xilinx:canUpgradeFrom>
         <xilinx:canUpgradeFrom>ospreydcs.com:osprey:ospreyEVR:2.0</xilinx:canUpgradeFrom>
+        <xilinx:canUpgradeFrom>ospreydcs.com:osprey:ospreyEVR:2.1</xilinx:canUpgradeFrom>
       </xilinx:upgrades>
-      <xilinx:coreCreationDateTime>2026-02-02T18:31:02Z</xilinx:coreCreationDateTime>
+      <xilinx:coreCreationDateTime>2026-02-04T18:34:56Z</xilinx:coreCreationDateTime>
     </xilinx:coreExtensions>
     <xilinx:packagingInfo>
       <xilinx:xilinxVersion>2023.1</xilinx:xilinxVersion>
       <xilinx:checksum xilinx:scope="busInterfaces" xilinx:value="9552bd96"/>
       <xilinx:checksum xilinx:scope="memoryMaps" xilinx:value="c30980da"/>
-      <xilinx:checksum xilinx:scope="fileGroups" xilinx:value="efec6a95"/>
+      <xilinx:checksum xilinx:scope="fileGroups" xilinx:value="3de7888d"/>
       <xilinx:checksum xilinx:scope="ports" xilinx:value="323a1216"/>
-      <xilinx:checksum xilinx:scope="hdlParameters" xilinx:value="e6758c32"/>
-      <xilinx:checksum xilinx:scope="parameters" xilinx:value="d665ea4d"/>
+      <xilinx:checksum xilinx:scope="hdlParameters" xilinx:value="8d0a348d"/>
+      <xilinx:checksum xilinx:scope="parameters" xilinx:value="311a240d"/>
       <xilinx:targetDRCs>
         <xilinx:targetDRC xilinx:tool="ipi">
           <xilinx:targetDRCOption xilinx:name="ignore_freq_hz" xilinx:value="false"/>

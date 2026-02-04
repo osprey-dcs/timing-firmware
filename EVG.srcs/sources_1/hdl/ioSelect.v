@@ -47,20 +47,15 @@ module ioSelect #(
 // System clock domain
 reg sysIsEVG = 0;
 reg sysFMCisPresent = 0;
-reg sysPMOD1IsIO = 0;
-reg sysPMOD1IsGPS = 0;
 
 always @(posedge sysClk) begin
     if (sysCsrStrobe) begin
         if (sysGPIO_OUT[8])  sysIsEVG        <= sysGPIO_OUT[0];
         if (sysGPIO_OUT[9])  sysFMCisPresent <= sysGPIO_OUT[1];
-        if (sysGPIO_OUT[10]) sysPMOD1IsIO    <= sysGPIO_OUT[2];
-        if (sysGPIO_OUT[11]) sysPMOD1IsGPS   <= sysGPIO_OUT[3];
     end
 end
 
-assign sysStatus = { {32-4{1'b0}},
-                     sysPMOD1IsGPS, sysPMOD1IsIO, sysFMCisPresent, sysIsEVG };
+assign sysStatus = { {32-2{1'b0}}, sysFMCisPresent, sysIsEVG };
 
 genvar i;
 generate
