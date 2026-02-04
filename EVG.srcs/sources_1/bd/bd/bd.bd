@@ -2053,7 +2053,7 @@
             "value": "true"
           },
           "ENABLE_TRISTATE_CONTROL": {
-            "value": "1"
+            "value": "0"
           },
           "HARDWARE_OUTPUT_COUNT": {
             "value": "8"
