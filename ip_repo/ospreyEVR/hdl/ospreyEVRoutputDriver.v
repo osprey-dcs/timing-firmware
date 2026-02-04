@@ -214,6 +214,10 @@ else begin
     .DATA_RATE_TQ   ("SDR"),
     .DATA_WIDTH     (SERDES_FACTOR),
     .TRISTATE_WIDTH (1),
+    .INIT_OQ(ACTIVE_LOW_OUTPUTS),
+    .SRVAL_OQ(ACTIVE_LOW_OUTPUTS),
+    .INIT_TQ(ENABLE_TRISTATE_CONTROL),
+    .SRVAL_TQ(ENABLE_TRISTATE_CONTROL),
     .SERDES_MODE    ("MASTER"))
   evrDriverSERDES (
     .D1             (serdesPad[0]),

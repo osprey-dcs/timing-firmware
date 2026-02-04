@@ -266,24 +266,27 @@ smallEVR #(
 /*
  * Startup sequencing
  */
-reg evrResetSERDES = 1, evrResetSERDES_d = 1;
-reg [HARDWARE_OUTPUT_COUNT-1:0] evrTriState = {HARDWARE_OUTPUT_COUNT{1'b1}};
+reg evrResetSERDES = 1;
 always @(posedge evrClk) begin
-    evrResetSERDES   <= 0;
-    evrResetSERDES_d <= evrResetSERDES;
-    if (evrResetSERDES_d == 0) begin
-        evrTriState <= evrTriStateIn;
-    end
+    evrResetSERDES <= 0;
 end
+
 
 /*
  * Generate active-HIGH resets in evrClk domain
  */
 (*ASYNC_REG="true"*) reg evrReset_m = 1;
 (*MARK_DEBUG=DEBUG*) reg evrReset = 1;
+wire EnableTriState = ENABLE_TRISTATE_CONTROL;
+(*ASYNC_REG="true"*) reg [HARDWARE_OUTPUT_COUNT-1:0] evrTriState_m =
+                            {HARDWARE_OUTPUT_COUNT{ENABLE_TRISTATE_CONTROL[0]}};
+reg [HARDWARE_OUTPUT_COUNT-1:0] evrTriState =
+                            {HARDWARE_OUTPUT_COUNT{ENABLE_TRISTATE_CONTROL[0]}};
 always @(posedge evrClk) begin
     evrReset_m <= ~s_axi_aresetn;
     evrReset   <= evrReset_m;
+    evrTriState_m <= evrTriState;
+    evrTriState   <= evrTriState_m;
 end
 
 /*
