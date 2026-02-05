@@ -332,7 +332,7 @@ for (i = 0 ; i < HARDWARE_OUTPUT_COUNT ; i = i + 1) begin : outputDriver
         .evrLinkUp(evrLinkUp),
         .evrActionIn(evrRawActions[i]),
         .evrDbusIn((i<8) ? evrDistributedBus[i] : 1'b0),
-        .evrSetIn(evrRawActions[i]), // FIXME -- need to handle this better!
+        .evrSetIn(evrRawActions[i]),
         .evrResetIn(evrRawActions[i+1]),
         .extIn_a(hwDriverIn_a[i]),
         .evrTriStateIn(evrTriState[i]),
