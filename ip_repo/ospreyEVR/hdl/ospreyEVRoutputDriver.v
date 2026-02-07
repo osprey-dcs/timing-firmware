@@ -196,7 +196,7 @@ end
 wire iobufI, iobufT;
 generate
 if (SERDES_FACTOR == 1) begin
-  assign iobufI = ACTIVE_LOW_OUTPUTS : ~serdesWord : serdesWord;
+  assign iobufI = ACTIVE_LOW_OUTPUTS ? ~serdesWord : serdesWord;
   assign iobufT = ENABLE_TRISTATE_CONTROL ? evrTriStateIn : 1'b0;
 end
 else begin
