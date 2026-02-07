@@ -287,7 +287,7 @@ reg [HARDWARE_OUTPUT_COUNT-1:0] evrTriState =
 always @(posedge evrClk) begin
     evrReset_m <= ~s_axi_aresetn;
     evrReset   <= evrReset_m;
-    evrTriState_m <= evrTriState;
+    evrTriState_m <= evrTriStateIn;
     evrTriState   <= evrTriState_m;
 end
 
