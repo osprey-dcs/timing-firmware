@@ -24,63 +24,59 @@
 # SOFTWARE.
 #
 
+from collections import OrderedDict
+import json
+
 # Create JSON file fragment for EVR registers
 
-def ospreyEVR_emitJSON(EVR_REG_BASE=1100000, hwOutputCount=8):
-    evr = ("""  "EVR:status": {
-        "access": "r",
-        "addr_width": 0,
-        "base_addr": %d,
-        "data_width": 32,
-        "sign": "unsigned"
-      },""",)
-    r = EVR_REG_BASE
-    for j in evr:
-        print(j % (r))
-        r += 1
+def ospreyEVR_build(EVR_REG_BASE=1100000, hwOutputCount=8):
+    R = {
+        "EVR:status": {
+            "access": "r",
+            "addr_width": 0,
+            "base_addr": EVR_REG_BASE,
+            "data_width": 32,
+            "sign": "unsigned",
+        },
+    }
 
-    template = """  "EVR:evnt%03d:action": {
-        "access": "w",
-        "addr_width": 0,
-        "base_addr": %d,
-        "data_width": 18,
-        "sign": "unsigned"
-      },"""
-    r = EVR_REG_BASE + 101
-    for e in range(1,127):
-        print(template % (e, r))
-        r += 1
-    
-    out = ("""  "EVR:out%d:source": {
-        "access": "w",
-        "addr_width": 0,
-        "base_addr": %d,
-        "data_width": 8,
-        "sign": "unsigned"
-      },""",
-      """  "EVR:pls%d:delay": {
-        "access": "w",
-        "addr_width": 0,
-        "base_addr": %d,
-        "data_width": 32,
-        "sign": "unsigned"
-      },""",
-      """  "EVR:pls%d:width": {
-        "access": "w",
-        "addr_width": 0,
-        "base_addr": %d,
-        "data_width": 32,
-        "sign": "unsigned"
-      },""")
-    rb = EVR_REG_BASE + 400
-    for j in out:
-        r = rb
-        for i in range(0,hwOutputCount):
-            print(j % (i+1, r))
-            r += 1
-        rb += 20
+    for addr, evt in enumerate(range(1, 127), EVR_REG_BASE+101):
+        R[f"EVR:evnt{evt:03d}:action"] = {
+            "access": "w",
+            "addr_width": 0,
+            "base_addr": addr,
+            "data_width": 18,
+            "sign": "unsigned",
+        }
 
+    for addr, idx in enumerate(range(1, hwOutputCount+1), EVR_REG_BASE+400):
+        R[f"EVR:out{idx}:source"] = {
+            "access": "w",
+            "addr_width": 0,
+            "base_addr": addr,
+            "data_width": 8,
+            "sign": "unsigned",
+        }
 
-#############################################################################
+    for addr, idx in enumerate(range(1, hwOutputCount+1), EVR_REG_BASE+420):
+        R[f"EVR:pls{idx}:delay"] = {
+            "access": "w",
+            "addr_width": 0,
+            "base_addr": addr,
+            "data_width": 32,
+            "sign": "unsigned",
+        }
+
+    for addr, idx in enumerate(range(1, hwOutputCount+1), EVR_REG_BASE+440):
+        R[f"EVR:pls{idx}:width"] = {
+            "access": "w",
+            "addr_width": 0,
+            "base_addr": addr,
+            "data_width": 32,
+            "sign": "unsigned",
+        }
+
+    return R
+
 if __name__ == "__main__":
-    ospreyEVR_emitJSON()
+    print(json.dumps(ospreyEVR_build(), indent=2))
