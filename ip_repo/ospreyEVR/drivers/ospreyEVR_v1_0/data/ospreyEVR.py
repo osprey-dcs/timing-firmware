@@ -38,16 +38,14 @@ def ospreyEVR_build(EVR_REG_BASE=1100000, hwOutputCount=8):
             "data_width": 32,
             "sign": "unsigned",
         },
-    }
-
-    for addr, evt in enumerate(range(1, 127), EVR_REG_BASE+101):
-        R[f"EVR:evnt{evt:03d}:action"] = {
+        "EVR:evnt:map": {
             "access": "w",
-            "addr_width": 0,
-            "base_addr": addr,
+            "addr_width": 8, # 256
+            "base_addr": EVR_REG_BASE+100,
             "data_width": 18,
             "sign": "unsigned",
-        }
+        },
+    }
 
     for addr, idx in enumerate(range(1, hwOutputCount+1), EVR_REG_BASE+400):
         R[f"EVR:out{idx}:source"] = {
