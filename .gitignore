@@ -13,3 +13,9 @@
 
 *.log
 *.jou
+
+# generated
+EVG.srcs/sources_1/hdl/gpio.v
+Workspace/EVG/src/JSONrom.h
+Workspace/EVG/src/LEEP.json
+Workspace/EVG/src/softwareBuildDate.h
