@@ -106,7 +106,6 @@ localparam MGT_COMMA_ALIGN_BYTE = 1;
 ///////////////////////////////////////////////////////////////////////////////
 // Static outputs
 assign VCXO_EN = 1'b1;
-assign LD16 = 1'b0;
 assign LD17 = 1'b0;
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -290,6 +289,7 @@ mgtWrapper #(
     .mgtTxCharIsK({CFG_MGT_COUNT{evgTxCharIsK}}));
 
 assign GPIO_IN[GPIO_IDX_LINK_STATUS] = {{32-CFG_MGT_COUNT{1'b0}}, mgtRxLinkUp};
+assign LD16 = mgtRxLinkUp[0]; // EVR link status
 
 ///////////////////////////////////////////////////////////////////////////////
 // Merge MPS fault status
