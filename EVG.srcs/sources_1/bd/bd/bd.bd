@@ -2059,7 +2059,7 @@
             "value": "8"
           },
           "SERDES_FACTOR": {
-            "value": "8"
+            "value": "1"
           }
         }
       },
