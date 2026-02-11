@@ -34,6 +34,7 @@
 #include "epics.h"
 #include "gpio.h"
 #include "iicFPGA.h"
+#include "ioSelect.h"
 #include "localPPS.h"
 #include "mgt.h"
 #include "mgtClkSwitch.h"
@@ -78,6 +79,7 @@ struct LEEPpacket {
 #define REG_MARBLE_PLL_SET_Y1               86
 #define REG_MARBLE_PLL_SET_Y3               87
 #define REG_MARBLE_PPS_LOCAL_CSR            88
+#define REG_IOSELECT                        89
 #define REG_SYSMON_BASE                     100
 #define SYSMON_SIZE                         300
 
@@ -168,6 +170,7 @@ readReg(int address)
                                                                        & 0xFFFF;
     case REG_MARBLE_PMOD_INPUTS:  return GPIO_READ(GPIO_IDX_PMOD_FMC_MONITOR)
                                                                           >> 16;
+    case REG_IOSELECT:            return ioSelectStatus();
     case RANGE(REG_SYSMON_BASE, SYSMON_SIZE):
         {
         int offset = address - REG_SYSMON_BASE;

@@ -283,6 +283,13 @@ def base_build():
           "base_addr": 71,
           "data_width": 8,
           "sign": "unsigned"
+        },
+        "FPGA:IO:select": {
+            "access": "r",
+            "addr_width": 0,
+            "base_addr": 89,
+            "data_width": 32,
+            "sign": "unsigned"
         }
     }
     return R
