@@ -59,7 +59,7 @@ def ospreyEVR_build(EVR_REG_BASE=1100000, hwOutputCount=8):
 
     for addr, idx in enumerate(range(1, hwOutputCount+1), EVR_REG_BASE+400):
         R[f"EVR:out{idx}:source"] = {
-            "access": "w",
+            "access": "rw",
             "addr_width": 0,
             "base_addr": addr,
             "data_width": 8,
@@ -68,7 +68,7 @@ def ospreyEVR_build(EVR_REG_BASE=1100000, hwOutputCount=8):
 
     for addr, idx in enumerate(range(1, hwOutputCount+1), EVR_REG_BASE+420):
         R[f"EVR:pls{idx}:delay"] = {
-            "access": "w",
+            "access": "rw",
             "addr_width": 0,
             "base_addr": addr,
             "data_width": 32,
@@ -77,7 +77,7 @@ def ospreyEVR_build(EVR_REG_BASE=1100000, hwOutputCount=8):
 
     for addr, idx in enumerate(range(1, hwOutputCount+1), EVR_REG_BASE+440):
         R[f"EVR:pls{idx}:width"] = {
-            "access": "w",
+            "access": "rw",
             "addr_width": 0,
             "base_addr": addr,
             "data_width": 32,

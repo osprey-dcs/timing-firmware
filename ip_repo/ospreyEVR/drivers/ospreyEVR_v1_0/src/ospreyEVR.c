@@ -259,6 +259,18 @@ ospreyEVR_FEEDread(int offset)
     if ((idx > 0) && (idx < 255)) {
         return shadow_actions[idx];
     }
+    idx = offset - REG_OUTPUT_SELECT_BASE;
+    if ((idx >= 0) && (idx < evrInfo.outputCount)) {
+        return evrInfo.source[idx];
+    }
+    idx = offset - REG_PULSE_DELAY_BASE;
+    if ((idx >= 0) && (idx < evrInfo.outputCount)) {
+        return evrInfo.delays[idx];
+    }
+    idx = offset - REG_PULSE_WIDTH_BASE;
+    if ((idx >= 0) && (idx < evrInfo.outputCount)) {
+        return evrInfo.widths[idx];
+    }
 
     return 0;
 }
