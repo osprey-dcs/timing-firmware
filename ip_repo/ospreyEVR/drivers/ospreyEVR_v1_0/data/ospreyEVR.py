@@ -49,7 +49,7 @@ def ospreyEVR_build(EVR_REG_BASE=1100000, hwOutputCount=8):
             "sign": "unsigned",
         },
         "EVR:evnt:map": {
-            "access": "w",
+            "access": "rw",
             "addr_width": 8, # 256
             "base_addr": EVR_REG_BASE+100,
             "data_width": 18,

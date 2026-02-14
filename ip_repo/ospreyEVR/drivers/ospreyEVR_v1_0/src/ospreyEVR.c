@@ -109,10 +109,14 @@ ospreyEVRStatus(void)
     return Xil_In32(evrInfo.baseAddr + REG_OFFSET_CSR);
 }
 
+static
+uint32_t shadow_actions[256];
+
 int
 ospreyEVRSetEventAction(int event, int action)
 {
     if ((event <= 0) || (event >= 255)) return -1;
+    shadow_actions[event] = action;
     Xil_Out32(evrInfo.baseAddr + REG_OFFSET_ACTION, (action << 8) | event);
     return 0;
 }
@@ -249,5 +253,12 @@ ospreyEVR_FEEDread(int offset)
     case REG_NOW+1:
         return now_nsec;
     }
+
+    int idx;
+    idx = offset - REG_ACTIONS_BASE;
+    if ((idx > 0) && (idx < 255)) {
+        return shadow_actions[idx];
+    }
+
     return 0;
 }
