@@ -199,6 +199,7 @@ ospreyEVRGetFifoEvent(uint32_t *seconds, uint32_t *ticks)
  * FEED I/O support
  */
 #define REG_STATUS                      0
+#define REG_NOW                         1
 #define REG_ACTIONS_BASE              100
 #define REG_OUTPUT_SELECT_BASE        400
 #define REG_PULSE_DELAY_BASE          420
@@ -236,8 +237,17 @@ uint32_t
 ospreyEVR_FEEDread(int offset)
 {
     if (!evrInfo.baseAddr) return -1;
+    static uint32_t now_nsec;
+
     switch(offset) {
     case REG_STATUS:       return ospreyEVRStatus();
+    case REG_NOW: {
+        uint32_t sec=now_nsec=0;
+        (void)ospreyEVRGetTime(&sec, &now_nsec);
+        return sec;
+    }
+    case REG_NOW+1:
+        return now_nsec;
     }
     return 0;
 }
