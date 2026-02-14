@@ -188,6 +188,10 @@ ospreyEVRGetFifoEvent(uint32_t *seconds, uint32_t *ticks)
     if (!evrInfo.baseAddr) return 0;
     eventReg = Xil_In32(evrInfo.baseAddr+REG_OFFSET_FIFO_EVENT);
     if ((eventReg & FIFO_EVENT_EVENT_PENDING) == 0) {
+        if (seconds)
+            *seconds = 0;
+        if (ticks)
+            *ticks = 0;
         return 0;
     }
     if (seconds) {
@@ -204,10 +208,15 @@ ospreyEVRGetFifoEvent(uint32_t *seconds, uint32_t *ticks)
  */
 #define REG_STATUS                      0
 #define REG_NOW                         1
+// ... 2
 #define REG_ACTIONS_BASE              100
 #define REG_OUTPUT_SELECT_BASE        400
 #define REG_PULSE_DELAY_BASE          420
 #define REG_PULSE_WIDTH_BASE          440
+
+// (1<<8) == 3*85 + 1
+#define REG_EVNT_LOG                  500
+// ... 756
 
 int
 ospreyEVR_FEEDwrite(int offset, uint32_t value)
@@ -242,6 +251,7 @@ ospreyEVR_FEEDread(int offset)
 {
     if (!evrInfo.baseAddr) return -1;
     static uint32_t now_nsec;
+    static uint32_t log_sec, log_nsec;
 
     switch(offset) {
     case REG_STATUS:       return ospreyEVRStatus();
@@ -252,9 +262,23 @@ ospreyEVR_FEEDread(int offset)
     }
     case REG_NOW+1:
         return now_nsec;
+    case REG_EVNT_LOG:
+        return 0xdeadbeef;
     }
 
     int idx;
+    idx = offset - REG_EVNT_LOG;
+    if ((idx > 0) && (idx < 256)) {
+        switch(idx%3u) {
+        case 1:
+            return ospreyEVRGetFifoEvent(&log_sec, &log_nsec);
+        case 2:
+            return log_sec;
+        case 0:
+            return log_nsec;
+        }
+        return 0;
+    }
     idx = offset - REG_ACTIONS_BASE;
     if ((idx > 0) && (idx < 255)) {
         return shadow_actions[idx];
