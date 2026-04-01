@@ -298,9 +298,9 @@ def evt_merge():
     R = base_build()
     R.update(ospreyEVG.ospreyEVG_build(
         EVG_REG_BASE=1000000,
-        timerCount=2,
+        timerCount=8,
         hwTriggerCount=8,
-        seqBankCount=4,
+        seqBankCount=8,
         seqAddrWidth=11,
     ))
     R.update(ospreyEVR.ospreyEVR_build(
