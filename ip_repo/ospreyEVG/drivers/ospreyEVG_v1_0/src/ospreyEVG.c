@@ -138,7 +138,7 @@ int
 ospreyEVGSetTimerEvent(int timerIndex, int evCode)
 {
     if (!evgInfo.baseAddr) return -1;
-    if ((evCode <= 0) || (evCode > 255)) return -2;
+    if ((evCode < 0) || (evCode > 255)) return -2;
     if ((timerIndex < 0) || (timerIndex >= evgInfo.timerCount)) return -3;
     Xil_Out32(evgInfo.baseAddr + REG_TIMER_CONFIG_BASE +
                                                    (timerIndex<<3) + 0, evCode);
