@@ -60,6 +60,8 @@ int ospreyEVGConfiguration(void);
 int ospreyEVGGetPPStoggle(void);
 int ospreyEVGSetSeconds(uint32_t posixSeconds);
 int ospreyEVGSetHeartbeatDivisor(uint32_t divisor);
+int ospreyEVGSetTimerControl(uint32_t control);
+int ospreyEVGGetTimerStatus(void);
 int ospreyEVGSetTimerEvent(int timerIndex, int evCode);
 int ospreyEVGSetTimerDivisor(int timerIndex, uint32_t divisor);
 int ospreyEVGSetHwTriggerEvent(int hwTriggerIndex, int edge, int evCode);

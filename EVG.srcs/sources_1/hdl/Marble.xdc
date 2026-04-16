@@ -271,10 +271,6 @@ create_clock -period 8.000 -name MGT_REFCLK0 [get_ports MGTREFCLK0_116_P]
 set_property CFGBVS VCCO [current_design]
 set_property CONFIG_VOLTAGE 3.3 [current_design]
 
-# LEDs
-set_property -dict {PACKAGE_PIN Y13 IOSTANDARD LVCMOS15} [get_ports LD16]
-set_property -dict {PACKAGE_PIN V12 IOSTANDARD LVCMOS15} [get_ports LD17]
-
 # Compress image
 set_property BITSTREAM.GENERAL.COMPRESS TRUE [current_design]
 

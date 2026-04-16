@@ -84,15 +84,6 @@ def ospreyEVR_build(EVR_REG_BASE=1100000, hwOutputCount=8):
             "sign": "unsigned",
         }
 
-
-    R["EVR:evnt:log"] = {
-        "access": "r",
-        "addr_width": 8, # 256
-        "base_addr": EVR_REG_BASE+500,
-        "data_width": 32,
-        "sign": "unsigned",
-    }
-
     return R
 
 if __name__ == "__main__":

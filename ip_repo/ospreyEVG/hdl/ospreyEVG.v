@@ -1,7 +1,7 @@
 /*
  * MIT License
  *
- * Copyright (c) 2025 Osprey DCS
+ * Copyright (c) 2026 Osprey DCS
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -26,7 +26,6 @@
  * Wrapper around tinyEVG event generator
  *
  * From Axi-Lite example without additional cycle of read latency
- *        WREADY is the write strobe.
  *        (RVALID && RREADY) is the read strobe.
  *
  * Based on the excellent tutorials by Dan Gisselquist.
@@ -49,6 +48,7 @@ module ospreyEVG_v1_0 #(
     parameter INPUT_COUNT        = 15,
     parameter DEBUG              = "false",
     ////////////////////// AXI-Lite Boilerplate Parameters ///////////////////
+    parameter C_S_AXI_FREQ_HZ    = 100000000,
     parameter C_S_AXI_ADDR_WIDTH = 7,
     parameter C_S_AXI_DATA_WIDTH = 32
     ) (
@@ -77,16 +77,26 @@ module ospreyEVG_v1_0 #(
     input  wire                          s_axi_rready,
     output wire                    [1:0] s_axi_rresp,
 
+(*MARK_DEBUG="true"*)
     input  wire                          s_axi_awvalid,
     output wire                          s_axi_awready,
+(*MARK_DEBUG="true"*)
     input  wire                    [2:0] s_axi_awprot,
+(*MARK_DEBUG="true"*)
     input  wire [C_S_AXI_ADDR_WIDTH-1:0] s_axi_awaddr,
+(*MARK_DEBUG="true"*)
     input  wire                          s_axi_wvalid,
+(*MARK_DEBUG="true"*)
     output reg                           s_axi_wready = 0,
+(*MARK_DEBUG="true"*)
     input  wire                    [3:0] s_axi_wstrb,
+(*MARK_DEBUG="true"*)
     input  wire [C_S_AXI_DATA_WIDTH-1:0] s_axi_wdata,
+(*MARK_DEBUG="true"*)
     output reg                           s_axi_bvalid = 0,
+(*MARK_DEBUG="true"*)
     input  wire                          s_axi_bready,
+(*MARK_DEBUG="true"*)
     output wire                    [1:0] s_axi_bresp);
 
 /*
@@ -115,28 +125,61 @@ begin
 end
 
 /*
- * Write side
+ * AXI write operation state machine
+ * Up to 3 EVG clocks are required to pick up values from system clock domain.
+ * Fast AXI masters might start a new transaction within this time, so we
+ * can't simply latch s_axi_wdata and use the standard, simple, AXI write
+ * transaction code.  Instead we add wait states to ensure that the EVG clock
+ * code has picked up s_axi_wdata before allowing the transaction to proceed.
  */
+
+// Scale values to avoid 32-bit overflow with high clock speeds.
+// Simulate the $ceil() function missing on some Verilogs.
+localparam WRITE_WAIT_STATE_COUNT = ((((3 * (C_S_AXI_FREQ_HZ/1000)) +
+                   (EVGCLK_FREQUENCY/1000) - 1)) / (EVGCLK_FREQUENCY/1000)) - 2;
+localparam WRITE_WAIT_STATE_COUNTER_LOAD = WRITE_WAIT_STATE_COUNT - 1;
+localparam WRITE_WAIT_STATE_COUNTER_WIDTH = ((WRITE_WAIT_STATE_COUNTER_LOAD<0) ?
+                               1 : $clog2(WRITE_WAIT_STATE_COUNTER_LOAD+1)) + 1;
+(*MARK_DEBUG="true"*)
+reg [WRITE_WAIT_STATE_COUNTER_WIDTH-1:0] writeWaitStateCounter;
+wire writeWaitStateCounterDone =
+                        writeWaitStateCounter[WRITE_WAIT_STATE_COUNTER_WIDTH-1];
+reg writeTransactionActive = 0;
+
 assign s_axi_awready = s_axi_wready;
+(*MARK_DEBUG="true"*)
+wire sysWriteStrobe = s_axi_awvalid && s_axi_wvalid && !writeTransactionActive;
+
 always @(posedge s_axi_aclk)
 begin
     if (!s_axi_aresetn) begin
         s_axi_wready <= 0;
+        s_axi_bvalid <= 0;
+    end
+    else if (writeTransactionActive) begin
+        if (s_axi_bvalid) begin
+            if (s_axi_bready) begin
+                s_axi_bvalid <= 0;
+                writeTransactionActive <= 0;
+            end
+        end
+        else if (s_axi_wready) begin
+            s_axi_wready <= 0;
+            s_axi_bvalid <= 1;
+        end
+        else if (writeWaitStateCounterDone) begin
+            s_axi_wready <= 1;
+        end
+        else begin
+            writeWaitStateCounter <= writeWaitStateCounter - 1;
+        end
     end
     else begin
-        s_axi_wready <= !s_axi_wready && s_axi_awvalid && s_axi_wvalid &&
-                                                (!s_axi_bvalid || s_axi_bready);
+        writeWaitStateCounter <= WRITE_WAIT_STATE_COUNTER_LOAD;
+        if (s_axi_awvalid && s_axi_wvalid) begin
+            writeTransactionActive <= 1;
+        end
     end
-    if (!s_axi_aresetn) begin
-        s_axi_bvalid <= 0;
-    end
-    else if (s_axi_wready) begin
-        s_axi_bvalid <= 1;
-    end
-    else if (s_axi_bready) begin
-        s_axi_bvalid <= 0;
-    end
-
 end
 //////////////////////// End of AXI-Lite Boilerplate ////////////////////////
 
@@ -186,6 +229,7 @@ localparam REG_IDX_SEQ_ADDR_CODE     = 5'd7;
 localparam REG_IDX_SEQ_GAP           = 5'd8;
 localparam REG_IDX_HW_TRIGGER_MAP    = 5'd9;
 localparam REG_IDX_DBUS_MAP          = 5'd10;
+localparam REG_IDX_TIMER_CSR         = 5'd11;
 localparam REG_IDX_LATENCY_CSR       = 5'd12;
 localparam REG_IDX_TIMER_CONFIG_BASE = 5'd16;
 
@@ -197,10 +241,12 @@ reg sysSetHeartbeatDivisorToggle = 0;
 if ((TIMER_COUNT < 2) || (TIMER_COUNT > 8)) begin
     Invalid_TIMER_COUNT();
 end
-reg [TIMER_COUNT-1:0] sysTimerConfigToggle = 0, sysTimerReloadToggle = 0;
+reg sysTimerControlToggle = 0;
+reg [TIMER_COUNT-1:0] sysTimerCodeToggle = 0, sysTimerInitValToggle = 0;
 localparam TIMERSEL_WIDTH = $clog2(TIMER_COUNT);
-wire timerReloadSel = s_axi_awaddr[2];
+wire timerInitValSel = s_axi_awaddr[2];
 wire [TIMERSEL_WIDTH-1:0] timerSel = s_axi_awaddr[3+:TIMERSEL_WIDTH];
+wire [(2*TIMER_COUNT)-1:0] timerStatus;
 
 reg [(2*HW_TRIGGER_COUNT)-1:0] sysHwUpdateToggle = 0;
 localparam HWSEL_WIDTH = $clog2(2*HW_TRIGGER_COUNT);
@@ -211,7 +257,6 @@ reg sysHwTriggerMapUpdateToggle = 0, sysDbusMapUpdateToggle = 0;
 reg [(HW_TRIGGER_COUNT*INPUTSEL_WIDTH)-1:0] hwTriggerMap = 0;
 reg [(DBUS_WIDTH*INPUTSEL_WIDTH)-1:0] dbusMap = 0;
 
-reg [31:0] sysWriteData;
 reg [31:0] sysReadData;
 assign s_axi_rdata = sysReadData;
 
@@ -252,14 +297,14 @@ begin
         /*
          * Control (write) operations
          */
-        if (s_axi_wready) begin
-        sysWriteData <= s_axi_wdata;
+        if (sysWriteStrobe) begin
         if (s_wRegIndex & REG_IDX_TIMER_CONFIG_BASE) begin
-            if (timerReloadSel) begin
-               sysTimerReloadToggle[timerSel]<=!sysTimerReloadToggle[timerSel];
+            if (timerInitValSel) begin
+               sysTimerInitValToggle[timerSel] <=
+                                               !sysTimerInitValToggle[timerSel];
             end
             else begin
-               sysTimerConfigToggle[timerSel]<=!sysTimerConfigToggle[timerSel];
+               sysTimerCodeToggle[timerSel]<=!sysTimerCodeToggle[timerSel];
             end
         end
         else case (s_wRegIndex)
@@ -278,6 +323,9 @@ begin
         end
         REG_IDX_HW_TRIGGER_MAP: begin
             sysHwTriggerMapUpdateToggle <= !sysHwTriggerMapUpdateToggle;
+        end
+        REG_IDX_TIMER_CSR: begin
+            sysTimerControlToggle <= !sysTimerControlToggle;
         end
         REG_IDX_DBUS_MAP: begin
             sysDbusMapUpdateToggle <= !sysDbusMapUpdateToggle;
@@ -299,6 +347,8 @@ begin
         REG_IDX_LATENCY_CSR:    sysReadData <= latencyStatus;
         REG_IDX_HW_TRIGGER_MAP: sysReadData <=
                    {{32-(HW_TRIGGER_COUNT*INPUTSEL_WIDTH){1'b0}}, hwTriggerMap};
+        REG_IDX_TIMER_CSR: sysReadData <=
+                                      {{32-(2*TIMER_COUNT){1'b0}}, timerStatus};
         REG_IDX_DBUS_MAP:       sysReadData <=
                               {{32-(DBUS_WIDTH*INPUTSEL_WIDTH){1'b0}}, dbusMap};
         default:                sysReadData <= 0;
@@ -316,7 +366,7 @@ ospreyEVGlatencyCheck #(
     .DEBUG(DEBUG))
   ospreyEVGlatencyCheck_i (
     .sysClk(s_axi_aclk),
-    .sysCsrStrobe(s_axi_wready && (s_wRegIndex == REG_IDX_LATENCY_CSR)),
+    .sysCsrStrobe(sysWriteStrobe && (s_wRegIndex == REG_IDX_LATENCY_CSR)),
     .sysGPIO_OUT(s_axi_wdata),
     .sysStatus(latencyStatus),
     .sampleClk(sampleClk),
@@ -331,6 +381,7 @@ ospreyEVGlatencyCheck #(
 //////////////////////////////////////////////////////////////////////////////
 //
 // Event generator (MGT transmitter) clock domain
+// The write wait-state code ensures that s_axi_wdata is stable when used.
 //
 
 /*
@@ -351,14 +402,14 @@ always @(posedge evgClk) begin
     dbusMapUpdateToggle   <= dbusMapUpdateToggle_m;
     dbusMapUpdateToggle_d <= dbusMapUpdateToggle;
     if (dbusMapUpdateToggle != dbusMapUpdateToggle_d) begin
-        dbusMap <= sysWriteData[(DBUS_WIDTH*INPUTSEL_WIDTH)-1:0];
+        dbusMap <= s_axi_wdata[(DBUS_WIDTH*INPUTSEL_WIDTH)-1:0];
     end
 
     hwTriggerMapUpdateToggle_m <= sysHwTriggerMapUpdateToggle;
     hwTriggerMapUpdateToggle   <= hwTriggerMapUpdateToggle_m;
     hwTriggerMapUpdateToggle_d <= hwTriggerMapUpdateToggle;
     if (hwTriggerMapUpdateToggle != hwTriggerMapUpdateToggle_d) begin
-        hwTriggerMap <= sysWriteData[(HW_TRIGGER_COUNT*INPUTSEL_WIDTH)-1:0];
+        hwTriggerMap <= s_axi_wdata[(HW_TRIGGER_COUNT*INPUTSEL_WIDTH)-1:0];
     end
 end
 wire [INPUT_COUNT:0] evgHwIn = {hwInputs, 1'b0};
@@ -448,8 +499,8 @@ always @(posedge evgClk) begin
     evgSetHeartbeatDivisorToggle   <= evgSetHeartbeatDivisorToggle_m;
     evgSetHeartbeatDivisorToggle_d <= evgSetHeartbeatDivisorToggle;
     if (evgSetHeartbeatDivisorToggle != evgSetHeartbeatDivisorToggle_d) begin
-        evgHeartbeatLoad <= sysWriteData - 2;
-        if (sysWriteData < 1024) begin
+        evgHeartbeatLoad <= s_axi_wdata - 2;
+        if (s_axi_wdata < 1024) begin
             evgHeartbeatEnable <= 0;
         end
         else begin
@@ -486,9 +537,9 @@ ospreyEVGsequencer #(
     .DEBUG(DEBUG))
   ospreyEVGsequencer_i (
     .sysClk(s_axi_aclk),
-    .sysCsrStrobe(s_axi_wready && (s_wRegIndex==REG_IDX_CSR)),
-    .sysAddressCodeStrobe(s_axi_wready && (s_wRegIndex==REG_IDX_SEQ_ADDR_CODE)),
-    .sysGapStrobe(s_axi_wready && (s_wRegIndex==REG_IDX_SEQ_GAP)),
+    .sysCsrStrobe(sysWriteStrobe && (s_wRegIndex==REG_IDX_CSR)),
+    .sysAddressCodeStrobe(sysWriteStrobe&&(s_wRegIndex==REG_IDX_SEQ_ADDR_CODE)),
+    .sysGapStrobe(sysWriteStrobe && (s_wRegIndex==REG_IDX_SEQ_GAP)),
     .sysGPIO_OUT(s_axi_wdata),
     .sysStatus(seqStatus),
     .sysAddressCodeRbk(seqAddrCodeRbk),
@@ -502,43 +553,76 @@ ospreyEVGsequencer #(
 /*
  * Timer-initated events
  */
+localparam TIMER_CMD_NOP    = 2'b00;
+localparam TIMER_CMD_STOP   = 2'b01;
+localparam TIMER_CMD_RESUME = 2'b10;
+localparam TIMER_CMD_START  = 2'b11;
+(*ASYNC_REG="true"*) reg timerControlToggle_m = 0;
+(*MARK_DEBUG=DEBUG*) reg timerControlToggle = 0, timerControlToggle_d = 0;
+always @(posedge evgClk) begin
+    timerControlToggle_m <= sysTimerControlToggle;
+    timerControlToggle   <= timerControlToggle_m;
+    timerControlToggle_d <= timerControlToggle;
+end
 (*MARK_DEBUG=DEBUG*) reg  [TIMER_COUNT-1:0] timerTriggerEnables = 0;
 (*MARK_DEBUG=DEBUG*) wire [TIMER_COUNT-1:0] timerTriggerStrobes;
 (*MARK_DEBUG=DEBUG*) reg  [(TIMER_COUNT*8)-1:0] timerEventCodes = 0;
 generate
 for (i = 0 ; i < TIMER_COUNT ; i = i + 1) begin : timerRequester
-    (*ASYNC_REG="true"*) reg timerConfigToggle_m = 0;
-(*MARK_DEBUG=DEBUG*)
-    reg timerConfigToggle = 0, timerConfigToggle_d;
-    (*ASYNC_REG="true"*) reg timerReloadToggle_m = 0;
-(*MARK_DEBUG=DEBUG*)
-    reg timerReloadToggle = 0, timerReloadToggle_d;
-    reg [31:0] timerReload = ~0;
-(*MARK_DEBUG=DEBUG*)
-    reg [32:0] timer = 0;
+    (*MARK_DEBUG=DEBUG*) wire[1:0] timerCmd = s_axi_wdata[i*2+:2];
+    (*ASYNC_REG="true"*) reg timerCodeToggle_m = 0;
+    (*MARK_DEBUG=DEBUG*) reg timerCodeToggle = 0, timerCodeToggle_d;
+    (*ASYNC_REG="true"*) reg timerInitValToggle_m = 0;
+    (*MARK_DEBUG=DEBUG*) reg timerInitValToggle = 0, timerInitValToggle_d;
+    reg [31:0] timerInitVal = ~0;
+    (*MARK_DEBUG=DEBUG*) reg [32:0] timer = 0;
     wire timerDone = timer[32];
     always @(posedge evgClk) begin
-        timerConfigToggle_m <= sysTimerConfigToggle[i];
-        timerConfigToggle   <= timerConfigToggle_m;
-        timerConfigToggle_d <= timerConfigToggle;
-        if (timerConfigToggle != timerConfigToggle_d) begin
-            timerTriggerEnables[i] <= (sysWriteData[7:0] != 0);
-            timerEventCodes[i*8+:8] <= sysWriteData[7:0];
+        timerCodeToggle_m <= sysTimerCodeToggle[i];
+        timerCodeToggle   <= timerCodeToggle_m;
+        timerCodeToggle_d <= timerCodeToggle;
+        if (timerCodeToggle != timerCodeToggle_d) begin
+            timerEventCodes[i*8+:8] <= s_axi_wdata[7:0];
         end
-        timerReloadToggle_m <= sysTimerReloadToggle[i];
-        timerReloadToggle   <= timerReloadToggle_m;
-        timerReloadToggle_d <= timerReloadToggle;
-        if (timerReloadToggle != timerReloadToggle_d) begin
-            timerReload <= sysWriteData;
+        timerInitValToggle_m <= sysTimerInitValToggle[i];
+        timerInitValToggle   <= timerInitValToggle_m;
+        timerInitValToggle_d <= timerInitValToggle;
+        if (timerInitValToggle != timerInitValToggle_d) begin
+            timerInitVal <= s_axi_wdata;
+            if (!timerTriggerEnables[i]) begin
+                // Set timer so an initial 'resume' behaves expectedly.
+                timer <= {1'b0, s_axi_wdata};
+            end
         end
-        if (!timerTriggerEnables[i] || timerDone) begin
-            timer <= {1'b0, timerReload};
+        if ((timerControlToggle != timerControlToggle_d)
+         && (timerCmd != TIMER_CMD_NOP)) begin
+            case (timerCmd)
+            TIMER_CMD_STOP: begin
+                timerTriggerEnables[i] <= 0;
+                if (timerDone) begin
+                    timer <= {1'b0, timerInitVal};
+                end
+            end
+            TIMER_CMD_RESUME: begin
+                timerTriggerEnables[i] <= 1;
+            end
+            TIMER_CMD_START: begin
+                timerTriggerEnables[i] <= 1;
+                timer <= {1'b0, timerInitVal};
+            end
+            endcase
         end
-        else begin
-            timer <= timer - 1;
+        else if (timerTriggerEnables[i]) begin
+            if (timerDone) begin
+                timer <= {1'b0, timerInitVal};
+            end
+            else begin
+                timer <= timer - 1;
+            end
         end
     end
     assign timerTriggerStrobes[i] = timerDone;
+    assign timerStatus[i*2+:2] = {timerTriggerEnables[i], 1'b0};
 end
 endgenerate
 
@@ -568,8 +652,8 @@ for (i = 0 ; i < HW_TRIGGER_COUNT ; i = i + 1) begin : hwRequester
             hwUpdateToggle   <= hwUpdateToggle_m;
             hwUpdateToggle_d <= hwUpdateToggle;
             if (hwUpdateToggle != hwUpdateToggle_d) begin
-                hwTriggerEnables[(i*2)+j] <= (sysWriteData[7:0] != 0);
-                hwEventCodes[((i*2)+j)*8+:8] <= sysWriteData[7:0];
+                hwTriggerEnables[(i*2)+j] <= (s_axi_wdata[7:0] != 0);
+                hwEventCodes[((i*2)+j)*8+:8] <= s_axi_wdata[7:0];
             end
         end
     end
@@ -588,7 +672,7 @@ always @(posedge evgClk) begin
     swTriggerToggle   <= swTriggerToggle_m;
     swTriggerToggle_d <= swTriggerToggle;
     if (swTriggerToggle != swTriggerToggle_d) begin
-        swEventCode <= sysWriteData[7:0];
+        swEventCode <= s_axi_wdata[7:0];
         swTriggerStrobe <= 1;
     end
     else begin

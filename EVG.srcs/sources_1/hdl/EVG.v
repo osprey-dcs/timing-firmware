@@ -93,9 +93,6 @@ module EVG #(
     output wire PMOD2_6,
     output wire PMOD2_7,
 
-    output wire LD16,
-    output wire LD17,
-
     input  wire        FMC1_PPS,
     input  wire [15:1] FMC1_DIN
     );
@@ -106,7 +103,6 @@ localparam MGT_COMMA_ALIGN_BYTE = 1;
 ///////////////////////////////////////////////////////////////////////////////
 // Static outputs
 assign VCXO_EN = 1'b1;
-assign LD17 = 1'b0;
 
 ///////////////////////////////////////////////////////////////////////////////
 // Clocks
@@ -289,7 +285,6 @@ mgtWrapper #(
     .mgtTxCharIsK({CFG_MGT_COUNT{evgTxCharIsK}}));
 
 assign GPIO_IN[GPIO_IDX_LINK_STATUS] = {{32-CFG_MGT_COUNT{1'b0}}, mgtRxLinkUp};
-assign LD16 = mgtRxLinkUp[0]; // EVR link status
 
 ///////////////////////////////////////////////////////////////////////////////
 // Merge MPS fault status
