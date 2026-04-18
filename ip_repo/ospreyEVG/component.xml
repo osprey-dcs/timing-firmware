@@ -270,7 +270,7 @@
         <spirit:parameters>
           <spirit:parameter>
             <spirit:name>viewChecksum</spirit:name>
-            <spirit:value>af901c13</spirit:value>
+            <spirit:value>face72f5</spirit:value>
           </spirit:parameter>
         </spirit:parameters>
       </spirit:view>
@@ -286,7 +286,7 @@
         <spirit:parameters>
           <spirit:parameter>
             <spirit:name>viewChecksum</spirit:name>
-            <spirit:value>231ac41d</spirit:value>
+            <spirit:value>c6a18d2c</spirit:value>
           </spirit:parameter>
         </spirit:parameters>
       </spirit:view>
@@ -300,7 +300,7 @@
         <spirit:parameters>
           <spirit:parameter>
             <spirit:name>viewChecksum</spirit:name>
-            <spirit:value>6867a9ce</spirit:value>
+            <spirit:value>245dd0cc</spirit:value>
           </spirit:parameter>
         </spirit:parameters>
       </spirit:view>
@@ -314,7 +314,7 @@
         <spirit:parameters>
           <spirit:parameter>
             <spirit:name>viewChecksum</spirit:name>
-            <spirit:value>ebff3e77</spirit:value>
+            <spirit:value>2b3552f1</spirit:value>
           </spirit:parameter>
         </spirit:parameters>
       </spirit:view>
@@ -863,6 +863,11 @@
         <spirit:displayName>Hw Trigger Count</spirit:displayName>
         <spirit:value spirit:format="long" spirit:resolve="generated" spirit:id="MODELPARAM_VALUE.HW_TRIGGER_COUNT">8</spirit:value>
       </spirit:modelParameter>
+      <spirit:modelParameter spirit:dataType="integer">
+        <spirit:name>C_S_AXI_FREQ_HZ</spirit:name>
+        <spirit:displayName>C S Axi Freq Hz</spirit:displayName>
+        <spirit:value spirit:format="long" spirit:resolve="generated" spirit:id="MODELPARAM_VALUE.C_S_AXI_FREQ_HZ">100000000</spirit:value>
+      </spirit:modelParameter>
     </spirit:modelParameters>
   </spirit:model>
   <spirit:choices>
@@ -902,7 +907,7 @@
       <spirit:file>
         <spirit:name>hdl/ospreyEVG.v</spirit:name>
         <spirit:fileType>verilogSource</spirit:fileType>
-        <spirit:userFileType>CHECKSUM_7856f7bd</spirit:userFileType>
+        <spirit:userFileType>CHECKSUM_4815b71a</spirit:userFileType>
       </spirit:file>
     </spirit:fileSet>
     <spirit:fileSet>
@@ -961,7 +966,7 @@
       <spirit:file>
         <spirit:name>xgui/ospreyEVG_v1_0.tcl</spirit:name>
         <spirit:fileType>tclSource</spirit:fileType>
-        <spirit:userFileType>CHECKSUM_ebff3e77</spirit:userFileType>
+        <spirit:userFileType>CHECKSUM_2b3552f1</spirit:userFileType>
         <spirit:userFileType>XGUI_VERSION_2</spirit:userFileType>
       </spirit:file>
     </spirit:fileSet>
@@ -1069,6 +1074,11 @@
       <spirit:displayName>Hardware Trigger Count</spirit:displayName>
       <spirit:value spirit:format="long" spirit:resolve="user" spirit:id="PARAM_VALUE.HW_TRIGGER_COUNT" spirit:minimum="2" spirit:maximum="8" spirit:rangeType="long">8</spirit:value>
     </spirit:parameter>
+    <spirit:parameter>
+      <spirit:name>C_S_AXI_FREQ_HZ</spirit:name>
+      <spirit:displayName>C S Axi Freq Hz</spirit:displayName>
+      <spirit:value spirit:format="long" spirit:resolve="user" spirit:id="PARAM_VALUE.C_S_AXI_FREQ_HZ">100000000</spirit:value>
+    </spirit:parameter>
   </spirit:parameters>
   <spirit:vendorExtensions>
     <xilinx:coreExtensions>
@@ -1095,20 +1105,20 @@
       </xilinx:taxonomies>
       <xilinx:displayName>ospreyEVG</xilinx:displayName>
       <xilinx:vendorDisplayName>Osprey DCS</xilinx:vendorDisplayName>
-      <xilinx:coreRevision>25</xilinx:coreRevision>
+      <xilinx:coreRevision>26</xilinx:coreRevision>
       <xilinx:upgrades>
         <xilinx:canUpgradeFrom>user.org:user:ospreyEVG:1.0</xilinx:canUpgradeFrom>
       </xilinx:upgrades>
-      <xilinx:coreCreationDateTime>2025-10-07T22:58:55Z</xilinx:coreCreationDateTime>
+      <xilinx:coreCreationDateTime>2026-04-14T18:06:54Z</xilinx:coreCreationDateTime>
     </xilinx:coreExtensions>
     <xilinx:packagingInfo>
       <xilinx:xilinxVersion>2023.1</xilinx:xilinxVersion>
       <xilinx:checksum xilinx:scope="busInterfaces" xilinx:value="f2bad0c9"/>
       <xilinx:checksum xilinx:scope="memoryMaps" xilinx:value="c30980da"/>
-      <xilinx:checksum xilinx:scope="fileGroups" xilinx:value="10ebeb12"/>
+      <xilinx:checksum xilinx:scope="fileGroups" xilinx:value="ba83e2c9"/>
       <xilinx:checksum xilinx:scope="ports" xilinx:value="b8550923"/>
-      <xilinx:checksum xilinx:scope="hdlParameters" xilinx:value="0d6895e3"/>
-      <xilinx:checksum xilinx:scope="parameters" xilinx:value="316bc5af"/>
+      <xilinx:checksum xilinx:scope="hdlParameters" xilinx:value="96d1fea0"/>
+      <xilinx:checksum xilinx:scope="parameters" xilinx:value="ec31a08c"/>
       <xilinx:targetDRCs>
         <xilinx:targetDRC xilinx:tool="ipi">
           <xilinx:targetDRCOption xilinx:name="ignore_freq_hz" xilinx:value="true"/>

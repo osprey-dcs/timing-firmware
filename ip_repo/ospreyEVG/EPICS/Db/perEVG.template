@@ -2,8 +2,36 @@ record(longin, "$(P)EVG:status") {
     field(DESC, "EVG status register")
     field(DTYP, "FEED Register Read")
     field(INP, "@name=$(NAME) reg=EVG:status")
-    field(SCAN, "2 second")
+    field(SCAN, ".5 second")
 }
+record(bi, "$(P)EVG:PPS:Vld") {
+    field(DTYP, "FEED Register Read")
+    field(INP, "@name=$(NAME) reg=EVG:status")
+    field(SCAN, "I/O Intr")
+    field(MASK, "0x1")
+    field(ZNAM, "No PPS")
+    field(ZSV , "MAJOR")
+    field(ONAM, "Valid")
+}
+record(bi, "$(P)EVG:TS:Vld") {
+    field(DTYP, "FEED Register Read")
+    field(INP, "@name=$(NAME) reg=EVG:status")
+    field(SCAN, "I/O Intr")
+    field(MASK, "0x2")
+    field(ZNAM, "No Time")
+    field(ZSV , "MAJOR")
+    field(ONAM, "Time OK")
+}
+record(bi, "$(P)EVG:PPS:Tgl") {
+    field(DESC, "PPS activity toggle")
+    field(DTYP, "FEED Register Read")
+    field(INP, "@name=$(NAME) reg=EVG:status")
+    field(SCAN, "I/O Intr")
+    field(MASK, "0x4")
+    field(ZNAM, "+")
+    field(ONAM, "X")
+}
+
 record(longin, "$(P)EVG:onConnect_") {
     field(DESC, "Process records on FPGA connection")
     field(DTYP, "FEED On Connect")
@@ -15,7 +43,34 @@ record(longin, "$(P)EVG:config") {
     field(DESC, "EVG sequencer configuration")
     field(DTYP, "FEED Register Read")
     field(INP, "@name=$(NAME) reg=EVG:config")
+    field(FLNK, "$(P)EVG:SEQ:disarm:I_")
 }
+# disarm and cancel all sequencers
+record(longout, "$(P)EVG:SEQ:disarm:I_") {
+    field(DTYP, "FEED Register Write")
+    field(OUT,  "@name=$(NAME) reg=EVG:SEQ:disarm")
+    field(VAL, "0xffff") # disarm all
+    field(FLNK, "$(P)EVG:SEQ:cancel:I_")
+}
+record(longout, "$(P)EVG:SEQ:cancel:I_") {
+    field(DESC, "Immediately cancel active sequence")
+    field(DTYP, "FEED Register Write")
+    field(OUT,  "@name=$(NAME) reg=EVG:SEQ:cancel")
+    field(VAL, "0xffff") # abort running all
+    field(FLNK, "$(P)EVG:init_")
+}
+# (re)initialize sub-units
+record(fanout, "$(P)EVG:init_") {
+    field(LNK1, "$(P)EVG:hbDivisor")
+    field(LNK2, "$(P)EVG:MAP:hwTrigger")
+    field(LNK3, "$(P)EVG:MAP:dbus")
+    field(FLNK, "$(P)EVG:onConn2_")
+}
+record(event, "$(P)EVG:onConn2_") {
+    field(VAL, "$(NAME):afterDisable") # --> to perEVG*.template
+}
+
+
 record(longout, "$(P)EVG:SEQ:arm") {
     field(DESC, "Bitmap of sequencer(s) to arm")
     field(DTYP, "FEED Register Write")
@@ -47,6 +102,7 @@ record(longout, "$(P)EVG:hbDivisor") {
     field(DESC, "Heartbeat event divisor")
     field(DTYP, "FEED Register Write")
     field(OUT,  "@name=$(NAME) reg=EVG:hbDivisor")
+    info(autosaveFields_pass0, "VAL")
 }
 record(longout, "$(P)EVG:swEvent") {
     field(DESC, "Event to send")
@@ -56,6 +112,7 @@ record(longout, "$(P)EVG:swEvent") {
     field(HOPR, "255")
     field(DRVL, "0")
     field(DRVH, "255")
+    field(VAL , "0")
 }
 record(longout, "$(P)EVG:SEQ:cancel") {
     field(DESC, "Immediately cancel active sequence")
@@ -66,9 +123,23 @@ record(longout, "$(P)EVG:MAP:hwTrigger") {
     field(DESC, "Map hardware inputs to triggers")
     field(DTYP, "FEED Register Write")
     field(OUT,  "@name=$(NAME) reg=EVG:MAP:hwTrig")
+    field(VAL, "0x87654321") # 1 to 1 mapping
+    info(autosaveFields_pass0, "VAL")
 }
 record(longout, "$(P)EVG:MAP:dbus") {
     field(DESC, "Map hardware inputs to distributed bus")
     field(DTYP, "FEED Register Write")
     field(OUT,  "@name=$(NAME) reg=EVG:MAP:dbus")
+    info(autosaveFields_pass0, "VAL")
+}
+record(longout, "$(P)EVG:TMR:control") {
+    field(DESC, "Control timers")
+    field(DTYP, "FEED Register Write")
+    field(OUT,  "@name=$(NAME) reg=EVG:TMR:control")
+    field("$(P)EVG:TMR:status")
+}
+record(longin, "$(P)EVG:TMR:status") {
+    field(DESC, "Timer status")
+    field(DTYP, "FEED Register Read")
+    field(INP, "@name=$(NAME) reg=EVG:TMR:status")
 }

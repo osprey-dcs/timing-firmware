@@ -1,0 +1,97 @@
+[*]
+[*] GTKWave Analyzer v3.3.121 (w)1999-2024 BSI
+[*] Sat Apr  4 16:07:36 2026
+[*]
+[dumpfile] "ospreyEVG_tb_axi0.fst"
+[dumpfile_mtime] "Sat Apr  4 04:59:39 2026"
+[dumpfile_size] 11497
+[savefile] "ospreyEVG_tb_axi0.gtkw"
+[timestart] 0
+[size] 1219 1101
+[pos] -1 -1
+*-4.616850 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] test.
+[treeopen] test.evg.
+[sst_width] 232
+[signals_width] 255
+[sst_expanded] 1
+[sst_vpaned_height] 331
+@420
+test.currentCase
+@28
+test.ACLK
+test.ARESETn
+@200
+-AR
+@28
+test.ARVALID
+test.ARREADY
+@22
+test.ARADDR[11:0]
+@200
+-R
+@28
+test.RVALID
+test.RREADY
+@22
+test.RDATA[31:0]
+@200
+-AW
+@28
+test.AWVALID
+test.AWREADY
+@22
+test.AWADDR[11:0]
+@200
+-W
+@28
+test.WVALID
+test.WREADY
+@22
+test.WDATA[31:0]
+@200
+-B
+@28
+test.BVALID
+test.BREADY
+test.BRESP[1:0]
+@200
+-hwInput
+@22
+test.hwInputs_a[7:0]
+test.evg.hwTriggerMap[31:0]
+test.evg.evgHwTriggerRising[7:0]
+test.evg.evgHwTriggerFalling[7:0]
+@200
+-sysTimer
+@28
+test.evgClk
+test.evg.sysTimerConfigToggle[1:0]
+test.evg.timerTriggerEnables[1:0]
+@22
+test.evg.timerEventCodes[15:0]
+@28
+test.evg.sysTimerReloadToggle[1:0]
+@22
+test.evg.timerRequester[0].timerReload[31:0]
+test.evg.timerRequester[0].timer[32:0]
+@200
+-SEQ
+@28
+test.evg.ospreyEVGsequencer_i.evgArm[1:0]
+test.evg.ospreyEVGsequencer_i.evgDisarm[1:0]
+test.evg.ospreyEVGsequencer_i.evgArmed[1:0]
+test.evg.ospreyEVGsequencer_i.evgTriggered[1:0]
+@29
+test.evg.ospreyEVGsequencer_i.evgReadEnable
+@22
+test.evg.ospreyEVGsequencer_i.evgDpramQcode[7:0]
+test.evg.ospreyEVGsequencer_i.evgDpramQgap[32:0]
+@200
+-EVT
+@28
+test.evg.eventRequest
+@22
+test.evg.eventCode[7:0]
+[pattern_trace] 1
+[pattern_trace] 0
