@@ -106,20 +106,6 @@ def ospreyEVG_build(EVG_REG_BASE=1000000,
             "data_width": 32,
             "sign": "unsigned",
         },
-        "EVG:TMR:control": {
-            "access": "w",
-            "addr_width": 0,
-            "base_addr": EVG_REG_BASE + 10,
-            "data_width": 32,
-            "sign": "unsigned",
-        },
-        "EVG:TMR:status": {
-            "access": "r",
-            "addr_width": 0,
-            "base_addr": EVG_REG_BASE + 10,
-            "data_width": 32,
-            "sign": "unsigned",
-        },
     }
 
     for addr, tmr in enumerate(range(1, timerCount+1), EVG_REG_BASE+100):

@@ -28,6 +28,7 @@
  */
 #include <stdio.h>
 #include <xil_io.h>
+#include <xparameters.h>
 #include "ospreyEVG.h"
 
 #define REG_CSR                (0*4)
@@ -41,7 +42,6 @@
 #define REG_SEQ_GAP            (8*4)
 #define REG_HW_TRIGGER_MAP     (9*4)
 #define REG_DBUS_MAP           (10*4)
-#define REG_TIMER_CSR          (11*4)
 #define REG_LATENCY_STATUS     (12*4)
 #define REG_TIMER_CONFIG_BASE  (16*4)
 
@@ -49,26 +49,15 @@
 #define CSR_W_APPLY_SOFT_TRIGGER        0x40000000
 #define CSR_W_CONFIGURE_HARD_TRIGGER    0x20000000
 
-#define TIMER_CMD_NOP    0
-#define TIMER_CMD_STOP   1
-#define TIMER_CMD_RESUME 2
-#define TIMER_CMD_START  3
-
 #define SEQ_ADDR_CODE_W_WRITE_ENABLE        0x80000000
 
-#define TIMER_CAPACITY  8
-struct timerConfig {
-    int     code;
-    int32_t divisor;
-};
 struct evgInfo {
-    uint32_t            baseAddr;
-    char                hwTriggerCount;
-    char                timerCount;
-    char                bankCount;
-    char                seqAddrWidth;
-    char                rxCount;
-    struct timerConfig  timers[TIMER_CAPACITY];
+    uint32_t baseAddr;
+    char     hwTriggerCount;
+    char     timerCount;
+    char     bankCount;
+    char     seqAddrWidth;
+    char     rxCount;
 };
 static struct evgInfo evgInfo;
 
@@ -90,9 +79,6 @@ ospreyEVGInit(uint32_t baseAddress)
                                          OSPREY_EVG_CONFIG_SEQ_ADDR_WIDTH_SHIFT;
     evgInfo.rxCount = (config & OSPREY_EVG_CONFIG_RX_COUNT_MASK) >>
                                                OSPREY_EVG_CONFIG_RX_COUNT_SHIFT;
-    if (evgInfo.timerCount > TIMER_CAPACITY) {
-        evgInfo.timerCount = TIMER_CAPACITY;
-    }
     /*
      * Fill with 'end-of-sequence' codes for the benefit
      * of clients that write unterminated sequences.
@@ -149,40 +135,11 @@ ospreyEVGSetHeartbeatDivisor(uint32_t divisor)
 }
 
 int
-ospreyEVGSetTimerControl(uint32_t control)
-{
-    int i;
-    if (!evgInfo.baseAddr) return -1;
-    for (i = 0 ; i <  evgInfo.timerCount ; i++) {
-        int cmd = (control >> (2*i)) & 0x3;
-        /*
-         * Reject attempts to (re)start unreasonably-configured timers
-         */
-        if ((cmd == TIMER_CMD_RESUME) || (cmd == TIMER_CMD_START)) {
-            if ((evgInfo.timers[i].code == 0)
-             || (evgInfo.timers[i].divisor < 40)) {
-                control &= ~(0x3 << (2*i));
-            }
-        }
-    }
-    Xil_Out32(evgInfo.baseAddr + REG_TIMER_CSR, control);
-    return 0;
-}
-
-int
-ospreyEVGGetTimerStatus(void)
-{
-    if (!evgInfo.baseAddr) return -1;
-    return Xil_In32(evgInfo.baseAddr + REG_TIMER_CSR);
-}
-
-int
 ospreyEVGSetTimerEvent(int timerIndex, int evCode)
 {
     if (!evgInfo.baseAddr) return -1;
-    if ((evCode <= 0) || (evCode > 255)) return -2;
+    if ((evCode < 0) || (evCode > 255)) return -2;
     if ((timerIndex < 0) || (timerIndex >= evgInfo.timerCount)) return -3;
-    evgInfo.timers[timerIndex].code = evCode;
     Xil_Out32(evgInfo.baseAddr + REG_TIMER_CONFIG_BASE +
                                                    (timerIndex<<3) + 0, evCode);
     return 0;
@@ -192,9 +149,8 @@ int
 ospreyEVGSetTimerDivisor(int timerIndex, uint32_t divisor)
 {
     if (!evgInfo.baseAddr) return -1;
-    if (divisor <= 40) return -2;
     if ((timerIndex < 0) || (timerIndex >= evgInfo.timerCount)) return -3;
-    evgInfo.timers[timerIndex].divisor = divisor;
+    if (divisor <= 1) divisor = ~(uint32_t)0;
     Xil_Out32(evgInfo.baseAddr + REG_TIMER_CONFIG_BASE +
                                               (timerIndex<<3) + 4, divisor - 2);
     return 0;
@@ -376,7 +332,6 @@ ospreyEVGGetDbusInputMap(void)
 #define F_REG_SEQ_CANCEL                  7
 #define F_REG_HW_TRIGGER_INPUT_MAP        8
 #define F_REG_DBUS_INPUT_MAP              9
-#define F_REG_TIMER_CSR                   10
 #define F_REG_TIMER_EVENT_BASE            100
 #define F_REG_TIMER_DIVISOR_BASE          120
 #define F_REG_HWTRIGGER_EVENT_BASE        140
@@ -401,7 +356,6 @@ ospreyEVG_FEEDwrite(int offset, uint32_t value)
     case F_REG_HW_TRIGGER_INPUT_MAP:
                                  ospreyEVGSetHwTriggerInputMap(value); return 0;
     case F_REG_DBUS_INPUT_MAP:   ospreyEVGSetDbusInputMap(value);      return 0;
-    case F_REG_TIMER_CSR:        ospreyEVGSetTimerControl(value);      return 0;
     }
     idx = offset - F_REG_HWTRIGGER_EVENT_BASE;
     if ((idx >= 0) && (idx < (2*evgInfo.hwTriggerCount))) {
@@ -452,7 +406,6 @@ ospreyEVG_FEEDread(int offset)
     case F_REG_CONFIG:               return ospreyEVGConfiguration();
     case F_REG_HW_TRIGGER_INPUT_MAP: return ospreyEVGGetHwTriggerInputMap();
     case F_REG_DBUS_INPUT_MAP:       return ospreyEVGGetDbusInputMap();
-    case F_REG_TIMER_CSR:            return ospreyEVGGetTimerStatus();
     }
     idx = offset - F_REG_LATENCY_READBACK_BASE;
     if ((idx >= 0) && (idx < 32)) {

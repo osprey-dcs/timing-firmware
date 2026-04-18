@@ -43,10 +43,10 @@
       "hwicap": "",
       "ospreyUDP": "",
       "latencyMMCM": "",
+      "ospreyEVG": "",
       "evrMMCM": "",
-      "evrTristateControl": "",
       "ospreyEVR": "",
-      "ospreyEVG": ""
+      "evrTristateControl": ""
     },
     "interface_ports": {
       "DDR_REF": {
@@ -1979,6 +1979,32 @@
           }
         }
       },
+      "ospreyEVG": {
+        "vlnv": "ospreydcs.com:user:ospreyEVG:1.0",
+        "xci_name": "bd_ospreyEVG_0_3",
+        "xci_path": "ip/bd_ospreyEVG_0_3/bd_ospreyEVG_0_3.xci",
+        "inst_hier_path": "ospreyEVG",
+        "parameters": {
+          "DEBUG": {
+            "value": "true"
+          },
+          "EVGCLK_FREQUENCY": {
+            "value": "125000000"
+          },
+          "RX_COUNT": {
+            "value": "8"
+          },
+          "SEQRAM_ADDR_WIDTH": {
+            "value": "12"
+          },
+          "SEQRAM_BANK_COUNT": {
+            "value": "8"
+          },
+          "TIMER_COUNT": {
+            "value": "8"
+          }
+        }
+      },
       "evrMMCM": {
         "vlnv": "xilinx.com:ip:clk_wiz:6.0",
         "xci_name": "bd_clk_wiz_0_0",
@@ -2017,20 +2043,6 @@
           }
         }
       },
-      "evrTristateControl": {
-        "vlnv": "xilinx.com:ip:xlconstant:1.1",
-        "xci_name": "bd_xlconstant_0_0",
-        "xci_path": "ip/bd_xlconstant_0_0/bd_xlconstant_0_0.xci",
-        "inst_hier_path": "evrTristateControl",
-        "parameters": {
-          "CONST_VAL": {
-            "value": "0"
-          },
-          "CONST_WIDTH": {
-            "value": "8"
-          }
-        }
-      },
       "ospreyEVR": {
         "vlnv": "ospreydcs.com:osprey:ospreyEVR:2.2",
         "xci_name": "bd_ospreyEVR_0_0",
@@ -2047,32 +2059,20 @@
             "value": "8"
           },
           "SERDES_FACTOR": {
-            "value": "8"
+            "value": "1"
           }
         }
       },
-      "ospreyEVG": {
-        "vlnv": "ospreydcs.com:user:ospreyEVG:1.0",
-        "xci_name": "bd_ospreyEVG_0_3",
-        "xci_path": "ip/bd_ospreyEVG_0_3/bd_ospreyEVG_0_3.xci",
-        "inst_hier_path": "ospreyEVG",
+      "evrTristateControl": {
+        "vlnv": "xilinx.com:ip:xlconstant:1.1",
+        "xci_name": "bd_xlconstant_0_0",
+        "xci_path": "ip/bd_xlconstant_0_0/bd_xlconstant_0_0.xci",
+        "inst_hier_path": "evrTristateControl",
         "parameters": {
-          "DEBUG": {
-            "value": "false"
+          "CONST_VAL": {
+            "value": "0"
           },
-          "EVGCLK_FREQUENCY": {
-            "value": "125000000"
-          },
-          "RX_COUNT": {
-            "value": "8"
-          },
-          "SEQRAM_ADDR_WIDTH": {
-            "value": "12"
-          },
-          "SEQRAM_BANK_COUNT": {
-            "value": "8"
-          },
-          "TIMER_COUNT": {
+          "CONST_WIDTH": {
             "value": "8"
           }
         }
@@ -2374,8 +2374,8 @@
           "hwicap/s_axi_aclk",
           "hwicap/icap_clk",
           "ospreyUDP/s_axi_lite_aclk",
-          "ospreyEVR/s_axi_aclk",
-          "ospreyEVG/s_axi_aclk"
+          "ospreyEVG/s_axi_aclk",
+          "ospreyEVR/s_axi_aclk"
         ]
       },
       "ospreyEVG_0_evgTxCharIsK": {
@@ -2453,8 +2453,8 @@
           "microblaze_0_axi_periph/M08_ARESETN",
           "hwicap/s_axi_aresetn",
           "ospreyUDP/s_axi_lite_aresetn",
-          "ospreyEVR/s_axi_aresetn",
-          "ospreyEVG/s_axi_aresetn"
+          "ospreyEVG/s_axi_aresetn",
+          "ospreyEVR/s_axi_aresetn"
         ]
       }
     },
