@@ -36,6 +36,7 @@
 #include "mgt.h"
 #include "mgtClkSwitch.h"
 #include "mmcMailbox.h"
+#include "ospreyRFIN.h"
 #include "ntpTime.h"
 #include "platform.h"
 #include "softwareBuildDate.h"
@@ -96,6 +97,7 @@ main(void)
     consoleInit();
     iicFPGAinit();
     ioSelectInit();
+    ospreyRFINinit();
     mgtClkSwitchInit();
     mgtClkSwitchConnectOutputToInput(MGT_CLK_SWITCH_OUTPUT_MGTCLK0,
                                      systemParameters.mgtClkSwitch0);

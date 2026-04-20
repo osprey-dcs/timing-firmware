@@ -47,7 +47,7 @@ ioSelectShow(void)
     int status = ioSelectStatus();
     if (status & CSR_RW_IS_EVG) {
         printf("Operating as Event Generator.\n");
-        printf("Obtaining PPS and hardware inputs from %s.\n;",
+        printf("Obtaining PPS and hardware inputs from %s.\n",
                     (status & CSR_RW_FMC_IS_PRESENT) ? "FMC RF-IN" : "PMOD-IO");
     }
 }

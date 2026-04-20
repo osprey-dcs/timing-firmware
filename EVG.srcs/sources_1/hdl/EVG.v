@@ -97,7 +97,15 @@ module EVG #(
     output wire LD17,
 
     input  wire        FMC1_PPS,
-    input  wire [15:1] FMC1_DIN
+    input  wire [15:1] FMC1_DIN,
+    output wire        FMC1_LMK01801_LE,
+    output wire        FMC1_LMK01801_CLK,
+    output wire        FMC1_LMK01801_DATA,
+    output wire        FMC1_ADS7253_CLK,
+    output wire        FMC1_ADS7253_CSB,
+    output wire        FMC1_ADS7253_DIN,
+    input  wire        FMC1_ADS7253_DOUTA,
+    input  wire        FMC1_ADS7253_DOUTB
     );
 
 localparam MGT_DATA_WIDTH       = 16;
@@ -127,6 +135,24 @@ endgenerate
 
 `include "firmwareBuildDate.v"
 assign GPIO_IN[GPIO_IDX_FIRMWARE_DATE] = FIRMWARE_BUILD_DATE;
+
+///////////////////////////////////////////////////////////////////////////////
+// Ospref RF-IN FMC module
+ospreyRFIN #(
+    .DEBUG("false"))
+  ospreyRFIN (
+    .sysClk(sysClk),
+    .csrStrobe(GPIO_STROBES[GPIO_IDX_RFIN_CONTROL]),
+    .GPIO_OUT(GPIO_OUT),
+    .status(GPIO_IN[GPIO_IDX_RFIN_CONTROL]),
+    .RFIN_LMK01801_LE(FMC1_LMK01801_LE),
+    .RFIN_LMK01801_CLK(FMC1_LMK01801_CLK),
+    .RFIN_LMK01801_DATA(FMC1_LMK01801_DATA),
+    .RFIN_ADS7253_CLK(FMC1_ADS7253_CLK),
+    .RFIN_ADS7253_CSB(FMC1_ADS7253_CSB),
+    .RFIN_ADS7253_DIN(FMC1_ADS7253_DIN),
+    .RFIN_ADS7253_DOUTA(FMC1_ADS7253_DOUTA),
+    .RFIN_ADS7253_DOUTB(FMC1_ADS7253_DOUTB));
 
 ///////////////////////////////////////////////////////////////////////////////
 // Keep track of elapsed time

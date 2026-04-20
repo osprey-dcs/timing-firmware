@@ -5,12 +5,13 @@ noTarget:
 	@echo "   firmware" >&2
 	@echo "   XSA" >&2
 	@echo "   createWorkspace" >&2
+	@echo "   buildWorkspace" >&2
 	@echo "   application" >&2
 	@exit -1
 
 all: verilogHeader EVG.runs/impl_1/EVG.bit
 
-everything: prepareFirmware firmware XSA createWorkspace application
+everything: prepareFirmware firmware XSA createWorkspace buildWorkspace application
 
 prepareFirmware:
 	$(MAKE) -C Workspace/EVG/src verilogHeader
@@ -28,6 +29,8 @@ createWorkspace:
 	-xsct BuildScripts/CreateWorkspace.tcl
 	tar xfv svSrc.tar
 	rm svSrc.tar
+
+buildWorkspace:
 	$(MAKE) -C Workspace/EVG/src
 	-xsct BuildScripts/BuildApplication.tcl
 

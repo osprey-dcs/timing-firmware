@@ -46,6 +46,7 @@
 #define GPIO_IDX_MARBLE_VCXO_HW_PPS        10 // Hardware PPS status
 #define GPIO_IDX_IO_SELECT                 11 // Hardware configuration
 #define GPIO_IDX_PMOD_FMC_MONITOR          12 // Hardware inputs
+#define GPIO_IDX_RFIN_CONTROL              13 // RF-IN FMC device control
 
 #define GPIO_IDX_COUNT                     32 // Number of GPIO registers
 
