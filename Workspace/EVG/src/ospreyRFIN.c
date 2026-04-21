@@ -60,21 +60,20 @@
 static uint32_t
 ads7253shift48(uint32_t wVal)
 {
-    int bitCount;
+    int b;
     uint32_t r, w;
     uint32_t aVal = 0;
     w = CSR_W_ADS7253_CS | CSR_W_ADS7253_CLK;
     GPIO_WRITE(GPIO_IDX_RFIN_CONTROL, w);
-    bitCount = 16;
-    while (--bitCount >= 0) {
-        w = CSR_W_ADS7253_CS | ((wVal & (1<<bitCount)) ? CSR_W_ADS7253_DIN : 0);
+    for (b = 0 ; b < 16 ; b++) {
+        w = CSR_W_ADS7253_CS | ((wVal & 0x8000) ? CSR_W_ADS7253_DIN : 0);
+        wVal <<= 1;
         GPIO_WRITE(GPIO_IDX_RFIN_CONTROL, w | CSR_W_ADS7253_CLK);
         r = GPIO_READ(GPIO_IDX_RFIN_CONTROL);
         aVal = (aVal << 1) | ((r & CSR_R_ADS7253_DOUTA) ? 1 : 0);
         GPIO_WRITE(GPIO_IDX_RFIN_CONTROL, w);
     }
-    bitCount = 32;
-    while (--bitCount >= 0) {
+    for (b = 0 ; b < 32 ; b++) {
         GPIO_WRITE(GPIO_IDX_RFIN_CONTROL, CSR_W_ADS7253_CS | CSR_W_ADS7253_CLK);
         GPIO_WRITE(GPIO_IDX_RFIN_CONTROL, CSR_W_ADS7253_CS);
     }
@@ -105,21 +104,20 @@ ads7253writeRegister(int cmd, int value)
 int
 ospreyRFINreadADS7253(int i)
 {
-    int bitCount;
+    int b;
     uint32_t r;
     uint32_t aVal = 0;
     static int bVal;
-    
+
     if (i == 1) return bVal;
     if (i != 0) return -1;
     GPIO_WRITE(GPIO_IDX_RFIN_CONTROL, CSR_W_ADS7253_CS | CSR_W_ADS7253_CLK);
-    bitCount = 16;
-    while (--bitCount >= 0) {
+    for (b = 0 ; b < 16 ; b++) {
         GPIO_WRITE(GPIO_IDX_RFIN_CONTROL, CSR_W_ADS7253_CS | CSR_W_ADS7253_CLK);
         GPIO_WRITE(GPIO_IDX_RFIN_CONTROL, CSR_W_ADS7253_CS);
     }
-    bitCount = 16;
-    while (--bitCount >= 0) {
+    bVal = 0;
+    for (b = 0 ; b < 16 ; b++) {
         GPIO_WRITE(GPIO_IDX_RFIN_CONTROL, CSR_W_ADS7253_CS | CSR_W_ADS7253_CLK);
         r = GPIO_READ(GPIO_IDX_RFIN_CONTROL);
         aVal = (aVal << 1) | ((r & CSR_R_ADS7253_DOUTA) ? 1 : 0);
@@ -143,8 +141,64 @@ lmk01801writeRegister(uint32_t shiftReg)
         GPIO_WRITE(GPIO_IDX_RFIN_CONTROL, d | CSR_W_LMK01801_CLK);
         shiftReg <<= 1;
     }
+    GPIO_WRITE(GPIO_IDX_RFIN_CONTROL, 0);
     GPIO_WRITE(GPIO_IDX_RFIN_CONTROL, CSR_W_LMK01801_LE);
     GPIO_WRITE(GPIO_IDX_RFIN_CONTROL, 0);
+    microsecondSpin(1);  //FIXME: Is this really necessary?
+}
+
+/*
+ * Configure LMK01801 clock distribution
+ * FIXME: The divider values should be settable.  Perhaps as system parameters
+ *        or perhaps as EPICS records.
+ *  For now:
+ *   CLK0 input:
+ *     CLK0_M2C -- divide by 2
+ *     GBTCLK0  -- divide by 1
+ *   CLK1 input:
+ *     GBTCLK1  -- divide by 1
+ *     CLK1_M2C -- divide by 2 (This affects the J20 diagnostic output as well)
+ */
+static void
+lmk01801init(void)
+{
+    /* Unlock settings */
+    lmk01801writeRegister(0x000005EF);
+
+    /* R0 -- reset */
+    lmk01801writeRegister(0x48003010);
+
+    /* R0 -- bypass input clock input dividers, bipolar inputs */
+    /*     0100 1000 00 000 00 000 11 0 0 0 0 0 0 0 0 0000 */
+    /*     ==== ---- == ==- -- -== == - - - - = = = = ---- */
+    lmk01801writeRegister(0x48003000);
+
+    /* R1 -- 7:5-Powerdown, 4-LVDS, 3:1-Powerdown, 0-LVDS */
+    /*     0000 0000 0000 0001 000 000 000 001 0001 */
+    /*     ==== ---- ==== ---- === =-- --= === ---- */
+    lmk01801writeRegister(0x00010011);
+
+    /* R2 -- 13-LVCMOS Normal/Off, 12-LVDS, 11:9-Powerdown, 8-LVDS */
+    lmk01801writeRegister(0x0C100012);
+
+    /* R3 -- SYNC0_AUTO (when register 5 written) */
+    lmk01801writeRegister(0x12000003);
+
+    /* R4 -- no delay */
+    lmk01801writeRegister(0x00000004);
+
+    /* R5 -- divide by 2 for CLKout0 (CLK0_M2C)
+     *       divide by 1 for CLKout4 (GBTCLK1) 
+     *       divide by 1 for CLKout8 (GBTCLK0)
+     *       divide by 2 for CLKout12 and CLKout13 (CLK1_M2C, J20)
+     *       no ADLY
+     */
+    /* 0000 00000000002 00 0 0 001 001 010 0101 */
+    /* ==== ----====--- -= = = =-- --= === ---- */
+    lmk01801writeRegister(0x000404A5);
+
+    /* Lock settings */
+    lmk01801writeRegister(0x000005FF);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -155,6 +209,7 @@ ospreyRFINinit(void)
     ads7253writeRegister(ADS7253_CMD_W_CFR, ADS7253_CFR_REF_SEL);
     cfr = ads7253readRegister(ADS7253_CMD_R_CFR);
     if (cfr != 0x0040) {
-        printf("WARNING -- RF-IN ADS7253 CFR %04X.\n", cfr);
+        printf("WARNING -- RF-IN ADS7253 CFR 0x%04X (expect 0x0040).\n", cfr);
     }
+    lmk01801init();
 }

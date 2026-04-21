@@ -44,9 +44,9 @@
       "ospreyUDP": "",
       "latencyMMCM": "",
       "evrMMCM": "",
-      "ospreyEVR": "",
       "evrTristateControl": "",
-      "ospreyEVG": ""
+      "ospreyEVG": "",
+      "ospreyEVR": ""
     },
     "interface_ports": {
       "DDR_REF": {
@@ -2017,26 +2017,6 @@
           }
         }
       },
-      "ospreyEVR": {
-        "vlnv": "ospreydcs.com:osprey:ospreyEVR:2.2",
-        "xci_name": "bd_ospreyEVR_0_0",
-        "xci_path": "ip/bd_ospreyEVR_0_0/bd_ospreyEVR_0_0.xci",
-        "inst_hier_path": "ospreyEVR",
-        "parameters": {
-          "ACTIVE_LOW_OUTPUTS": {
-            "value": "true"
-          },
-          "ENABLE_TRISTATE_CONTROL": {
-            "value": "0"
-          },
-          "HARDWARE_OUTPUT_COUNT": {
-            "value": "8"
-          },
-          "SERDES_FACTOR": {
-            "value": "1"
-          }
-        }
-      },
       "evrTristateControl": {
         "vlnv": "xilinx.com:ip:xlconstant:1.1",
         "xci_name": "bd_evrTristateControl_0",
@@ -2074,6 +2054,26 @@
           },
           "TIMER_COUNT": {
             "value": "8"
+          }
+        }
+      },
+      "ospreyEVR": {
+        "vlnv": "ospreydcs.com:osprey:ospreyEVR:2.2",
+        "xci_name": "bd_ospreyEVR_0_0",
+        "xci_path": "ip/bd_ospreyEVR_0_0/bd_ospreyEVR_0_0.xci",
+        "inst_hier_path": "ospreyEVR",
+        "parameters": {
+          "ACTIVE_LOW_OUTPUTS": {
+            "value": "true"
+          },
+          "ENABLE_TRISTATE_CONTROL": {
+            "value": "0"
+          },
+          "HARDWARE_OUTPUT_COUNT": {
+            "value": "8"
+          },
+          "SERDES_FACTOR": {
+            "value": "1"
           }
         }
       }
@@ -2374,8 +2374,8 @@
           "hwicap/s_axi_aclk",
           "hwicap/icap_clk",
           "ospreyUDP/s_axi_lite_aclk",
-          "ospreyEVR/s_axi_aclk",
-          "ospreyEVG/s_axi_aclk"
+          "ospreyEVG/s_axi_aclk",
+          "ospreyEVR/s_axi_aclk"
         ]
       },
       "ospreyEVG_0_evgTxCharIsK": {
@@ -2453,8 +2453,8 @@
           "microblaze_0_axi_periph/M08_ARESETN",
           "hwicap/s_axi_aresetn",
           "ospreyUDP/s_axi_lite_aresetn",
-          "ospreyEVR/s_axi_aresetn",
-          "ospreyEVG/s_axi_aresetn"
+          "ospreyEVG/s_axi_aresetn",
+          "ospreyEVR/s_axi_aresetn"
         ]
       }
     },

@@ -98,8 +98,8 @@ module EVG #(
 
     input  wire        FMC1_PPS,
     input  wire [15:1] FMC1_DIN,
-    output wire        FMC1_LMK01801_LE,
     output wire        FMC1_LMK01801_CLK,
+    output wire        FMC1_LMK01801_LE,
     output wire        FMC1_LMK01801_DATA,
     output wire        FMC1_ADS7253_CLK,
     output wire        FMC1_ADS7253_CSB,
@@ -119,6 +119,10 @@ assign LD17 = 1'b0;
 ///////////////////////////////////////////////////////////////////////////////
 // Clocks
 wire sysClk, clk20, clk125, clk200, clk500, evgClk, gtRefClkDiv2;
+
+wire clkFMC1_M2C0, clkFMC1_M2C1;
+IBUFGDS FMC1_M2C0_IB(.I(FMC1_CLK0_M2C_P),.IB(FMC1_CLK0_M2C_N),.O(clkFMC1_M2C0));
+IBUFGDS FMC1_M2C1_IB(.I(FMC1_CLK1_M2C_P),.IB(FMC1_CLK1_M2C_N),.O(clkFMC1_M2C1));
 
 ///////////////////////////////////////////////////////////////////////////////
 // General-purpose I/O register glue
@@ -145,8 +149,8 @@ ospreyRFIN #(
     .csrStrobe(GPIO_STROBES[GPIO_IDX_RFIN_CONTROL]),
     .GPIO_OUT(GPIO_OUT),
     .status(GPIO_IN[GPIO_IDX_RFIN_CONTROL]),
-    .RFIN_LMK01801_LE(FMC1_LMK01801_LE),
     .RFIN_LMK01801_CLK(FMC1_LMK01801_CLK),
+    .RFIN_LMK01801_LE(FMC1_LMK01801_LE),
     .RFIN_LMK01801_DATA(FMC1_LMK01801_DATA),
     .RFIN_ADS7253_CLK(FMC1_ADS7253_CLK),
     .RFIN_ADS7253_CSB(FMC1_ADS7253_CSB),
@@ -322,7 +326,7 @@ assign LD16 = mgtRxLinkUp[0]; // EVR link status
 
 ///////////////////////////////////////////////////////////////////////////////
 // Measure clocks
-localparam FREQ_MON_CHANNEL_COUNT = 13;
+localparam FREQ_MON_CHANNEL_COUNT = 15;
 wire [29:0] measuredFrequency;
 wire measuredUsingInteralAcqMarker;
 reg [$clog2(FREQ_MON_CHANNEL_COUNT)-1:0] frequencyChannelSelect = 0;
@@ -340,6 +344,8 @@ frequencyCounters #(
                       mgtRxClks[1],
                       mgtRxClks[0],
                       evgClk,
+                      clkFMC1_M2C1,
+                      clkFMC1_M2C0,
                       clk20,
                       clk200,
                       gtRefClkDiv2,

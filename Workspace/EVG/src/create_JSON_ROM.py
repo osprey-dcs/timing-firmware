@@ -270,17 +270,24 @@ def base_build():
           "data_width": 32,
           "sign": "unsigned"
         },
-        "MARBLE:FMC:inputs": {
+        "MARBLE:RFIN:inputs": {
           "access": "r",
           "addr_width": 0,
           "base_addr": 70,
           "data_width": 16,
           "sign": "unsigned"
         },
+        "MARBLE:RFIN:ADCx": {
+          "access": "r",
+          "addr_width": 1,
+          "base_addr": 71,
+          "data_width": 16,
+          "sign": "unsigned"
+        },
         "MARBLE:PMOD:inputs": {
           "access": "r",
           "addr_width": 0,
-          "base_addr": 71,
+          "base_addr": 75,
           "data_width": 8,
           "sign": "unsigned"
         },

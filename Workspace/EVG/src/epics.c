@@ -39,6 +39,7 @@
 #include "mgt.h"
 #include "mgtClkSwitch.h"
 #include "mmcMailbox.h"
+#include "ospreyRFIN.h"
 #include "softwareBuildDate.h"
 #include "systemParameters.h"
 #include "util.h"
@@ -73,8 +74,10 @@ struct LEEPpacket {
 #define REG_FMC2_SERIAL_NUMBER              51
 #define REG_FMC1_PART_NUMBER                54
 #define REG_FMC2_PART_NUMBER                55
-#define REG_MARBLE_FMC_INPUTS               70
-#define REG_MARBLE_PMOD_INPUTS              71
+#define REG_MARBLE_RFIN_INPUTS              70
+#define REG_MARBLE_RFIN_ADC_A               71
+#define REG_MARBLE_RFIN_ADC_B               72
+#define REG_MARBLE_PMOD_INPUTS              75
 #define REG_MARBLE_MGT_REFCLK_SOURCE        80
 #define REG_MARBLE_PLL_SET_Y1               86
 #define REG_MARBLE_PLL_SET_Y3               87
@@ -166,7 +169,9 @@ readReg(int address)
     case REG_FMC2_SERIAL_NUMBER:  return iicFPGAgetSerialNumber(1);
     case REG_FMC1_PART_NUMBER:    return iicFPGAgetPartNumber(0);
     case REG_FMC2_PART_NUMBER:    return iicFPGAgetPartNumber(1);
-    case REG_MARBLE_FMC_INPUTS:   return GPIO_READ(GPIO_IDX_PMOD_FMC_MONITOR)
+    case REG_MARBLE_RFIN_ADC_A:   return ospreyRFINreadADS7253(0);
+    case REG_MARBLE_RFIN_ADC_B:   return ospreyRFINreadADS7253(1);
+    case REG_MARBLE_RFIN_INPUTS:  return GPIO_READ(GPIO_IDX_PMOD_FMC_MONITOR)
                                                                        & 0xFFFF;
     case REG_MARBLE_PMOD_INPUTS:  return GPIO_READ(GPIO_IDX_PMOD_FMC_MONITOR)
                                                                           >> 16;

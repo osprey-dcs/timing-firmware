@@ -1,7 +1,7 @@
 {
    "ActiveEmotionalView":"Default View",
-   "Default View_ScaleFactor":"0.370331",
-   "Default View_TopLeft":"-726,3",
+   "Default View_ScaleFactor":"0.392743",
+   "Default View_TopLeft":"-547,3",
    "ExpandedHierarchyInLayout":"",
    "guistr":"# # String gsaved with Nlview 7.5.8 2022-09-21 7111 VDI=41 GEI=38 GUI=JA:10.0 TLS
 #  -string -flagsOSRD
@@ -53,9 +53,9 @@ preplace inst hwicap -pg 1 -lvl 4 -x 1550 -y 1030 -defaultsOSRD
 preplace inst ospreyUDP -pg 1 -lvl 4 -x 1550 -y 820 -defaultsOSRD
 preplace inst latencyMMCM -pg 1 -lvl 3 -x 1100 -y 1300 -defaultsOSRD
 preplace inst evrMMCM -pg 1 -lvl 3 -x 1100 -y 1640 -defaultsOSRD
-preplace inst ospreyEVR -pg 1 -lvl 4 -x 1550 -y 1730 -defaultsOSRD
 preplace inst evrTristateControl -pg 1 -lvl 3 -x 1100 -y 1820 -defaultsOSRD
 preplace inst ospreyEVG -pg 1 -lvl 4 -x 1550 -y 1440 -defaultsOSRD
+preplace inst ospreyEVR -pg 1 -lvl 4 -x 1550 -y 1730 -defaultsOSRD
 preplace netloc GPIO_IN_0_1 1 0 4 NJ 80 NJ 80 NJ 80 NJ
 preplace netloc axi_lite_generic_reg_0_GPIO_OUT 1 4 1 NJ 100
 preplace netloc axi_lite_generic_reg_0_GPIO_STROBES 1 4 1 NJ 80

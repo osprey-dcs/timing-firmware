@@ -294,6 +294,8 @@ cmdFMON(int argc, char **argv)
                                    "MGT Ref/2",
                                    "IDELAY Ref",
                                    "VCXO20",
+                                   "FMC1 M2C0",
+                                   "FMC1 M2C1",
                                    "EVG",
                                    "MGT Rx[0]",
                                    "MGT Rx[1]",
@@ -317,6 +319,7 @@ cmdFMON(int argc, char **argv)
             printf("%3d.%06d\n", rate / 1000000, rate % 1000000);
         }
     }
+ospreyRFINinit();
 }
 
 static void

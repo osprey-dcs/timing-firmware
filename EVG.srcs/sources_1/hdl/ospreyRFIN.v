@@ -34,8 +34,8 @@ module ospreyRFIN #(
     input  wire [31:0] GPIO_OUT,
     output wire [31:0] status,
 
-    output wire RFIN_LMK01801_LE,
     output wire RFIN_LMK01801_CLK,
+    output wire RFIN_LMK01801_LE,
     output wire RFIN_LMK01801_DATA,
 
     output wire RFIN_ADS7253_CLK,
