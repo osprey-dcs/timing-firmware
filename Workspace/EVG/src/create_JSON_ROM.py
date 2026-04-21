@@ -46,7 +46,7 @@ def base_build():
           "data_width": 32,
           "sign": "unsigned"
         },
-        "Marble:mgtRefClk0": {
+        "MARBLE:mgtRefClk0": {
           "access": "rw",
           "addr_width": 0,
           "base_addr": 80,
@@ -81,14 +81,14 @@ def base_build():
           "data_width": 16,
           "sign": "unsigned"
         },
-        "Marble:U29:Temp": {
+        "MARBLE:U29:Temp": {
           "access": "r",
           "addr_width": 0,
           "base_addr": 132,
           "data_width": 16,
           "sign": "unsigned"
         },
-        "Marble:U28:Temp": {
+        "MARBLE:U28:Temp": {
           "access": "r",
           "addr_width": 0,
           "base_addr": 133,
@@ -221,21 +221,21 @@ def base_build():
           "data_width": 16,
           "sign": "unsigned"
         },
-        "Marble:VCXO:SR": {
+        "MARBLE:VCXO:SR": {
           "access": "r",
           "addr_width": 0,
           "base_addr": 292,
           "data_width": 32,
           "sign": "unsigned"
         },
-        "Marble:VCXO:ASR": {
+        "MARBLE:VCXO:ASR": {
           "access": "r",
           "addr_width": 0,
           "base_addr": 293,
           "data_width": 32,
           "sign": "unsigned"
         },
-        "Marble:VCXO:PPS": {
+        "MARBLE:VCXO:PPS": {
           "access": "r",
           "addr_width": 0,
           "base_addr": 294,
