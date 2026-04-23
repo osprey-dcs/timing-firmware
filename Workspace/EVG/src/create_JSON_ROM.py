@@ -270,7 +270,7 @@ def base_build():
           "data_width": 32,
           "sign": "unsigned"
         },
-        "MARBLE:RFIN:inputs": {
+        "Marble:RFIN:inputs": {
           "access": "r",
           "addr_width": 0,
           "base_addr": 70,
