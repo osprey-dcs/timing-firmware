@@ -27,14 +27,17 @@
 #include "gpio.h"
 #include "util.h"
 
-#define CSR_W_ADS7253_CLK   0x1
-#define CSR_W_ADS7253_CS    0x2
-#define CSR_W_ADS7253_DIN   0x4
-#define CSR_W_LMK01801_CLK  0x8
-#define CSR_W_LMK01801_LE   0x10
-#define CSR_W_LMK01801_DATA 0x20
-#define CSR_R_ADS7253_DOUTA 0x1
-#define CSR_R_ADS7253_DOUTB 0x2
+#define CSR_W_STOP_ADC      0x1
+#define CSR_W_START_ADC     0x2
+#define CSR_W_ADS7253_CLK   0x4
+#define CSR_W_ADS7253_CS    0x8
+#define CSR_W_ADS7253_DIN   0x10
+#define CSR_W_LMK01801_CLK  0x20
+#define CSR_W_LMK01801_LE   0x40
+#define CSR_W_LMK01801_DATA 0x80
+#define CSR_R_ADC_STOPPED   0x1
+#define CSR_R_ADS7253_DOUTA 0x2
+#define CSR_R_ADS7253_DOUTB 0x4
 
 #define ADS7253_CMD_W_CFR         0x8
 #define ADS7253_CMD_W_REFDAC_A    0x9
@@ -98,34 +101,14 @@ ads7253writeRegister(int cmd, int value)
     ads7253shift48((cmd << 12) | (value & 0xFFF));
 }
 
-/*
- * Assume that channel B reads are always preceded by a channel A read.
- */
 int
 ospreyRFINreadADS7253(int i)
 {
-    int b;
-    uint32_t r;
-    uint32_t aVal = 0;
-    static int bVal;
-
-    if (i == 1) return bVal;
-    if (i != 0) return -1;
-    GPIO_WRITE(GPIO_IDX_RFIN_CONTROL, CSR_W_ADS7253_CS | CSR_W_ADS7253_CLK);
-    for (b = 0 ; b < 16 ; b++) {
-        GPIO_WRITE(GPIO_IDX_RFIN_CONTROL, CSR_W_ADS7253_CS | CSR_W_ADS7253_CLK);
-        GPIO_WRITE(GPIO_IDX_RFIN_CONTROL, CSR_W_ADS7253_CS);
+    uint32_t r = GPIO_READ(GPIO_IDX_RFIN_CONTROL);
+    if (i) {
+        return r & 0xFFFF;
     }
-    bVal = 0;
-    for (b = 0 ; b < 16 ; b++) {
-        GPIO_WRITE(GPIO_IDX_RFIN_CONTROL, CSR_W_ADS7253_CS | CSR_W_ADS7253_CLK);
-        r = GPIO_READ(GPIO_IDX_RFIN_CONTROL);
-        aVal = (aVal << 1) | ((r & CSR_R_ADS7253_DOUTA) ? 1 : 0);
-        bVal = (bVal << 1) | ((r & CSR_R_ADS7253_DOUTB) ? 1 : 0);
-        GPIO_WRITE(GPIO_IDX_RFIN_CONTROL, CSR_W_ADS7253_CS);
-    }
-    GPIO_WRITE(GPIO_IDX_RFIN_CONTROL, 0);
-    return aVal;
+    return r >> 16;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -144,7 +127,6 @@ lmk01801writeRegister(uint32_t shiftReg)
     GPIO_WRITE(GPIO_IDX_RFIN_CONTROL, 0);
     GPIO_WRITE(GPIO_IDX_RFIN_CONTROL, CSR_W_LMK01801_LE);
     GPIO_WRITE(GPIO_IDX_RFIN_CONTROL, 0);
-    microsecondSpin(1);  //FIXME: Is this really necessary?
 }
 
 /*
@@ -206,8 +188,13 @@ void
 ospreyRFINinit(void)
 {
     int cfr;
+    GPIO_WRITE(GPIO_IDX_RFIN_CONTROL, CSR_W_STOP_ADC);
+    while ((GPIO_READ(GPIO_IDX_RFIN_CONTROL) & CSR_R_ADC_STOPPED) == 0) {
+        continue;
+    }
     ads7253writeRegister(ADS7253_CMD_W_CFR, ADS7253_CFR_REF_SEL);
     cfr = ads7253readRegister(ADS7253_CMD_R_CFR);
+    GPIO_WRITE(GPIO_IDX_RFIN_CONTROL, CSR_W_START_ADC);
     if (cfr != 0x0040) {
         printf("WARNING -- RF-IN ADS7253 CFR 0x%04X (expect 0x0040).\n", cfr);
     }

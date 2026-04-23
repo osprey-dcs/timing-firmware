@@ -319,7 +319,6 @@ cmdFMON(int argc, char **argv)
             printf("%3d.%06d\n", rate / 1000000, rate % 1000000);
         }
     }
-ospreyRFINinit();
 }
 
 static void

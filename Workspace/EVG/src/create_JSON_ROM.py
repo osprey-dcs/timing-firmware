@@ -277,14 +277,21 @@ def base_build():
           "data_width": 16,
           "sign": "unsigned"
         },
-        "MARBLE:RFIN:ADCx": {
+        "Marble:RFIN:level1": {
           "access": "r",
-          "addr_width": 1,
+          "addr_width": 0,
           "base_addr": 71,
           "data_width": 16,
           "sign": "unsigned"
         },
-        "MARBLE:PMOD:inputs": {
+        "Marble:RFIN:level2": {
+          "access": "r",
+          "addr_width": 0,
+          "base_addr": 72,
+          "data_width": 16,
+          "sign": "unsigned"
+        },
+        "Marble:PMOD:inputs": {
           "access": "r",
           "addr_width": 0,
           "base_addr": 75,
