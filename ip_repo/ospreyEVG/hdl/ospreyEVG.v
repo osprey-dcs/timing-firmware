@@ -77,26 +77,16 @@ module ospreyEVG_v1_0 #(
     input  wire                          s_axi_rready,
     output wire                    [1:0] s_axi_rresp,
 
-(*MARK_DEBUG="true"*)
     input  wire                          s_axi_awvalid,
     output wire                          s_axi_awready,
-(*MARK_DEBUG="true"*)
     input  wire                    [2:0] s_axi_awprot,
-(*MARK_DEBUG="true"*)
     input  wire [C_S_AXI_ADDR_WIDTH-1:0] s_axi_awaddr,
-(*MARK_DEBUG="true"*)
     input  wire                          s_axi_wvalid,
-(*MARK_DEBUG="true"*)
     output reg                           s_axi_wready = 0,
-(*MARK_DEBUG="true"*)
     input  wire                    [3:0] s_axi_wstrb,
-(*MARK_DEBUG="true"*)
     input  wire [C_S_AXI_DATA_WIDTH-1:0] s_axi_wdata,
-(*MARK_DEBUG="true"*)
     output reg                           s_axi_bvalid = 0,
-(*MARK_DEBUG="true"*)
     input  wire                          s_axi_bready,
-(*MARK_DEBUG="true"*)
     output wire                    [1:0] s_axi_bresp);
 
 /*
@@ -140,14 +130,12 @@ localparam WRITE_WAIT_STATE_COUNT = ((((3 * (C_S_AXI_FREQ_HZ/1000)) +
 localparam WRITE_WAIT_STATE_COUNTER_LOAD = WRITE_WAIT_STATE_COUNT - 1;
 localparam WRITE_WAIT_STATE_COUNTER_WIDTH = ((WRITE_WAIT_STATE_COUNTER_LOAD<0) ?
                                1 : $clog2(WRITE_WAIT_STATE_COUNTER_LOAD+1)) + 1;
-(*MARK_DEBUG="true"*)
 reg [WRITE_WAIT_STATE_COUNTER_WIDTH-1:0] writeWaitStateCounter;
 wire writeWaitStateCounterDone =
                         writeWaitStateCounter[WRITE_WAIT_STATE_COUNTER_WIDTH-1];
 reg writeTransactionActive = 0;
 
 assign s_axi_awready = s_axi_wready;
-(*MARK_DEBUG="true"*)
 wire sysWriteStrobe = s_axi_awvalid && s_axi_wvalid && !writeTransactionActive;
 
 always @(posedge s_axi_aclk)
