@@ -1,43 +1,97 @@
+# N - Output index (from 1)
+# TRG - Pulse trigger action bit (from 0)
+
+record(longin, "$(P)EVR:OUT:$(N):onConn_") {
+    field(SCAN, "Event")
+    field(EVNT, "$(NAME):initOutputs") # <-- from perEVR.template
+    field(FLNK, "$(P)EVR:OUT:$(N):onConn1_")
+}
+record(fanout, "$(P)EVR:OUT:$(N):onConn1_") {
+    field(LNK0, "$(P)EVR:OUT:$(N):source")
+    field(LNK1, "$(P)EVR:OUT:$(N):scl_") # proc delay/width
+    field(FLNK, "$(P)EVR:OUT:$(N):onConn2_")
+}
+record(event, "$(P)EVR:OUT:$(N):onConn2_") {
+    field(VAL, "$(NAME):afterOutputs") # --> to perEVR.template
+}
+
+# calculate scale from ns to delay ticks
+record(calcout, "$(P)EVR:OUT:$(N):scl_") {
+    field(INPA, "$(P)Ref:T MS") # ref clock period (s)
+    field(INPB, "$(P)EVR:Mlt MS") # EVR output resolution multiplier (aka. SERDES_FACTOR)
+    field(INPC, "1e-9") # ns
+    field(CALC, "A/C/B")
+    field(OUT , "$(P)EVR:OUT:$(N):scl2_ PP")
+}
+record(dfanout, "$(P)EVR:OUT:$(N):scl2_") {
+    field(OUTA, "$(P)EVR:OUT:$(N):delay.ASLO PP")
+    field(OUTB, "$(P)EVR:OUT:$(N):width.ASLO PP")
+}
+
 record(mbbo, "$(P)EVR:OUT:$(N):source") {
-    field(DESC, "Hardware output $(N) source")
+    field(DESC, "$(DESC=Hardware output $(N) source)")
     field(DTYP, "FEED Register Write")
     field(OUT , "@name=$(NAME) reg=EVR:out$(N):source")
+    # 0 - Static 0
+    # 1 - Pulse
+    # 3 - DBus
+    # 7 - Static 1
     field(ZRVL, "0")
     field(ZRST, "Static 0")
     field(ONVL, "1")
     field(ONST, "Pulse")
-    field(TWVL, "2")
-    field(TWST, "Latch")
-    field(THVL, "3")
-    field(THST, "Dbus")
-    field(FRVL, "4")
-    field(FRST, "External")
-    field(FVVL, "7")
-    field(FVST, "Static 1")
+    field(TWVL, "3")
+    field(TWST, "Dbus $(TRG)")
+    field(THVL, "7")
+    field(THST, "Static 1")
+    info(autosaveFields_pass0, "RVAL")
 }
 record(ao, "$(P)EVR:OUT:$(N):delay") {
     field(DESC, "Hardware output $(N) pulse delay")
+    field(DTYP, "Raw Soft Channel")
+    field(OUT , "$(P)EVR:OUT:$(N):delay_ PP MSS")
+    field(EGU , "ns")
+    # ASLO set from above
+    info(autosaveFields_pass0, "VAL LINR ESLO EOFF HOPR HOPR")
+}
+record(ao, "$(P)EVR:OUT:$(N):delay_") {
+    field(DESC, "Hardware output $(N) pulse delay")
     field(DTYP, "FEED Register Write")
     field(OUT , "@name=$(NAME) reg=EVR:pls$(N):delay")
-    field(EGU , "ns")
-    field(LINR, "LINEAR")
-    field(ESLO, "1")
-    field(EOFF, "0")
-    field(LOPR, "0")
-    field(HOPR, "2000000")
+    field(EGU , "tick")
     field(DRVL, "0")
-    field(DRVH, "2000000")
+    field(DRVH, "0x7fffffff")
 }
 record(ao, "$(P)EVR:OUT:$(N):width") {
     field(DESC, "Hardware output $(N) pulse width")
+    field(DTYP, "Raw Soft Channel")
+    field(OUT , "$(P)EVR:OUT:$(N):width_ PP MSS")
+    field(EGU , "ns")
+    # ASLO set from above
+    info(autosaveFields_pass0, "VAL LINR ESLO EOFF HOPR HOPR")
+}
+record(ao, "$(P)EVR:OUT:$(N):width_") {
+    field(DESC, "Hardware output $(N) pulse width")
     field(DTYP, "FEED Register Write")
     field(OUT , "@name=$(NAME) reg=EVR:pls$(N):width")
-    field(EGU , "ns")
-    field(LINR, "LINEAR")
-    field(ESLO, "1")
-    field(EOFF, "0")
-    field(LOPR, "0")
-    field(HOPR, "2000000")
-    field(DRVL, "8")
-    field(DRVH, "2000000")
+    field(EGU , "tick")
+    field(DRVL, "0")
+    field(DRVH, "0x7fffffff")
+}
+
+record(longout, "$(P)EVR:OUT:$(N):evt1") {
+    field(DTYP, "Bit Table Update")
+    field(OUT , "@table=$(NAME) action=$(TRG)")
+    field(DRVH, "255")
+    field(VAL , "0")
+    field(PINI, "1")
+    info(autosaveFields_pass0, "VAL")
+}
+record(longout, "$(P)EVR:OUT:$(N):evt2") {
+    field(DTYP, "Bit Table Update")
+    field(OUT , "@table=$(NAME) action=$(TRG)")
+    field(DRVH, "255")
+    field(VAL , "0")
+    field(PINI, "1")
+    info(autosaveFields_pass0, "VAL")
 }

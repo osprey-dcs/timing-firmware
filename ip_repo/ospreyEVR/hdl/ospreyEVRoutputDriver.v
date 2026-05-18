@@ -1,6 +1,6 @@
 // MIT License
 //
-// Copyright (c) 2025 Osprey DCS
+// Copyright (c) 2026 Osprey DCS
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -27,9 +27,6 @@
 module ospreyEVRoutputDriver #(
     parameter DATA_WIDTH              = 32,
     parameter SERDES_FACTOR           = 8,
-    parameter ENABLE_TRISTATE_CONTROL = 0,
-    parameter TRISTATE_INIT_STATE     = 0,
-    parameter TRISTATE_RESET_STATE    = 0,
     parameter ACTIVE_LOW_OUTPUTS      = 0,
     parameter DEBUG                   = "false"
     ) (
@@ -49,9 +46,7 @@ module ospreyEVRoutputDriver #(
     input  wire evrSetIn,
     input  wire evrResetIn,
     input  wire extIn_a,
-    input  wire evrTriStateIn,
-    output wire evrTriStateOut,
-    inout  wire evrPin);
+    output wire evrPin);
 
 ///////////////////////////////////////////////////////////////////////////////
 // Clock crossing
@@ -193,11 +188,10 @@ always @(posedge evrClk) begin
     endcase
 end
 
-wire iobufI, iobufT;
+wire obufI;
 generate
 if (SERDES_FACTOR == 1) begin
-  assign iobufI = ACTIVE_LOW_OUTPUTS ? ~serdesWord : serdesWord;
-  assign iobufT = ENABLE_TRISTATE_CONTROL ? evrTriStateIn : 1'b0;
+  assign obufI = ACTIVE_LOW_OUTPUTS ? ~serdesWord : serdesWord;
 end
 else begin
   /////////////////////////////////////////////////////////////////////////////
@@ -206,6 +200,13 @@ else begin
   wire [7:0] serdesPad = ACTIVE_LOW_OUTPUTS ?
                                          ~{{8-SERDES_FACTOR{1'b0}}, serdesWord}
                                         : {{8-SERDES_FACTOR{1'b0}}, serdesWord};
+  if (ACTIVE_LOW_OUTPUTS & 0) begin // FIXME: This glitch workaround fails -- the FPGA pin appears to still be driven by the OSERDES and hence still has the glitch -- Code disabled, but left in for now in case a working arrangement is figured out -- WEN, 2026-05-05
+  // With active-low outputs the OSERDES produces a short active glitch on
+  // startup.  To work arount this an ISERDES block is used to route the
+  // OSERDES output back to the firmware where it can be combined with a
+  // longer startup reset signal.
+  wire ofb_feedback;
+  wire iserdesO;
   OSERDESE2 #(
     .DATA_RATE_OQ   ("DDR"),
     .DATA_RATE_TQ   ("SDR"),
@@ -213,8 +214,6 @@ else begin
     .TRISTATE_WIDTH (1),
     .INIT_OQ(ACTIVE_LOW_OUTPUTS),
     .SRVAL_OQ(ACTIVE_LOW_OUTPUTS),
-    .INIT_TQ(TRISTATE_INIT_STATE),
-    .SRVAL_TQ(TRISTATE_INIT_STATE),
     .SERDES_MODE    ("MASTER"))
   evrDriverSERDES (
     .D1             (serdesPad[0]),
@@ -225,7 +224,7 @@ else begin
     .D6             (serdesPad[5]),
     .D7             (serdesPad[6]),
     .D8             (serdesPad[7]),
-    .T1             (ENABLE_TRISTATE_CONTROL ? evrTriStateIn : 1'b0),
+    .T1             (1'b0),
     .T2             (1'b0),
     .T3             (1'b0),
     .T4             (1'b0),
@@ -236,20 +235,90 @@ else begin
     .OCE            (1'b1),
     .CLK            (evrBitClk),
     .CLKDIV         (evrClk),
-    .OQ             (iobufI),
-    .TQ             (iobufT),
+    .OQ             (),
+    .TQ             (),
+    .OFB            (ofb_feedback),
+    .TFB            (),
+    .TBYTEIN        (1'b0),
+    .TBYTEOUT       (),
+    .TCE            (1'b0),
+    .RST            (evrResetSERDES));
+
+  ISERDESE2 #(
+    .DATA_RATE("DDR"),
+    .DATA_WIDTH(8),
+    .INTERFACE_TYPE("NETWORKING"),
+    .OFB_USED("TRUE"))
+  ISERDESE2_i (
+    .O(iserdesO),
+    .D(1'b0),
+    .OFB(ofb_feedback),
+    .CLK(evrBitClk),
+    .CLKB(~evrBitClk),
+    .CLKDIV(evrClk),
+    .RST(1'b0),
+    .CE1(1'b1),
+    .BITSLIP(1'b0));
+
+  localparam RESET_EXTEND_COUNTER_WIDTH = 18;
+  reg [RESET_EXTEND_COUNTER_WIDTH-1:0] evrExtendCounter = ~0;
+  wire evrResetSERDESextended = evrExtendCounter[RESET_EXTEND_COUNTER_WIDTH-1];
+  always @(posedge evrClk) begin
+    if (evrResetSERDES) begin
+        evrExtendCounter <= ~0;
+    end
+    else if (evrResetSERDESextended) begin
+        evrExtendCounter <= evrExtendCounter - 1;
+    end
+  end
+
+  assign obufI = evrResetSERDESextended | iserdesO;
+  end
+  else begin
+  // No need for the above ISERDES hack when outputs are active-high since
+  // there's no startup glitch in this case.
+  OSERDESE2 #(
+    .DATA_RATE_OQ   ("DDR"),
+    .DATA_RATE_TQ   ("SDR"),
+    .DATA_WIDTH     (SERDES_FACTOR),
+    .TRISTATE_WIDTH (1),
+    .INIT_OQ(ACTIVE_LOW_OUTPUTS),
+    .SRVAL_OQ(ACTIVE_LOW_OUTPUTS),
+    .SERDES_MODE    ("MASTER"))
+  evrDriverSERDES (
+    .D1             (serdesPad[0]),
+    .D2             (serdesPad[1]),
+    .D3             (serdesPad[2]),
+    .D4             (serdesPad[3]),
+    .D5             (serdesPad[4]),
+    .D6             (serdesPad[5]),
+    .D7             (serdesPad[6]),
+    .D8             (serdesPad[7]),
+    .T1             (1'b0),
+    .T2             (1'b0),
+    .T3             (1'b0),
+    .T4             (1'b0),
+    .SHIFTIN1       (1'b0),
+    .SHIFTIN2       (1'b0),
+    .SHIFTOUT1      (),
+    .SHIFTOUT2      (),
+    .OCE            (1'b1),
+    .CLK            (evrBitClk),
+    .CLKDIV         (evrClk),
+    .OQ             (obufI),
+    .TQ             (),
     .OFB            (),
     .TFB            (),
     .TBYTEIN        (1'b0),
     .TBYTEOUT       (),
-    .TCE            (ENABLE_TRISTATE_CONTROL),
+    .TCE            (1'b0),
     .RST            (evrResetSERDES));
+  end
 end
 endgenerate
-IOBUF evrHwObuf(.I(iobufI),
-                .O(evrTriStateOut),
-                .T(iobufT),
-                .IO(evrPin));
+
+OBUF evrHwIObuf(.I(obufI),
+                .O(evrPin));
 endmodule
 
 ///////////////////////////////////////////////////////////////////////////////

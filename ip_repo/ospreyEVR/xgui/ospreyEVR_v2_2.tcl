@@ -14,10 +14,8 @@ proc init_gui { IPINST } {
   set_property tooltip {Number of hardware output pins} ${HARDWARE_OUTPUT_COUNT}
   set SERDES_FACTOR [ipgui::add_param $IPINST -name "SERDES_FACTOR" -widget comboBox]
   set_property tooltip {OSERDES Parallel Input Width} ${SERDES_FACTOR}
-  set ENABLE_TRISTATE_CONTROL [ipgui::add_param $IPINST -name "ENABLE_TRISTATE_CONTROL" -widget checkBox]
-  set_property tooltip {When 0, evrTriStateIn is ignored and evrTriStateOut is tied low.} ${ENABLE_TRISTATE_CONTROL}
   set ACTIVE_LOW_OUTPUTS [ipgui::add_param $IPINST -name "ACTIVE_LOW_OUTPUTS"]
-  set_property tooltip {Invert hardware output values when set.} ${ACTIVE_LOW_OUTPUTS}
+  set_property tooltip {Invert ouputs} ${ACTIVE_LOW_OUTPUTS}
 
 }
 
@@ -57,15 +55,6 @@ proc validate_PARAM_VALUE.DISTRIBUTED_BUFFER_ADDR_WIDTH { PARAM_VALUE.DISTRIBUTE
 	return true
 }
 
-proc update_PARAM_VALUE.ENABLE_TRISTATE_CONTROL { PARAM_VALUE.ENABLE_TRISTATE_CONTROL } {
-	# Procedure called to update ENABLE_TRISTATE_CONTROL when any of the dependent parameters in the arguments change
-}
-
-proc validate_PARAM_VALUE.ENABLE_TRISTATE_CONTROL { PARAM_VALUE.ENABLE_TRISTATE_CONTROL } {
-	# Procedure called to validate ENABLE_TRISTATE_CONTROL
-	return true
-}
-
 proc update_PARAM_VALUE.HARDWARE_OUTPUT_COUNT { PARAM_VALUE.HARDWARE_OUTPUT_COUNT } {
 	# Procedure called to update HARDWARE_OUTPUT_COUNT when any of the dependent parameters in the arguments change
 }
@@ -81,24 +70,6 @@ proc update_PARAM_VALUE.SERDES_FACTOR { PARAM_VALUE.SERDES_FACTOR } {
 
 proc validate_PARAM_VALUE.SERDES_FACTOR { PARAM_VALUE.SERDES_FACTOR } {
 	# Procedure called to validate SERDES_FACTOR
-	return true
-}
-
-proc update_PARAM_VALUE.TRISTATE_INIT_STATE { PARAM_VALUE.TRISTATE_INIT_STATE } {
-	# Procedure called to update TRISTATE_INIT_STATE when any of the dependent parameters in the arguments change
-}
-
-proc validate_PARAM_VALUE.TRISTATE_INIT_STATE { PARAM_VALUE.TRISTATE_INIT_STATE } {
-	# Procedure called to validate TRISTATE_INIT_STATE
-	return true
-}
-
-proc update_PARAM_VALUE.TRISTATE_RESET_STATE { PARAM_VALUE.TRISTATE_RESET_STATE } {
-	# Procedure called to update TRISTATE_RESET_STATE when any of the dependent parameters in the arguments change
-}
-
-proc validate_PARAM_VALUE.TRISTATE_RESET_STATE { PARAM_VALUE.TRISTATE_RESET_STATE } {
-	# Procedure called to validate TRISTATE_RESET_STATE
 	return true
 }
 
@@ -174,23 +145,8 @@ proc update_MODELPARAM_VALUE.SERDES_FACTOR { MODELPARAM_VALUE.SERDES_FACTOR PARA
 	set_property value [get_property value ${PARAM_VALUE.SERDES_FACTOR}] ${MODELPARAM_VALUE.SERDES_FACTOR}
 }
 
-proc update_MODELPARAM_VALUE.ENABLE_TRISTATE_CONTROL { MODELPARAM_VALUE.ENABLE_TRISTATE_CONTROL PARAM_VALUE.ENABLE_TRISTATE_CONTROL } {
-	# Procedure called to set VHDL generic/Verilog parameter value(s) based on TCL parameter value
-	set_property value [get_property value ${PARAM_VALUE.ENABLE_TRISTATE_CONTROL}] ${MODELPARAM_VALUE.ENABLE_TRISTATE_CONTROL}
-}
-
 proc update_MODELPARAM_VALUE.ACTIVE_LOW_OUTPUTS { MODELPARAM_VALUE.ACTIVE_LOW_OUTPUTS PARAM_VALUE.ACTIVE_LOW_OUTPUTS } {
 	# Procedure called to set VHDL generic/Verilog parameter value(s) based on TCL parameter value
 	set_property value [get_property value ${PARAM_VALUE.ACTIVE_LOW_OUTPUTS}] ${MODELPARAM_VALUE.ACTIVE_LOW_OUTPUTS}
-}
-
-proc update_MODELPARAM_VALUE.TRISTATE_INIT_STATE { MODELPARAM_VALUE.TRISTATE_INIT_STATE PARAM_VALUE.TRISTATE_INIT_STATE } {
-	# Procedure called to set VHDL generic/Verilog parameter value(s) based on TCL parameter value
-	set_property value [get_property value ${PARAM_VALUE.TRISTATE_INIT_STATE}] ${MODELPARAM_VALUE.TRISTATE_INIT_STATE}
-}
-
-proc update_MODELPARAM_VALUE.TRISTATE_RESET_STATE { MODELPARAM_VALUE.TRISTATE_RESET_STATE PARAM_VALUE.TRISTATE_RESET_STATE } {
-	# Procedure called to set VHDL generic/Verilog parameter value(s) based on TCL parameter value
-	set_property value [get_property value ${PARAM_VALUE.TRISTATE_RESET_STATE}] ${MODELPARAM_VALUE.TRISTATE_RESET_STATE}
 }
 

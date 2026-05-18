@@ -36,9 +36,6 @@ module ospreyEVR_v1_0 #(
     parameter HARDWARE_OUTPUT_COUNT         = 4,
     parameter SERDES_FACTOR                 = 8,
     parameter ACTION_STROBES_WIDTH          = 16,
-    parameter ENABLE_TRISTATE_CONTROL       = 0,
-    parameter TRISTATE_INIT_STATE           = 0,
-    parameter TRISTATE_RESET_STATE          = 0,
     parameter ACTIVE_LOW_OUTPUTS            = 0,
     parameter DEBUG                         = "false",
     ////////////////////// AXI-Lite Boilerplate Parameters ///////////////////
@@ -58,15 +55,8 @@ module ospreyEVR_v1_0 #(
     /*
      * Hardware outputs -- must connect directly to pin.
      */
-    inout  wire [HARDWARE_OUTPUT_COUNT-1:0] evrHardwareOutputs,
+    output wire [HARDWARE_OUTPUT_COUNT-1:0] evrHardwareOutputs,
     input  wire [HARDWARE_OUTPUT_COUNT-1:0] hwDriverIn_a,
-
-    /*
-     * Output tri-state control.
-     * Used only if ENABLE_TRISTATE_CONTROL is true.
-     */
-    input  wire [HARDWARE_OUTPUT_COUNT-1:0] evrTriStateIn,
-    output wire [HARDWARE_OUTPUT_COUNT-1:0] evrTriStateOut,
 
     /*
      * Internal triggers
@@ -267,28 +257,26 @@ smallEVR #(
 
 /*
  * Startup sequencing
+ * Hold SERDES in reset for a while after startup
  */
-reg evrResetSERDES = 1;
+localparam SERDES_RESET_TIMER_WIDTH = 12;
+reg [SERDES_RESET_TIMER_WIDTH-1:0] serdesResetTimer = ~0;
+wire evrResetSERDES = serdesResetTimer[SERDES_RESET_TIMER_WIDTH-1];
 always @(posedge evrClk) begin
-    evrResetSERDES <= 0;
+    if (evrResetSERDES) begin
+        serdesResetTimer <= serdesResetTimer - 1;
+    end
 end
 
 
 /*
- * Generate active-HIGH resets in evrClk domain
+ * Generate active-HIGH reset in evrClk domain
  */
 (*ASYNC_REG="true"*) reg evrReset_m = 1;
 (*MARK_DEBUG=DEBUG*) reg evrReset = 1;
-wire EnableTriState = ENABLE_TRISTATE_CONTROL;
-(*ASYNC_REG="true"*) reg [HARDWARE_OUTPUT_COUNT-1:0] evrTriState_m =
-                            {HARDWARE_OUTPUT_COUNT{ENABLE_TRISTATE_CONTROL[0]}};
-reg [HARDWARE_OUTPUT_COUNT-1:0] evrTriState =
-                            {HARDWARE_OUTPUT_COUNT{ENABLE_TRISTATE_CONTROL[0]}};
 always @(posedge evrClk) begin
     evrReset_m <= ~s_axi_aresetn;
     evrReset   <= evrReset_m;
-    evrTriState_m <= evrTriStateIn;
-    evrTriState   <= evrTriState_m;
 end
 
 /*
@@ -314,9 +302,6 @@ for (i = 0 ; i < HARDWARE_OUTPUT_COUNT ; i = i + 1) begin : outputDriver
     ospreyEVRoutputDriver #(
         .DATA_WIDTH(32),
         .SERDES_FACTOR(SERDES_FACTOR),
-        .ENABLE_TRISTATE_CONTROL(ENABLE_TRISTATE_CONTROL),
-        .TRISTATE_INIT_STATE(TRISTATE_INIT_STATE[i]),
-        .TRISTATE_RESET_STATE(TRISTATE_RESET_STATE[i]),
         .ACTIVE_LOW_OUTPUTS(ACTIVE_LOW_OUTPUTS),
         .DEBUG(DEBUG))
       ospreyEVRoutputDriver_i (
@@ -335,8 +320,6 @@ for (i = 0 ; i < HARDWARE_OUTPUT_COUNT ; i = i + 1) begin : outputDriver
         .evrSetIn(evrRawActions[i]),
         .evrResetIn(evrRawActions[i+1]),
         .extIn_a(hwDriverIn_a[i]),
-        .evrTriStateIn(evrTriState[i]),
-        .evrTriStateOut(evrTriStateOut[i]),
         .evrPin(evrHardwareOutputs[i]));
 end
 endgenerate
@@ -445,8 +428,7 @@ assign s_axi_rdata = readData;
 wire        activeLowOutputs = ACTIVE_LOW_OUTPUTS;
 wire  [3:0] serdesFactor = SERDES_FACTOR;
 wire  [4:0] hwOutputCount = HARDWARE_OUTPUT_COUNT;
-wire [31:0] sysStatus = {{32-HARDWARE_OUTPUT_COUNT-1-4-5-4{1'b0}}, 
-                        evrTriStateIn,
+wire [31:0] sysStatus = {{32-1-4-5-4{1'b0}}, 
                         activeLowOutputs,
                         serdesFactor,
                         hwOutputCount,
