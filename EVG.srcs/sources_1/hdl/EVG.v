@@ -24,7 +24,10 @@
 
 /*
  * Top level module
+ * For development the 'USE_PMOD_GPS' definition should be uncommented.
  */
+`define USE_PMOD_GPS
+
 `default_nettype none
 module EVG #(
     `include "gpio.v"
@@ -82,12 +85,19 @@ module EVG #(
     input  wire PMOD1_4,
     input  wire PMOD1_5,
     output wire PMOD1_6,
-    output wire PMOD1_7,
+    output wire PMOD1_7,  // Optional PPS out
 
+`ifdef USE_PMOD_GPS
+    input  wire PMOD2_0,  // PMOD-GPS 3DFix
+    output wire PMOD2_1,  // PMOD-GPS RxD
+    input  wire PMOD2_2,  // PMOD-GPS TxD
+    input  wire PMOD2_3,  // PMOD-GPS PPS
+`else
     input  wire PMOD2_0,
     input  wire PMOD2_1,
     output wire PMOD2_2,
     output wire PMOD2_3,
+`endif
     input  wire PMOD2_4,
     input  wire PMOD2_5,
     output wire PMOD2_6,
@@ -110,11 +120,36 @@ module EVG #(
 
 localparam MGT_DATA_WIDTH       = 16;
 localparam MGT_COMMA_ALIGN_BYTE = 1;
+localparam TIMESTAMP_WIDTH      = 64;
 
 ///////////////////////////////////////////////////////////////////////////////
 // Static outputs
 assign VCXO_EN = 1'b1;
 assign LD17 = 1'b0;
+
+///////////////////////////////////////////////////////////////////////////////
+// PMOD I/O routing
+// For development a PPS marker from a PMOD-GPS module drives a PMOD-TTL
+// output which is externally looped back to the RF-IN PPS input.
+
+wire [7:0] pmodOut;
+assign PMOD2_7 = pmodOut[7];
+assign PMOD2_6 = pmodOut[5];
+assign PMOD1_3 = pmodOut[2];
+assign PMOD1_6 = pmodOut[1];
+assign PMOD1_2 = pmodOut[0];
+
+`ifdef USE_PMOD_GPS
+assign PMOD1_7 = ~PMOD2_3;
+assign PMOD2_1 = 1'b1;
+`else
+assign PMOD2_3 = pmodOut[6];
+assign PMOD2_2 = pmodOut[4];
+assign PMOD1_7 = pmodOut[3];
+`endif
+
+wire [7:0] pmodIn = { ~PMOD2_5, ~PMOD2_1, ~PMOD2_4, ~PMOD2_0,
+                      ~PMOD1_5, ~PMOD1_1, ~PMOD1_4, ~PMOD1_0 };
 
 ///////////////////////////////////////////////////////////////////////////////
 // Clocks
@@ -174,15 +209,11 @@ sysClkCounters #(.CLK_RATE(CFG_SYSCLK_RATE), .DEBUG("false"))
 // PMOD1, if present, is a PMOD-IO (for production) or a PMOD-GPS (for testing).
 // PMOD2, if present, is a PMOD-IO.
 
-wire [15:0] evgHwInputs;
+wire [14:0] evgHwInputs;
 wire [31:0] ioSelectStatus;
 wire isEVG = ioSelectStatus[0];
 assign GPIO_IN[GPIO_IDX_IO_SELECT] = ioSelectStatus;
-wire ppsPrimary_out, ppsSecondary_out;
-
-wire [7:0] pmodIn = { ~PMOD2_5, ~PMOD2_1, ~PMOD2_4, ~PMOD2_0,
-                      ~PMOD1_5, ~PMOD1_1, ~PMOD1_4, ppsSecondary_out };
-wire [15:0] fmc1In = {FMC1_DIN, ppsPrimary_out};
+wire ppsPrimary_out;
 
 ioSelect #(.DEBUG("false"))
   ioSelect (
@@ -191,10 +222,11 @@ ioSelect #(.DEBUG("false"))
     .sysGPIO_OUT(GPIO_OUT),
     .sysStatus(GPIO_IN[GPIO_IDX_IO_SELECT]),
     .evgHwInputs(evgHwInputs),
-    .fmcInputs(fmc1In),
+    .fmcInputs(FMC1_DIN),
     .pmodInputs(pmodIn));
 
-assign GPIO_IN[GPIO_IDX_PMOD_FMC_MONITOR] = {8'b0, pmodIn, fmc1In};
+assign GPIO_IN[GPIO_IDX_PMOD_FMC_MONITOR] = {8'b0, pmodIn,
+                                             FMC1_DIN, ppsPrimary_out};
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -227,11 +259,11 @@ marbleClockSync #(
     .clk125(clk125),
     .clk500(clk500),
     .ppsPrimary_pin(FMC1_PPS),
-    .ppsSecondary_pin(~PMOD1_0),
+    .ppsSecondary_pin(1'b0),
     .ppsFromFabric(isEVG ? localPPSmarker : evrPPSmarker),
     .hwPPSmarker_a(hwPPSmarker_a),
     .ppsPrimary_out(ppsPrimary_out),
-    .ppsSecondary_out(ppsSecondary_out),
+    .ppsSecondary_out(),
     .hwPPSvalid(ppsValid),
     .ppsMarker(evgPPSmarker),
     .ppsToggle(),
@@ -285,44 +317,81 @@ mmcIO #(.DEBUG("false"))
 
 ///////////////////////////////////////////////////////////////////////////////
 // Multi-gigabit transceivers
-wire                      [CFG_MGT_COUNT-1:0] mgtRxClks;
-wire                      [CFG_MGT_COUNT-1:0] mgtRxLinkUp;
-wire     [(CFG_MGT_COUNT*MGT_DATA_WIDTH)-1:0] mgtRxChars;
-wire [(CFG_MGT_COUNT*(MGT_DATA_WIDTH/8))-1:0] mgtRxCharIsK;
-wire                     [MGT_DATA_WIDTH-1:0] evgTxChars;
-wire                 [(MGT_DATA_WIDTH/8)-1:0] evgTxCharIsK;
+// Machine protection data transfer.
+localparam MGT_CTYPE_WIDTH = (MGT_DATA_WIDTH+7) / 8;
+wire                  [MGT_DATA_WIDTH-1:0] evgTxChars;
+wire                 [MGT_CTYPE_WIDTH-1:0] evgTxCharIsK;
+wire                   [CFG_MGT_COUNT-1:0] mgtRxClks;
+wire                   [CFG_MGT_COUNT-1:0] mgtRxLinkUp;
+wire  [(CFG_MGT_COUNT*MGT_DATA_WIDTH)-1:0] mgtRxChars;
+wire [(CFG_MGT_COUNT*MGT_CTYPE_WIDTH)-1:0] mgtRxCharIsK;
+wire            [CFG_MPS_OUTPUT_COUNT-1:0] mpsTripped;
 
-mgtWrapper #(
+fiberLinks #(
     .MGT_COUNT(CFG_MGT_COUNT),
     .MGT_DATA_WIDTH(MGT_DATA_WIDTH),
-    .COMMA_ALIGN_BYTE(MGT_COMMA_ALIGN_BYTE),
-    .SYSCLK_RATE(CFG_SYSCLK_RATE),
-    .DEBUG("false"))
-  mgtWrapper_i (
+    .MPS_OUTPUT_COUNT(CFG_MPS_OUTPUT_COUNT),
+    .DEBUG("false"),
+    .DEBUG_MGT("true"),
+    .DEBUG_EVR("false"),
+    .DEBUG_EVF("false"),
+    .DEBUG_EVG("false"),
+    .DEBUG_EVS("true"),
+    .DEBUG_MPS("false"))
+  fiberLinks (
     .sysClk(sysClk),
-    .sysCsrStrobe(GPIO_STROBES[GPIO_IDX_MGT_CSR]),
+    .sysMgtCsrStrobe(GPIO_STROBES[GPIO_IDX_MGT_CSR]),
     .sysGPIO_OUT(GPIO_OUT),
-    .sysStatus(GPIO_IN[GPIO_IDX_MGT_CSR]),
+    .sysMgtStatus(GPIO_IN[GPIO_IDX_MGT_CSR]),
+    .sysLinkStatus(GPIO_IN[GPIO_IDX_LINK_STATUS]),
+    .isEVG(isEVG),
+    .mpsTripped_a(mpsTripped),
+    .mgtRxClks(mgtRxClks),
+    .mgtRxLinkUp(mgtRxLinkUp),
+    .mgtRxChars(mgtRxChars),
+    .mgtRxCharIsK(mgtRxCharIsK),
+    .mgtTxClk(evgClk),
+    .evgTxChars(evgTxChars),
+    .evgTxCharIsK(evgTxCharIsK),
     .gtRefClkP(MGTREFCLK0_116_P),
     .gtRefClkN(MGTREFCLK0_116_N),
     .gtRefClkDiv2(gtRefClkDiv2),
     .rxP(QSFP_RX_P),
     .rxN(QSFP_RX_N),
     .txP(QSFP_TX_P),
-    .txN(QSFP_TX_N),
-    .mgtRxClks(mgtRxClks),
-    .mgtRxLinkUp(mgtRxLinkUp),
-    .mgtRxChars(mgtRxChars),
-    .mgtRxCharIsK(mgtRxCharIsK),
-    .mgtTxClk(evgClk),
-    .mgtTxChars({CFG_MGT_COUNT{evgTxChars}}),
-    .mgtTxCharIsK({CFG_MGT_COUNT{evgTxCharIsK}}));
+    .txN(QSFP_TX_N));
 
-assign GPIO_IN[GPIO_IDX_LINK_STATUS] = {{32-CFG_MGT_COUNT{1'b0}}, mgtRxLinkUp};
-assign LD16 = mgtRxLinkUp[0]; // EVR link status
+// FIXME: Need some glitch-free way to drive PMOD outputs with either MPS trips or EVR hardware outputs.
 
 ///////////////////////////////////////////////////////////////////////////////
-// Merge MPS fault status
+// Machine protection operations
+wire [TIMESTAMP_WIDTH-1:0] evrTimestamp;
+mps #(
+    .EVR_MPS_CLEAR_EVENT(CFG_EVR_MPS_CLEAR_EVENT),
+    .MGT_COUNT(CFG_MGT_COUNT),
+    .MGT_DATA_WIDTH(MGT_DATA_WIDTH),
+    .MGT_CTYPE_WIDTH(MGT_CTYPE_WIDTH),
+    .MPS_INPUT_COUNT(CFG_MPS_INPUT_COUNT),
+    .MPS_OUTPUT_COUNT(CFG_MPS_OUTPUT_COUNT),
+    .TIMESTAMP_WIDTH(TIMESTAMP_WIDTH),
+    .DEBUG(DEBUG))
+  mps_i (
+    .sysClk(sysClk),
+    .sysLocalCsrStrobe(GPIO_STROBES[GPIO_IDX_MPS_LOCAL_CSR]),
+    .sysLocalDataStrobe(GPIO_STROBES[GPIO_IDX_MPS_LOCAL_DATA]),
+    .sysMergeCsrStrobe(GPIO_STROBES[GPIO_IDX_MPS_MERGE_CSR]),
+    .sysGPIO_OUT(GPIO_OUT),
+    .sysLocalStatus(GPIO_IN[GPIO_IDX_MPS_LOCAL_CSR]),
+    .sysLocalData(GPIO_IN[GPIO_IDX_MPS_LOCAL_DATA]),
+    .sysMergeStatus(GPIO_IN[GPIO_IDX_MPS_MERGE_CSR]),
+    .mgtRxClks(mgtRxClks),
+    .mgtRxChars(mgtRxChars),
+    .mgtRxCharIsK(mgtRxCharIsK),
+    .mgtRxLinkUp(mgtRxLinkUp),
+    .evrTimestamp(evrTimestamp),
+    .mpsInputStates_a(evgHwInputs[CFG_MPS_INPUT_COUNT-1:0]),
+    .mgtTxClk(evgClk),
+    .mpsTripped(mpsTripped));
 
 ///////////////////////////////////////////////////////////////////////////////
 // Measure clocks
@@ -425,13 +494,13 @@ bd bd_i (
     .evgHwInputs_a(evgHwInputs),
 
     .evrClk(mgtRxClks[0]),
-    .evrRxChars(mgtRxChars[15:0]),
-    .evrRxCharIsK(mgtRxCharIsK[1:0]),
+    .evrRxChars(mgtRxChars[MGT_DATA_WIDTH-1:0]),
+    .evrRxCharIsK(mgtRxChars[MGT_CTYPE_WIDTH-1:0]),
     .evrPPSmarker(evrPPSmarker),
     .evrLinkUp(mgtRxLinkUp[0]),
     .evrHwDriverIn(8'h00),
-    .evrHardwareOutputs({PMOD2_7, PMOD2_3, PMOD2_6, PMOD2_2,
-                         PMOD1_7, PMOD1_3, PMOD1_6, PMOD1_2}),
+    .evrHardwareOutputs(pmodOut),
+    .evrTimestamp(evrTimestamp),
 
     .console_rxd(FPGA_TxD),
     .console_txd(FPGA_RxD)

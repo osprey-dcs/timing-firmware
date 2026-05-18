@@ -1,7 +1,7 @@
 /*
  * MIT License
  *
- * Copyright (c) 2025 Osprey DCS
+ * Copyright (c) 2026 Osprey DCS
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,74 +23,74 @@
  */
 
 /*
- * Merge fault status from multiple receivers.
+ * Merge and forward MPS System trip status from multiple receivers.
  */
 `default_nettype none
 module mpsMerge #(
-    parameter MGT_COUNT          = 8,
-    parameter MGT_DATA_WIDTH     = 16,
-    parameter MPS_OUTPUT_COUNT   = 8,
-    parameter BASE_MERGE_MGT_IDX = 2,
-    parameter EVCODE_BYTE        = 1,
-    parameter DEBUG              = "false"
+    parameter MGT_COUNT        = -1,
+    parameter MGT_DATA_WIDTH   = -1,
+    parameter MPS_OUTPUT_COUNT = -1,
+    parameter DEBUG            = "false"
     ) (
     input  wire        sysClk,
     input  wire        sysCsrStrobe,
     input  wire [31:0] sysGPIO_OUT,
     output wire [31:0] sysStatus,
 
+    input  wire        evrClear,
+
     (*MARK_DEBUG=DEBUG*)input wire [(MGT_COUNT*MGT_DATA_WIDTH)-1:0] mgtRxChars,
     (*MARK_DEBUG=DEBUG*)input wire                  [MGT_COUNT-1:0] mgtRxLinkUp,
 
-    (*MARK_DEBUG=DEBUG*) output wire [MPS_OUTPUT_COUNT-1:0] mpsMergedFaults_a);
-
-localparam MUX_SEL_WIDTH = $clog2(MGT_COUNT);
-localparam DBUS_BASE_BIT = (1 - EVCODE_BYTE) * 8;
+                         input  wire                mgtTxClk,
+    (*MARK_DEBUG=DEBUG*) output reg [MGT_COUNT-1:0] mpsTripped);
 
 ///////////////////////////////////////////////////////////////////////////////
 // System clock domain
-(*MARK_DEBUG=DEBUG*) reg [MGT_COUNT-1:0] linkImportant = {MGT_COUNT{1'b1}};
-reg [MUX_SEL_WIDTH-1:0] muxSel = 0;
-(*ASYNC_REG="true"*) reg [MGT_DATA_WIDTH-1:0] faultMux;
+(*MARK_DEBUG=DEBUG*) reg [MGT_COUNT-1:0] linkImportant = ~0;
+wire [MPS_OUTPUT_COUNT-1:0] mpsTripped_a;
 
 always @(posedge sysClk) begin
     if (sysCsrStrobe) begin
-        if (sysGPIO_OUT[31]) begin
-            linkImportant <= sysGPIO_OUT[MGT_COUNT-1];
-        end
-        else begin
-            muxSel <= sysGPIO_OUT[MUX_SEL_WIDTH-1];
+        if (sysGPIO_OUT[12]) begin
+            linkImportant <= sysGPIO_OUT[0+:MGT_COUNT] &
+                                                    {{MGT_COUNT-1{1'b1}}, 1'b0};
         end
     end
-    faultMux <= 
-          mgtRxChars[((muxSel*MGT_DATA_WIDTH)+DBUS_BASE_BIT)+:MPS_OUTPUT_COUNT];
 end
-assign sysStatus = { {8-MPS_OUTPUT_COUNT{1'b0}}, mpsMergedFaults_a,
-                     {8-MPS_OUTPUT_COUNT{1'b0}}, faultMux,
+
+assign sysStatus = { {16-MPS_OUTPUT_COUNT{1'b0}}, mpsTripped_a,
                      {16-MGT_COUNT{1'b0}}, linkImportant };
 
 ///////////////////////////////////////////////////////////////////////////////
-// Merge fault status from all incoming fiber links.
+// Combinatorial merge
+// "To iterate is human, to recurse, divine." -- Attributed to L Peter Deutsch
 
-/*
- * Merging is done combinatorially since any race condition
- * will be resolved on the next transmitter clock cycle.
- *
- * "To iterate is human, to recurse, divine." -- Attributed to L Peter Deutsch
- */
 function [MPS_OUTPUT_COUNT-1:0] merge;
     input            [MPS_OUTPUT_COUNT-1:0] linkImportant;
     input                   [MGT_COUNT-1:0] mgtRxLinkUp;
     input  [(MGT_COUNT*MGT_DATA_WIDTH)-1:0] mgtRxChars;
-    input                           integer i;
-    merge = (i < BASE_MERGE_MGT_IDX) ? 0 :
-           (({MPS_OUTPUT_COUNT{linkImportant[i]}} &
-             (mgtRxChars[((i*MGT_DATA_WIDTH)+DBUS_BASE_BIT)+:MPS_OUTPUT_COUNT] |
-             {MPS_OUTPUT_COUNT{!mgtRxLinkUp[i]}})) |
+    input                             [7:0] i;
+    merge = (i == 0) ? 0 :
+             (({MPS_OUTPUT_COUNT{linkImportant[i]}} &
+                         (mgtRxChars[(i*MGT_DATA_WIDTH)+:MPS_OUTPUT_COUNT] |
+                                     {MPS_OUTPUT_COUNT{!mgtRxLinkUp[i]}})) |
                             merge(linkImportant, mgtRxLinkUp, mgtRxChars, i-1));
 endfunction
 
-assign mpsMergedFaults_a =
-                     merge(linkImportant, mgtRxLinkUp, mgtRxChars, MGT_COUNT-1);
+assign mpsTripped_a = merge(linkImportant, mgtRxLinkUp, mgtRxChars,MGT_COUNT-1);
+
+///////////////////////////////////////////////////////////////////////////////
+// MGT transmit clock domain
+reg [2:0] mpfTxPhase = 0;
+(*ASYNC_REG="true"*) reg [MPS_OUTPUT_COUNT-1:0] mpsTripped_m = 0;
+(*ASYNC_REG="true"*) reg mpsClear_m = 0;
+reg mpsClear = 0;
+always @(posedge mgtTxClk) begin
+    mpsClear_m <= evrClear; //FIXME: Needs stretching!
+    mpsClear   <= mpsClear_m;
+    mpsTripped_m <= mpsTripped_a;
+    mpsTripped   <= mpsTripped_m | (mpsTripped & ~{MPS_OUTPUT_COUNT{mpsClear}});
+end
 endmodule
 `default_nettype wire

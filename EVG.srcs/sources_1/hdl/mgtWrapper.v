@@ -1,7 +1,7 @@
 /*
  * MIT License
  *
- * Copyright (c) 2025 Osprey DCS
+ * Copyright (c) 2026 Osprey DCS
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -32,7 +32,8 @@ module mgtWrapper #(
     parameter MGT_DATA_WIDTH   = -1,
     parameter COMMA_ALIGN_BYTE = -1,
     parameter SYSCLK_RATE      = 100000000,
-    parameter DEBUG            = "false"
+    parameter DEBUG            = "false",
+    parameter MGT_CTYPE_WIDTH  = (MGT_DATA_WIDTH+7)/8
     ) (
     input  wire        sysClk,
     input  wire        sysCsrStrobe,
@@ -47,18 +48,17 @@ module mgtWrapper #(
     output wire [MGT_COUNT-1:0] txP,
     output wire [MGT_COUNT-1:0] txN,
 
-    output wire                      [MGT_COUNT-1:0] mgtRxClks,
-    output wire                      [MGT_COUNT-1:0] mgtRxLinkUp,
-    output wire     [(MGT_COUNT*MGT_DATA_WIDTH)-1:0] mgtRxChars,
-    output wire [(MGT_COUNT*(MGT_DATA_WIDTH/8))-1:0] mgtRxCharIsK,
+    output wire                   [MGT_COUNT-1:0] mgtRxClks,
+    output wire                   [MGT_COUNT-1:0] mgtRxLinkUp,
+    output wire  [(MGT_COUNT*MGT_DATA_WIDTH)-1:0] mgtRxChars,
+    output wire [(MGT_COUNT*MGT_CTYPE_WIDTH)-1:0] mgtRxCharIsK,
 
-    output wire                                      mgtTxClk,
-    input  wire     [(MGT_COUNT*MGT_DATA_WIDTH)-1:0] mgtTxChars,
-    input  wire [(MGT_COUNT*(MGT_DATA_WIDTH/8))-1:0] mgtTxCharIsK);
+    output wire                                   mgtTxClk,
+    input  wire  [(MGT_COUNT*MGT_DATA_WIDTH)-1:0] mgtTxChars,
+    input  wire [(MGT_COUNT*MGT_CTYPE_WIDTH)-1:0] mgtTxCharIsK);
 
 localparam MGT_STATUS_WIDTH = 4;
 localparam MGT_SEL_WIDTH = (MGT_COUNT < 2) ? 1 : $clog2(MGT_COUNT);
-localparam MGT_BYTE_COUNT = MGT_DATA_WIDTH / 8;
 
 localparam RESET_APPLY_COUNTER_LOAD = SYSCLK_RATE / 10000;
 localparam RESET_APPLY_COUNTER_WIDTH = $clog2(RESET_APPLY_COUNTER_LOAD+1) + 1;
@@ -101,7 +101,7 @@ wire rxSoftReset = rxSoftResetCounter[RESET_APPLY_COUNTER_WIDTH-1];
 wire txSoftReset = txSoftResetCounter[RESET_APPLY_COUNTER_WIDTH-1];
 
 /*
- * Lopback control (first MGT only)
+ * Loopback control (first MGT only)
  */
 reg [2:0] loopback [0:MGT_COUNT-1];
 
@@ -177,13 +177,13 @@ BUFG txoutclk_bufg(.I(mgtTxClkUnbuf), .O(mgtTxClk));
 ///////////////////////////////////////////////////////////////////////////////
 // Per-lane code
 
-wire      [MGT_COUNT-1:0] mgtRxClksUnbuf;
-wire [MGT_DATA_WIDTH-1:0] mgtRxData [0:MGT_COUNT-1];
-wire [MGT_BYTE_COUNT-1:0] mgtRxDataK [0:MGT_COUNT-1];
-wire [MGT_BYTE_COUNT-1:0] mgtRxNotInTable [0:MGT_COUNT-1];
-reg       [MGT_COUNT-1:0] mgtRxSlide = 0;
-wire [MGT_DATA_WIDTH-1:0] mgtTxData [0:MGT_COUNT-1];
-wire [MGT_BYTE_COUNT-1:0] mgtTxDataIsK [0:MGT_COUNT-1];
+wire       [MGT_COUNT-1:0] mgtRxClksUnbuf;
+wire  [MGT_DATA_WIDTH-1:0] mgtRxData [0:MGT_COUNT-1];
+wire [MGT_CTYPE_WIDTH-1:0] mgtRxDataK [0:MGT_COUNT-1];
+wire [MGT_CTYPE_WIDTH-1:0] mgtRxNotInTable [0:MGT_COUNT-1];
+reg        [MGT_COUNT-1:0] mgtRxSlide = 0;
+wire  [MGT_DATA_WIDTH-1:0] mgtTxData [0:MGT_COUNT-1];
+wire [MGT_CTYPE_WIDTH-1:0] mgtTxDataIsK [0:MGT_COUNT-1];
 
 genvar i;
 generate
@@ -192,7 +192,7 @@ for (i = 0 ; i < MGT_COUNT ; i = i + 1) begin : perLane
  * Split out transmit values
  */
 assign    mgtTxData[i] = mgtTxChars[MGT_DATA_WIDTH*i+:MGT_DATA_WIDTH];
-assign mgtTxDataIsK[i] = mgtTxCharIsK[MGT_BYTE_COUNT*i+:MGT_BYTE_COUNT];
+assign mgtTxDataIsK[i] = mgtTxCharIsK[MGT_CTYPE_WIDTH*i+:MGT_CTYPE_WIDTH];
 
 /*
  * Buffer recovered clock
@@ -204,7 +204,7 @@ BUFG rxclk_bufg(.I(mgtRxClksUnbuf[i]), .O(mgtRxClks[i]));
  */
 mgtLinkStatus #(
     .MGT_DATA_WIDTH(MGT_DATA_WIDTH),
-    .MGT_BYTE_COUNT(MGT_BYTE_COUNT),
+    .MGT_CTYPE_WIDTH(MGT_CTYPE_WIDTH),
     .COMMA_ALIGN_BYTE(COMMA_ALIGN_BYTE),
     .DEBUG(DEBUG))
   mgtLinkStatus_i (
@@ -214,7 +214,7 @@ mgtLinkStatus #(
     .mgtDataIsK(mgtRxDataK[i]),
     .mgtRxNotInTable(mgtRxNotInTable[i]),
     .rxChars(mgtRxChars[(i*MGT_DATA_WIDTH)+:MGT_DATA_WIDTH]),
-    .rxCharIsK(mgtRxCharIsK[i*2+:2]),
+    .rxCharIsK(mgtRxCharIsK[i*MGT_CTYPE_WIDTH+:MGT_CTYPE_WIDTH]),
     .rxLinkUp(mgtRxLinkUp[i]));
 
 /*
@@ -1010,17 +1010,17 @@ endmodule
  */
 module mgtLinkStatus #(
     parameter MGT_DATA_WIDTH   = -1,
-    parameter MGT_BYTE_COUNT   = -1,
+    parameter MGT_CTYPE_WIDTH  = -1,
     parameter COMMA_ALIGN_BYTE = -1,
     parameter DEBUG            = "false"
     ) (
     input  wire                                            clk,
     input  wire                                            powerdown,
     (*MARK_DEBUG=DEBUG*) input  wire  [MGT_DATA_WIDTH-1:0] mgtData,
-    (*MARK_DEBUG=DEBUG*) input  wire  [MGT_BYTE_COUNT-1:0] mgtDataIsK,
-    (*MARK_DEBUG=DEBUG*) input  wire  [MGT_BYTE_COUNT-1:0] mgtRxNotInTable,
+    (*MARK_DEBUG=DEBUG*) input  wire [MGT_CTYPE_WIDTH-1:0] mgtDataIsK,
+    (*MARK_DEBUG=DEBUG*) input  wire [MGT_CTYPE_WIDTH-1:0] mgtRxNotInTable,
     (*MARK_DEBUG=DEBUG*) output reg   [MGT_DATA_WIDTH-1:0] rxChars,
-    (*MARK_DEBUG=DEBUG*) output reg   [MGT_BYTE_COUNT-1:0] rxCharIsK,
+    (*MARK_DEBUG=DEBUG*) output reg  [MGT_CTYPE_WIDTH-1:0] rxCharIsK,
     (*MARK_DEBUG=DEBUG*) output wire                       rxLinkUp);
 
 if ((COMMA_ALIGN_BYTE < 0) || (COMMA_ALIGN_BYTE >= MGT_DATA_WIDTH)) begin
