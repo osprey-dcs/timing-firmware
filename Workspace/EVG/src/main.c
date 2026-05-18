@@ -99,8 +99,6 @@ main(void)
     ioSelectInit();
     ospreyRFINinit();
     mgtClkSwitchInit();
-    mgtClkSwitchConnectOutputToInput(MGT_CLK_SWITCH_OUTPUT_MGTCLK0,
-                                     systemParameters.mgtClkSwitch0);
     xadcInit();
     mgtInit();
     tftpInit();

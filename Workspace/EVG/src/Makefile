@@ -54,7 +54,7 @@ softwareBuildDate.h: clockAdjust.c \
                      JSONrom.h
 	sh setSoftwareBuildDate.sh >softwareBuildDate.h
 
-$(VERILOG_HEADER): gpio.h
+$(VERILOG_HEADER): config.h gpio.h
 	echo "UPDATING VERILOG HEADER -- FIRMWARE MUST BE REBUILT!"
 	sh createVerilogHeader.sh "$(VERILOG_HEADER)"
 

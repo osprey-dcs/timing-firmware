@@ -100,7 +100,7 @@ mgtInit(void)
             break;
         }
         if ((microsecondsSinceBoot() - then) > 1000000) {
-            printf("Warning -- QPLL Unlocked: %08X\n", csr);
+            printf("Warning -- QPLL unlocked: %08X\n", csr);
             break;
         }
     }

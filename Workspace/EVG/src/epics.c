@@ -99,23 +99,51 @@ struct LEEPpacket {
 
 static int powerUpFlag = 1;
 
-static void
+void
 setMgtClkSwitch0(int inputClkIndex)
 {
     uint32_t now;
     static uint32_t whenWritten;
+    static int writeCount;
     if ((inputClkIndex < 0)
      || (inputClkIndex >= MGT_CLK_SWITCH_INPUT_DISABLE_OUTPUT)) {
         return;
     }
-    if (inputClkIndex != systemParameters.mgtClkSwitch0) {
+    if (((inputClkIndex == MGT_CLK_SWITCH_INPUT_FMC1_GBTCLK0)
+      || (inputClkIndex == MGT_CLK_SWITCH_INPUT_FMC1_GBTCLK1))
+     && (!(ioSelectStatus() & IOSELECT_STATUS_FMC_IS_PRESENT))) {
+        printf("WARNING -- Setting MGT clock to FMC1 GBTCLK but "
+               "RF-IN mezzanine card is not present!\n");
+    }
+    if ((whenWritten == 0)
+     || (inputClkIndex != systemParameters.mgtClkSwitch0)) {
         mgtClkSwitchConnectOutputToInput(MGT_CLK_SWITCH_OUTPUT_MGTCLK0,
                                          inputClkIndex);
-        now = GPIO_READ(GPIO_IDX_SECONDS_SINCE_BOOT);
-        if ((whenWritten != 0) && ((now - whenWritten) < 300)) {
-            return;
+        if ((whenWritten == 0) || (debugFlags & DEBUGFLAG_EPICS_WRITE)) {
+            printf("Drive MGT clock from ");
+            switch(inputClkIndex) {
+            case MGT_CLK_SWITCH_INPUT_FPGA_REF_CLK0:
+                                                printf("FPGA Ref Clk 0"); break;
+            case MGT_CLK_SWITCH_INPUT_FMC1_GBTCLK0:
+                                                printf("FMC1 GBTCLK0");   break;
+            case MGT_CLK_SWITCH_INPUT_FMC1_GBTCLK1:
+                                                printf("FMC1 GBTCLK1");   break;
+            default:                   printf("Input %d", inputClkIndex); break;
+            }
+            printf(".\n");
         }
         systemParameters.mgtClkSwitch0 = inputClkIndex;
+        now = GPIO_READ(GPIO_IDX_SECONDS_SINCE_BOOT);
+        if ((now - whenWritten) > 120) {
+            writeCount = 0;
+        }
+        else {
+            writeCount++;
+        }
+        if (writeCount >= 5) {
+            printf("Warning -- MGT clock reference changing rapidly.  "
+                   "Risk of flash wear.\n");
+        }
         systemParametersStash();
         whenWritten = now;
     }
@@ -239,7 +267,6 @@ epicsHandler(ospreyUDPendpoint endpoint, uint32_t farAddress, int farPort,
     static struct LEEPpacket reply;
     struct LEEPreg *replyReg = &reply.regs[0];
     int printed = 0;
-
 
     /*
      * Ignore packets that are clearly invalid

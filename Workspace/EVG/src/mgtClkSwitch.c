@@ -27,8 +27,10 @@
  */
 #include <stdio.h>
 #include <stdint.h>
+#include "epics.h"
 #include "iicFPGA.h"
 #include "mgtClkSwitch.h"
+#include "systemParameters.h"
 #include "util.h"
 
 #define REG_XPT_RESET   0x00
@@ -90,6 +92,7 @@ mgtClkSwitchInit(void)
     for (outputIndex = 0 ; outputIndex < 8 ; outputIndex++) {
         outputEnable(outputIndex, 0);
     }
+    setMgtClkSwitch0(systemParameters.mgtClkSwitch0);
 }
 
 void

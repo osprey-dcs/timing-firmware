@@ -47,6 +47,9 @@
 #define GPIO_IDX_IO_SELECT                 11 // Hardware configuration
 #define GPIO_IDX_PMOD_FMC_MONITOR          12 // Hardware inputs
 #define GPIO_IDX_RFIN_CONTROL              13 // RF-IN FMC device control
+#define GPIO_IDX_MPS_LOCAL_CSR             14 // Local MPS configuration
+#define GPIO_IDX_MPS_LOCAL_DATA            15 // Local MPS configuration
+#define GPIO_IDX_MPS_MERGE_CSR             16 // Merge MPS from other nodes
 
 #define GPIO_IDX_COUNT                     32 // Number of GPIO registers
 

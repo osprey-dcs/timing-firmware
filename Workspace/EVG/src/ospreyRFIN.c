@@ -101,14 +101,18 @@ ads7253writeRegister(int cmd, int value)
     ads7253shift48((cmd << 12) | (value & 0xFFF));
 }
 
+/*
+ * Read RF signal level
+ * Note that the second ADC channel reads the level of the first RF input (!!).
+ */
 int
 ospreyRFINreadADS7253(int i)
 {
     uint32_t r = GPIO_READ(GPIO_IDX_RFIN_CONTROL);
     if (i) {
-        return r & 0xFFFF;
+        return r >> 16;
     }
-    return r >> 16;
+    return r & 0xFFFF;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -131,15 +135,13 @@ lmk01801writeRegister(uint32_t shiftReg)
 
 /*
  * Configure LMK01801 clock distribution
- * FIXME: The divider values should be settable.  Perhaps as system parameters
- *        or perhaps as EPICS records.
  *  For now:
  *   CLK0 input:
- *     CLK0_M2C -- divide by 2
- *     GBTCLK0  -- divide by 1
+ *     CLK0_M2C -- LMK01801 CLK0  -- divide by 2
+ *     GBTCLK1  -- LMK01801 CLK4  -- divide by 1
  *   CLK1 input:
- *     GBTCLK1  -- divide by 1
- *     CLK1_M2C -- divide by 2 (This affects the J20 diagnostic output as well)
+ *     GBTCLK0  -- LMK01801 CLK8  -- divide by 1
+ *     CLK1_M2C -- LMK01801 CLK12 -- divide by 2 (J20 diagnostic output too)
  */
 static void
 lmk01801init(void)
@@ -169,7 +171,9 @@ lmk01801init(void)
     /* R4 -- no delay */
     lmk01801writeRegister(0x00000004);
 
-    /* R5 -- divide by 2 for CLKout0 (CLK0_M2C)
+    /* R5 -- FIXME: The divider values should be settable.
+     *       Perhaps as system parameter or perhaps as EPICS records.
+     *       divide by 2 for CLKout0 (CLK0_M2C)
      *       divide by 1 for CLKout4 (GBTCLK1) 
      *       divide by 1 for CLKout8 (GBTCLK0)
      *       divide by 2 for CLKout12 and CLKout13 (CLK1_M2C, J20)

@@ -161,7 +161,7 @@ clockAdjustScan(void)
 void
 clockAdjustSetDAC(int dacSelect, int dacValue)
 {
-    if (dacValue == DAC_VALUE_CLOSE_LOOP) {
+    if ((dacSelect == 0) && (dacValue == DAC_VALUE_CLOSE_LOOP)) {
         GPIO_WRITE(GPIO_IDX_MARBLE_VCXO_PLL_CSR, CSR_W_ENABLE);
     }
     else {

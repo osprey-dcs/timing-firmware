@@ -42,9 +42,11 @@
 #define CFG_MGT_COUNT       8
 
 /*
- * Ethernet packet capacity (1500) - IP header size (20) - UDP header size (8)
+ * Machine protection
  */
-#define CFG_UDP_PACKET_CAPACITY 1472
+#define CFG_MPS_INPUT_COUNT     8
+#define CFG_MPS_OUTPUT_COUNT    8
+#define CFG_EVR_MPS_CLEAR_EVENT 126
 
 /*
  * Location of alternate boot image in flash memory
