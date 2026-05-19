@@ -70,9 +70,6 @@ ioSelectInit(void)
         }
     }
     ioSelectShow();
-    if (!systemParameters.ntpServer) {
-        mgtSetLoopback(0, MGT_LOOPBACK_FAR_PMA);
-    }
 }
 
 int
