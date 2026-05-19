@@ -101,7 +101,7 @@ wire rxSoftReset = rxSoftResetCounter[RESET_APPLY_COUNTER_WIDTH-1];
 wire txSoftReset = txSoftResetCounter[RESET_APPLY_COUNTER_WIDTH-1];
 
 /*
- * Loopback control (first MGT only)
+ * Loopback control
  */
 reg [2:0] loopback [0:MGT_COUNT-1];
 
