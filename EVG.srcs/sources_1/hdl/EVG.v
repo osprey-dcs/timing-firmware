@@ -26,7 +26,7 @@
  * Top level module
  * For development the 'USE_PMOD_GPS' definition should be uncommented.
  */
-`define USE_PMOD_GPS
+//`define USE_PMOD_GPS
 
 `default_nettype none
 module EVG #(
@@ -133,6 +133,8 @@ assign LD17 = 1'b0;
 // output which is externally looped back to the RF-IN PPS input.
 
 wire [7:0] pmodOut;
+wire ppsSecondary_out;
+
 assign PMOD2_7 = pmodOut[7];
 assign PMOD2_6 = pmodOut[5];
 assign PMOD1_3 = pmodOut[2];
@@ -140,9 +142,11 @@ assign PMOD1_6 = pmodOut[1];
 assign PMOD1_2 = pmodOut[0];
 
 `ifdef USE_PMOD_GPS
-assign PMOD1_7 = ~PMOD2_3;
+wire ppsSecondary = PMOD2_3;
+assign PMOD1_7 = ~ppsSecondary_out;
 assign PMOD2_1 = 1'b1;
 `else
+wire ppsSecondary = 1'b0;
 assign PMOD2_3 = pmodOut[6];
 assign PMOD2_2 = pmodOut[4];
 assign PMOD1_7 = pmodOut[3];
@@ -259,11 +263,11 @@ marbleClockSync #(
     .clk125(clk125),
     .clk500(clk500),
     .ppsPrimary_pin(FMC1_PPS),
-    .ppsSecondary_pin(1'b0),
+    .ppsSecondary_pin(ppsSecondary),
     .ppsFromFabric(isEVG ? localPPSmarker : evrPPSmarker),
     .hwPPSmarker_a(hwPPSmarker_a),
     .ppsPrimary_out(ppsPrimary_out),
-    .ppsSecondary_out(),
+    .ppsSecondary_out(ppsSecondary_out),
     .hwPPSvalid(ppsValid),
     .ppsMarker(evgPPSmarker),
     .ppsToggle(),
