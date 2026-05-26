@@ -252,7 +252,7 @@ localPPS #(.DEBUG("false"))
 // DAC2 adjusts the 20 MHz system clock.
 wire ppsValid, evgPPSmarker, hwPPSmarker_a, evrPPSmarker;
 marbleClockSync #(
-    .DEBUG("false"))
+    .DEBUG("true"))
   marbleClockSync (
     .sysClk(sysClk),
     .sysCsrStrobe(GPIO_STROBES[GPIO_IDX_MARBLE_VCXO_PLL_CSR]),
@@ -336,11 +336,11 @@ fiberLinks #(
     .MGT_DATA_WIDTH(MGT_DATA_WIDTH),
     .MPS_OUTPUT_COUNT(CFG_MPS_OUTPUT_COUNT),
     .DEBUG("false"),
-    .DEBUG_MGT("true"),
+    .DEBUG_MGT("false"),
     .DEBUG_EVR("false"),
     .DEBUG_EVF("false"),
     .DEBUG_EVG("false"),
-    .DEBUG_EVS("true"),
+    .DEBUG_EVS("false"),
     .DEBUG_MPS("false"))
   fiberLinks (
     .sysClk(sysClk),
