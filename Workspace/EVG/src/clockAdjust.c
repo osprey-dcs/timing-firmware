@@ -161,6 +161,9 @@ clockAdjustScan(void)
 void
 clockAdjustSetDAC(int dacSelect, int dacValue)
 {
+    if (debugFlags & DEBUGFLAG_CLOCKADJUST_SHOW) {
+        printf("clockAdjustSetDAC(%d, %d)\n", dacSelect, dacValue);
+    }
     if ((dacSelect == 0) && (dacValue == DAC_VALUE_CLOSE_LOOP)) {
         GPIO_WRITE(GPIO_IDX_MARBLE_VCXO_PLL_CSR, CSR_W_ENABLE);
     }
@@ -168,10 +171,21 @@ clockAdjustSetDAC(int dacSelect, int dacValue)
         uint32_t csr = GPIO_READ(GPIO_IDX_MARBLE_VCXO_PLL_CSR);
         if (csr & CSR_R_PLL_ENABLED) {
             GPIO_WRITE(GPIO_IDX_MARBLE_VCXO_PLL_CSR, CSR_W_DISABLE);
+            /*
+             * Could hang here for up to a second, but disabling the PLL
+             * should be a fairly rare occurence.
+             */
+            while (GPIO_READ(GPIO_IDX_MARBLE_VCXO_PLL_CSR)&CSR_R_PLL_ENABLED) {
+                microsecondSpin(100);
+            }
         }
         GPIO_WRITE(GPIO_IDX_MARBLE_VCXO_PLL_CSR, CSR_W_SET_DAC |
                                                 (dacSelect ? CSR_W_VCXO20 : 0) |
                                                 (dacValue & CSR_W_DAC_MASK));
+        if (dacSelect && (csr & CSR_R_PLL_ENABLED)) {
+            microsecondSpin(10);
+            GPIO_WRITE(GPIO_IDX_MARBLE_VCXO_PLL_CSR, CSR_W_ENABLE);
+        }
     }
 }
 
