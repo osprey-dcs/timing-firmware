@@ -1,7 +1,7 @@
 /*
  * MIT License
  *
- * Copyright (c) 2025 Osprey DCS
+ * Copyright (c) 2026 Osprey DCS
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -33,7 +33,7 @@
 `default_nettype none
 module marbleClockSync #(
     parameter      CLK_RATE          = 125000000,
-    parameter real DAC_COUNTS_PER_HZ = 28.0,
+    parameter real DAC_COUNTS_PER_HZ = 27.8,
     parameter      DEBUG             = "false"
     ) (
     input  wire        sysClk,
@@ -59,7 +59,7 @@ module marbleClockSync #(
 
 localparam DAC_WIDTH = 16;
 localparam UNLOCK_COUNT = 20; // Unlocked until good for this many samples
-localparam SCALE_SHIFT = 9; // Integer arithmetic scaling
+localparam SCALE_SHIFT = 6; // Integer arithmetic scaling
 localparam FINE_ERROR_WIDTH = 3;
 localparam LOW_JITTER_THRESHOLD_NS = 32;
 localparam JITTER_HYSTERESIS_NS = 5;
@@ -81,13 +81,10 @@ always @(posedge sysClk) begin
         else if (sysGPIO_OUT[31]) begin
             sysPLLenable <= 1;
         end
-        if (sysGPIO_OUT[29]) begin
-            sysDACvalue = sysGPIO_OUT[DAC_WIDTH-1:0];
+        if (sysGPIO_OUT[29] && !sysPLLenable) begin
+            sysDACvalue <= sysGPIO_OUT[DAC_WIDTH-1:0];
             sysUpdateVCXO20 <= sysGPIO_OUT[DAC_WIDTH];
             sysDACtoggle <= !sysDACtoggle;
-        end
-        else begin
-            sysUpdateVCXO20 <= 0;
         end
         if (sysGPIO_OUT[27]) begin
             sysIsOffsetBinary <= 0;
@@ -215,7 +212,8 @@ localparam CLK_COUNTER_WIDTH = $clog2(CLK_COUNTER_LOAD+1)+1;
 reg [CLK_COUNTER_WIDTH-1:0] clkCounter = CLK_COUNTER_LOAD;
 reg clkCounterEnable = 0;
 (*MARK_DEBUG=DEBUG*) wire swPPSstrobe = clkCounter[CLK_COUNTER_WIDTH-1];
-reg [CLK_COUNTER_WIDTH-1:0] hwIntervalCounter = 0, hwInterval = 0;
+(*MARK_DEBUG=DEBUG*) reg [CLK_COUNTER_WIDTH-1:0] hwIntervalCounter = 0;
+(*MARK_DEBUG=DEBUG*) reg [CLK_COUNTER_WIDTH-1:0] hwInterval = 0;
 
 localparam PPS_STRETCH_LOAD = CLK_RATE / 100000;
 localparam PPS_STRETCH_WIDTH = $clog2(PPS_STRETCH_LOAD+1)+1;
@@ -263,7 +261,7 @@ reg [UNLOCK_COUNTER_WIDTH-1:0] unlockCounter = UNLOCK_COUNTER_RELOAD;
 (*ASYNC_REG="true"*) reg dacManualToggle_m = 0;
 (*MARK_DEBUG=DEBUG*) reg dacManualToggle = 0, dacManualToggleCheck = 0;
 
-// Control action
+// Control action change
 // Add one bit to handle the case where the proportional and integral terms
 // have different signs, so the sum might not need the extra bit, the
 // individual terms might.
@@ -272,42 +270,42 @@ localparam CTRL_WIDTH = PHASE_ERROR_WIDTH + SCALE_SHIFT + 1;
 
 // Saturate (avoid integrator windup)
 // Limit DAC output to linear part of VCXO range
-localparam DAC_LIMIT = (((1 << (DAC_WIDTH - 1)) - 1) * 7) / 8;
-localparam CTRL_LIMIT = $rtoi((DAC_LIMIT << (SCALE_SHIFT + FINE_ERROR_WIDTH)) /
-                                                             DAC_COUNTS_PER_HZ);
-localparam CTRL_LIMIT_WIDTH = $clog2(CTRL_LIMIT+1) + 1;
-wire signed [CTRL_WIDTH-1:0] ctrlAccumulateLimit = CTRL_LIMIT;
-(*MARK_DEBUG=DEBUG*) reg signed [CTRL_WIDTH-1:0] ctrlAccumulate = 0;
-(*MARK_DEBUG=DEBUG*) wire signed [CTRL_WIDTH-1:0] ctrlAccumulateNext =
-                                                     ctrlAccumulate + ctrlDelta;
+(*MARK_DEBUG=DEBUG*)
+wire signed [DAC_WIDTH:0] dacLimitWide = (((1 << (DAC_WIDTH - 1)) - 1) * 7) / 8;
 
 // VCXO scaling
-// Extra bit accounts for signed DSP multiplier.
-localparam DAC_CALIB_WIDTH = $clog2(DAC_PER_HZ_SCALED+1) + 1;
-wire signed [DAC_CALIB_WIDTH-1:0] dacCalibFactor = DAC_PER_HZ_SCALED;
-localparam PRODUCT_WIDTH = CTRL_LIMIT_WIDTH + DAC_CALIB_WIDTH;
-(*MARK_DEBUG=DEBUG*) reg signed [PRODUCT_WIDTH-1:0] product;
+// Choose widths to match DSP48.
+// Explicitly specify sign extension
+//   Vivado fails to do the sign extension implicitly.
+(*MARK_DEBUG=DEBUG*) wire signed [24:0] termA = ctrlDelta;
+(*MARK_DEBUG=DEBUG*) wire signed [17:0] termB = DAC_PER_HZ_SCALED;
+(*MARK_DEBUG=DEBUG*) reg  signed [42:0] product;
+(*MARK_DEBUG=DEBUG*) wire signed [DAC_WIDTH:0] dacDeltaWide =
+           product[(SCALE_SHIFT+FINE_ERROR_WIDTH+DAC_SCALE_SHIFT)+:DAC_WIDTH+1];
 (*MARK_DEBUG=DEBUG*) reg signed [DAC_WIDTH-1:0] dacValue = 0;
-(*MARK_DEBUG=DEBUG*) reg [1:0] dacSync_n = ~0;
+(*MARK_DEBUG=DEBUG*)
+wire signed [DAC_WIDTH:0] dacValueWide = dacValue;
+(*MARK_DEBUG=DEBUG*)
+wire signed [DAC_WIDTH:0] dacNextWide = dacValueWide + dacDeltaWide;
 
 // DAC data transfer
-// Assume sysIsOffsetBinary changes only when DAC updates are disabled
-wire [DAC_WIDTH-1:0] sendValue = dacValue ^
-                                        {sysIsOffsetBinary,{DAC_WIDTH-1{1'b0}}};
 (*MARK_DEBUG=DEBUG*) reg dacUpdateToggle = 0;
 (*MARK_DEBUG=DEBUG*) reg dacBusy = 0;
+wire [DAC_WIDTH-1:0] sendValue = (enable ? dacValue : sysDACvalue) ^
+                                       {sysIsOffsetBinary, {DAC_WIDTH-1{1'b0}}};
 
 // State machine
 localparam [3:0] PLL_ST_INIT                    = 4'd0,
-                 PLL_ST_OPEN_LOOP               = 4'd1,
-                 PLL_ST_AWAIT_EITHER_PPS        = 4'd2,
-                 PLL_ST_AWAIT_SW_PPS            = 4'd3,
-                 PLL_ST_AWAIT_HW_PPS            = 4'd4,
-                 PLL_ST_COMPUTE_PHASE_ERROR     = 4'd5,
-                 PLL_ST_COMPUTE_CONTROL_DELTA   = 4'd6,
-                 PLL_ST_ACCUMULATE_AND_SATURATE = 4'd7,
-                 PLL_ST_COMPUTE_DAC_VALUE       = 4'd8,
-                 PLL_ST_UPDATE_DAC              = 4'd9;
+                 PLL_ST_FIRST_UPDATE            = 4'd1,
+                 PLL_ST_OPEN_LOOP               = 4'd2,
+                 PLL_ST_AWAIT_EITHER_PPS        = 4'd3,
+                 PLL_ST_AWAIT_SW_PPS            = 4'd4,
+                 PLL_ST_AWAIT_HW_PPS            = 4'd5,
+                 PLL_ST_COMPUTE_PHASE_ERROR     = 4'd6,
+                 PLL_ST_COMPUTE_CONTROL_DELTA   = 4'd7,
+                 PLL_ST_ADJUST_LOOP_GAIN        = 4'd8,
+                 PLL_ST_COMPUTE_DAC_DELTA       = 4'd9,
+                 PLL_ST_UPDATE_DAC              = 4'd10;
 (*MARK_DEBUG=DEBUG*) reg [3:0] pllState = PLL_ST_INIT;
 (*MARK_DEBUG=DEBUG*) reg jitterIsHigh = 0;
 
@@ -316,6 +314,7 @@ localparam START_DELAY_LOAD = (2 * CLK_RATE) + (CLK_RATE / 4);
 localparam START_DELAY_WIDTH = $clog2(START_DELAY_LOAD+1) + 1;
 reg [START_DELAY_WIDTH-1:0] startDelay = START_DELAY_LOAD;
 wire startDelayDone = startDelay[START_DELAY_WIDTH-1];
+
 
 always @(posedge clk125) begin
     /*
@@ -353,10 +352,8 @@ always @(posedge clk125) begin
         ppsStretch <= -PPS_STRETCH_LOAD;
         ppsToggle <= !ppsToggle;
     end
-    else begin
-        if (ppsMarker) begin
-            ppsStretch <= ppsStretch + 1;
-        end
+    else if (ppsMarker) begin
+        ppsStretch <= ppsStretch + 1;
     end
 
     /*
@@ -371,8 +368,13 @@ always @(posedge clk125) begin
              * Ensure that the DAC is in a known state by writing to it now.
              */
             dacValue <= 0;
-            dacSync_n <= 0;
             dacUpdateToggle <= !dacUpdateToggle;
+            startDelay <= CLK_RATE / 10000;
+            pllState <= PLL_ST_FIRST_UPDATE;
+        end
+    end
+    PLL_ST_FIRST_UPDATE: begin
+        if (startDelayDone) begin
             pllState <= PLL_ST_OPEN_LOOP;
         end
     end
@@ -382,16 +384,13 @@ always @(posedge clk125) begin
         phaseErrorCoarse <= 0;
         phaseErrorOld <= 0;
         jitterAccumulator <= 0;
-        ctrlAccumulate <= 0;
         unlockCounter <= UNLOCK_COUNTER_RELOAD;
         if (enable && hwPPSvalid && hwPPSstrobe) begin
-            dacSync_n <= 2'b10;
             pllState <= PLL_ST_AWAIT_HW_PPS;
         end
         else if (dacManualToggle != dacManualToggleCheck) begin
             dacManualToggleCheck <= dacManualToggle;
-            dacValue <= sysDACvalue;
-            dacSync_n <= sysUpdateVCXO20 ? 2'b01 : 2'b10;
+            if (!sysUpdateVCXO20) dacValue <= sysDACvalue;
             dacUpdateToggle <= !dacUpdateToggle;
         end
     end
@@ -428,12 +427,11 @@ always @(posedge clk125) begin
                  * slew to get frequency close to steady-state value
                  * and phase close to zero on next update.
                  */
-                phaseError <= (CLK_RATE - hwIntervalCounter)
-                                                        << FINE_ERROR_WIDTH;
+                phaseError <= 0;
                 ctrlDelta <= (CLK_RATE - hwIntervalCounter) <<
-                                             (SCALE_SHIFT+FINE_ERROR_WIDTH);
+                                                 (SCALE_SHIFT+FINE_ERROR_WIDTH);
                 clkCounterEnable <= 1;
-                pllState <= PLL_ST_ACCUMULATE_AND_SATURATE;
+                pllState <= PLL_ST_COMPUTE_DAC_DELTA;
             end
         end
     end
@@ -461,56 +459,38 @@ always @(posedge clk125) begin
 
         /*
          * Velocity form of proportional plus integral controller.
-         *
-         * Slow PLL: Kp = 1/16      Ki = 1/512
-         * Fast PLL: Kp = 1/4       Ki = 1/16
-         *
-         * Use slow PLL when locked to high-jitter PPS marker.
+         *   Kp = 1/4
+         *   Ki = 1/16
          */
-        ctrlDelta <= pllLocked && jitterIsHigh ?
-                      ((phaseErrorDiff << (SCALE_SHIFT - 4)) +
-                       (phaseError << (SCALE_SHIFT - 9)))
-                                               :
-                      ((phaseErrorDiff << (SCALE_SHIFT - 2)) +
-                       (phaseError << (SCALE_SHIFT - 4)));
+        ctrlDelta <= (phaseErrorDiff << (SCALE_SHIFT - 2)) +
+                                              (phaseError << (SCALE_SHIFT - 4));
         phaseErrorOld <= phaseError;
-        jitterAbs <= (phaseErrorDiff<0) ? -phaseErrorDiff : phaseErrorDiff;
-        pllState <= PLL_ST_ACCUMULATE_AND_SATURATE;
+        jitterAbs <= (phaseErrorDiff < 0) ? -phaseErrorDiff : phaseErrorDiff;
+        pllState <= PLL_ST_ADJUST_LOOP_GAIN;
     end
-    PLL_ST_ACCUMULATE_AND_SATURATE: begin
+    PLL_ST_ADJUST_LOOP_GAIN: begin
         /*
-         * No worry about overflow in the limit checks
-         * since there's extra bit in CTRL_WIDTH.
+         * Reduce loop gain by factor of 4 when locked to high-jitter PPS.
          */
-        if (ctrlAccumulateNext > ctrlAccumulateLimit) begin
-            ctrlAccumulate <= ctrlAccumulateLimit;
-        end
-        else if (ctrlAccumulateNext < -ctrlAccumulateLimit) begin
-            ctrlAccumulate <= -ctrlAccumulateLimit;
-        end
-        else begin
-            ctrlAccumulate <= ctrlAccumulateNext;
+        if (pllLocked && jitterIsHigh) begin
+            ctrlDelta <= ctrlDelta >> 2;
         end
         if (enabled) begin
             jitterAccumulator <= jitterAccumulator + jitterAbs -
                                  (jitterAccumulator >> JITTER_FILTER_SHIFT);
         end
-        pllState <= PLL_ST_COMPUTE_DAC_VALUE;
+        pllState <= PLL_ST_COMPUTE_DAC_DELTA;
     end
-    PLL_ST_COMPUTE_DAC_VALUE: begin
+    PLL_ST_COMPUTE_DAC_DELTA: begin
         /*
          * Forward phase error value to processor
          */
         phaseError24 <= phaseError;
 
         /*
-         * Convert control action (Hz) to DAC counts.
-         *   ctrlAccumulate is scaled by (1<<(SCALE_SHIFT+FINE_ERROR_WIDTH)
-         *   dacCalibFactor is scaled by (1<<DAC_SCALE_SHIFT)
-         * Use only as many bits of ctrlAccumulate as needed to fit the
-         * satured limit.  This ensures that we can fit a single DSP48.
+         * Convert control action delta (Hz) to DAC counts.
          */
-        product <= ctrlAccumulate[CTRL_LIMIT_WIDTH-1:0] * dacCalibFactor;
+        product <= termA * termB;
 
         /*
          * Check jitter
@@ -524,11 +504,15 @@ always @(posedge clk125) begin
         pllState <= PLL_ST_UPDATE_DAC;
     end
     PLL_ST_UPDATE_DAC: begin
-        /*
-         * Remove scale factors
-         */
-        dacValue <= product[(SCALE_SHIFT+FINE_ERROR_WIDTH+DAC_SCALE_SHIFT)
-                                                               +:DAC_WIDTH];
+        if (dacNextWide > dacLimitWide) begin
+            dacValue <= dacLimitWide[0+:DAC_WIDTH];
+        end
+        else if (dacNextWide < -dacLimitWide) begin
+            dacValue <= -dacLimitWide[0+:DAC_WIDTH];
+        end
+        else begin
+            dacValue <= dacNextWide[0+:DAC_WIDTH];
+        end
         /*
          * Check for 'enable' only in this state to prevent extra or
          * missing ppsMarkers when disabling (we have just seen both
@@ -548,7 +532,7 @@ always @(posedge clk125) begin
     endcase
 end
 
-assign sysStatus = {pllLocked, dacUpdateToggle, enable, jitterIsHigh,
+assign sysStatus = {pllLocked, dacUpdateToggle, enable|enabled, jitterIsHigh,
                     hwPPSvalid, hwPPStoggle, sysIsOffsetBinary, dacBusy,
                     phaseError24};
 assign sysAuxStatus = { jitterMonitor, dacValue };
@@ -605,7 +589,7 @@ always @(posedge clk125) begin
         if (dacUpdateToggle != dacUpdateToggle_d) begin
             dacBusy <= 1;
             spiShiftReg <= {{SPI_SHIFTREG_WIDTH-DAC_WIDTH{1'b0}}, sendValue};
-            SPI_SYNCn <= dacSync_n;
+            SPI_SYNCn <= (sysUpdateVCXO20 && !enable) ? 2'b01 : 2'b10;
             spiState <= SPI_ST_TRANSFER;
         end
     end
