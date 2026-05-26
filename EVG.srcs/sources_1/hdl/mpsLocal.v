@@ -47,7 +47,14 @@ module mpsLocal #(
                          input  wire                        mgtTxClk,
     (*MARK_DEBUG=DEBUG*) output reg  [MPS_OUTPUT_COUNT-1:0] mpsTripped = 0);
 
-localparam MPS_SEL_WIDTH = $clog2(MPS_OUTPUT_COUNT);
+if ((MPS_OUTPUT_COUNT<1) || (MPS_OUTPUT_COUNT>8)) begin
+  mpsLocal_BAD_MPS_OUTPUT_COUNT();
+end
+if ((MPS_INPUT_COUNT<1) || (MPS_INPUT_COUNT>8)) begin
+  mpsLocal_BAD_MPS_INPUT_COUNT();
+end
+
+localparam MPS_SEL_WIDTH = (MPS_OUTPUT_COUNT<2) ? 1 : $clog2(MPS_OUTPUT_COUNT);
 localparam REG_SEL_WIDTH = 4;
 
 reg [MPS_SEL_WIDTH-1:0] sysMPSsel = 0;
@@ -80,6 +87,15 @@ assign sysStatus = { {16-MPS_OUTPUT_COUNT{1'b0}}, sysForceTrip,
                      {4-REG_SEL_WIDTH{1'b0}}, sysREGsel,
                      {4-MPS_SEL_WIDTH{1'b0}}, sysMPSsel };
 
+///////////////////////////////////////////////////////////////////////////////
+// Acquisition clock domain
+(*ASYNC_REG="true"*) reg [MPS_INPUT_COUNT-1:0] mpsInputs_m = 0;
+reg [MPS_INPUT_COUNT-1:0] mpsInputs = 0;
+always @(posedge acqClk) begin
+    mpsInputs_m <= mpsInputStates_a ^ invert;
+    mpsInputs   <= mpsInputs_m;
+end
+
 // Instantiate each of the MPS output handlers
 genvar i;
 generate
@@ -97,7 +113,7 @@ for (i = 0 ; i < MPS_OUTPUT_COUNT ; i = i + 1) begin : mpsChan
         .sysData(acqPerChannelData[i*32+:32]),
         .acqClk(acqClk),
         .acqTimestamp(acqTimestamp),
-        .mpsInputs_a(mpsInputStates_a ^ invert),
+        .mpsInputs(mpsInputs),
         .sysForceTrip(sysForceTrip[i]),
         .acqTripped(acqPerChannelTripped[i]),
         .acqClearTrip(acqClearTrip));
@@ -127,7 +143,7 @@ module mpsLocalChannel #(
 
                          input  wire                        acqClk,
     (*MARK_DEBUG=DEBUG*) input  wire  [TIMESTAMP_WIDTH-1:0] acqTimestamp,
-    (*MARK_DEBUG=DEBUG*) input  wire  [MPS_INPUT_COUNT-1:0] mpsInputs_a,
+    (*MARK_DEBUG=DEBUG*) input  wire  [MPS_INPUT_COUNT-1:0] mpsInputs,
     (*MARK_DEBUG=DEBUG*) input  wire                        sysForceTrip,
     (*MARK_DEBUG=DEBUG*) output reg                         acqTripped = 1,
     (*MARK_DEBUG=DEBUG*) input  wire                        acqClearTrip);
@@ -135,7 +151,7 @@ module mpsLocalChannel #(
 reg [MPS_INPUT_COUNT-1:0] important = 0, firstFault = 0;
 reg [MPS_INPUT_COUNT-1:0] goodState = 0;
 reg [TIMESTAMP_WIDTH-1:0] whenFaulted = 0;
-reg [MPS_INPUT_COUNT-1:0] mpsInputs = 0, faultedInputs = 0;
+reg [MPS_INPUT_COUNT-1:0] faultedInputs = 0;
 reg                       forceTrip;
 
 /*
@@ -166,15 +182,12 @@ end
 /*
  * MPS
  */
-(*ASYNC_REG="true"*) reg [MPS_INPUT_COUNT-1:0] mpsInputs_m = 0;
-(*ASYNC_REG="true"*) reg                       forceTrip_m = 0;
+(*ASYNC_REG="true"*) reg   forceTrip_m = 0;
 wire [MPS_INPUT_COUNT-1:0] faults = (faultedInputs & important);
 
 assign trip = (faults != 0) || forceTrip;
 
 always @(posedge acqClk) begin
-    mpsInputs_m   <= mpsInputs_a;
-    mpsInputs     <= mpsInputs_m;
     faultedInputs <= mpsInputs ^ goodState;
     forceTrip_m <= sysForceTrip;
     forceTrip   <= forceTrip_m;
