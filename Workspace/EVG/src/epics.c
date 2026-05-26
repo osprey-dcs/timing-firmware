@@ -39,6 +39,7 @@
 #include "mgt.h"
 #include "mgtClkSwitch.h"
 #include "mmcMailbox.h"
+#include "mpsLocal.h"
 #include "ospreyRFIN.h"
 #include "softwareBuildDate.h"
 #include "systemParameters.h"
@@ -94,6 +95,11 @@ struct LEEPpacket {
 #define REG_EVG_COUNT                       100000
 #define REG_EVR_START                       1100000
 #define REG_EVR_COUNT                       100000
+
+#define REG_MPS_LOCAL_START                 100000
+#define REG_MPS_LOCAL_COUNT                 1000
+#define REG_MPS_MERGE_START                 110000
+#define REG_MPS_MERGE_COUNT                 1000
 
 #define RANGE(base, count) (base) ... ((base)+(count)-1)
 
@@ -152,15 +158,21 @@ setMgtClkSwitch0(int inputClkIndex)
 static void
 writeReg(int address, uint32_t value)
 {
-    if (systemParameters.ntpServer
-     && (address >= REG_EVG_START)
+    if ((address >= REG_EVG_START)
      && (address < (REG_EVG_START + REG_EVG_COUNT))) {
-        ospreyEVG_FEEDwrite(address - REG_EVG_START, value);
+        if (systemParameters.ntpServer) {
+            ospreyEVG_FEEDwrite(address - REG_EVG_START, value);
+        }
         return;
     }
     if ((address >= REG_EVR_START)
      && (address < (REG_EVR_START + REG_EVR_COUNT))) {
         ospreyEVR_FEEDwrite(address - REG_EVR_START, value);
+        return;
+    }
+    if ((address >= REG_MPS_LOCAL_START)
+     && (address < (REG_MPS_LOCAL_START + REG_MPS_LOCAL_COUNT))) {
+        mpsLocalWrite(address - REG_MPS_LOCAL_START, value);
         return;
     }
     switch(address) {
@@ -179,14 +191,22 @@ readReg(int address)
     /*
      * Application-specific registers
      */
-    if (systemParameters.ntpServer
-     && (address >= REG_EVG_START)
+    if ((address >= REG_EVG_START)
      && (address < (REG_EVG_START + REG_EVG_COUNT))) {
-        return ospreyEVG_FEEDread(address - REG_EVG_START);
+        if (systemParameters.ntpServer) {
+            return ospreyEVG_FEEDread(address - REG_EVG_START);
+        }
+        else {
+            return (~(uint32_t)0);
+        }
     }
     if ((address >= REG_EVR_START)
      && (address < (REG_EVR_START + REG_EVR_COUNT))) {
         return ospreyEVR_FEEDread(address - REG_EVR_START);
+    }
+    if ((address >= REG_MPS_LOCAL_START)
+     && (address < (REG_MPS_LOCAL_START + REG_MPS_LOCAL_COUNT))) {
+        return mpsLocalRead(address - REG_MPS_LOCAL_START);
     }
     switch(address) {
     case REG_POWERUP_STATE:       return powerUpFlag;

@@ -98,82 +98,146 @@ mpsLocalDumpReg(void)
     }
 }
 
-void
+static void
 mpsLocalSetDiscreteBitmap(int outputIndex, uint32_t map)
 {
     setReg(CSR_REG_DISCRETE_BITMAP, outputIndex, map);
 }
 
-void
+static void
 mpsLocalSetDiscreteGoodState(int outputIndex, uint32_t goodState)
 {
     setReg(CSR_REG_DISCRETE_GOOD_STATE, outputIndex, goodState);
 }
 
-void
+static void
 mpsLocalSetInvertedInputs(uint32_t map)
 {
     map &= (1 << CFG_MPS_INPUT_COUNT) - 1;
     CSR_WRITE(CSR_MPS_W_INVERT | map);
 }
 
-void
+static void
 mpsLocalSetForceTrip(uint32_t mpsOutputs)
 {
     mpsOutputs &= (1 << CFG_MPS_OUTPUT_COUNT) - 1;
     CSR_WRITE(CSR_MPS_W_FORCE_TRIP | mpsOutputs);
 }
 
-uint32_t
+static uint32_t
 mpsLocalGetDiscreteBitmap(int outputIndex)
 {
     return getReg(CSR_REG_DISCRETE_BITMAP, outputIndex);
 }
 
-uint32_t
+static uint32_t
 mpsLocalGetDiscreteGoodState(int outputIndex)
 {
     return getReg(CSR_REG_DISCRETE_GOOD_STATE, outputIndex);
 }
 
-uint32_t
+static uint32_t
 mpsLocalGetInvertedInputs(void)
 {
     return (CSR_READ() & CSR_MPS_R_INVERT_MASK) >> CSR_MPS_R_INVERT_SHIFT;
 }
 
-uint32_t
+static uint32_t
 mpsLocalGetForceTrip(void)
 {
     return (CSR_READ()&CSR_MPS_R_FORCE_TRIP_MASK) >> CSR_MPS_R_FORCE_TRIP_SHIFT;
 }
 
-uint32_t
+static uint32_t
 mpsLocalGetFirstFaultDiscrete(int outputIndex)
 {
     return getReg(CSR_REG_FIRST_FAULT_DISCRETE, outputIndex);
 }
 
-uint32_t
+static uint32_t
 mpsLocalGetFirstFaultSeconds(int outputIndex)
 {
     return getReg(CSR_REG_FIRST_FAULT_SECONDS, outputIndex);
 }
 
-uint32_t
+static uint32_t
 mpsLocalGetFirstFaultTicks(int outputIndex)
 {
     return getReg(CSR_REG_FIRST_FAULT_TICKS, outputIndex);
 }
 
-uint32_t
+static uint32_t
 mpsLocalGetStatus(int outputIndex)
 {
     return getReg(CSR_REG_STATUS, outputIndex);
 }
 
-uint32_t
-mpsLocalFetchSysmon(int index)
+/*
+ * FEED I/O support
+ */
+#define REG_FORCE_TRIP          0
+#define REG_INVERT_INPUTS       1
+#define REG_STATUS_BASE         100
+#define REG_IMPORTANT_BASE      200
+#define REG_GOOD_STATE_BASE     300
+#define REG_FIRST_FAULT_BASE    400
+#define REG_FAULT_SECONDS_BASE  500
+#define REG_FAULT_TICKS_BASE    600
+#define RANGE(base, count) (base) ... ((base)+(count)-1)
+
+void
+mpsLocalWrite(int offset, uint32_t value)
 {
-    return 0;
+    switch(offset) {
+    case REG_FORCE_TRIP:
+        mpsLocalSetForceTrip(value);
+        break;
+
+    case REG_INVERT_INPUTS:
+        mpsLocalSetInvertedInputs(value);
+        break;
+
+    case RANGE(REG_IMPORTANT_BASE, CFG_MPS_OUTPUT_COUNT):
+        mpsLocalSetDiscreteBitmap(offset - REG_IMPORTANT_BASE, value);
+        break;
+
+    case RANGE(REG_GOOD_STATE_BASE, CFG_MPS_OUTPUT_COUNT):
+        mpsLocalSetDiscreteGoodState(offset - REG_GOOD_STATE_BASE, value);
+        break;
+    }
+}
+
+uint32_t
+mpsLocalRead(int offset)
+{
+    switch(offset) {
+    case REG_FORCE_TRIP:
+        return mpsLocalGetForceTrip();
+        break;
+
+    case REG_INVERT_INPUTS:
+        return mpsLocalGetInvertedInputs();
+        break;
+
+    case RANGE(REG_STATUS_BASE, CFG_MPS_OUTPUT_COUNT):
+        return mpsLocalGetStatus(offset - REG_STATUS_BASE);
+
+    case RANGE(REG_IMPORTANT_BASE, CFG_MPS_OUTPUT_COUNT):
+        return mpsLocalGetDiscreteBitmap(offset - REG_IMPORTANT_BASE);
+
+    case RANGE(REG_GOOD_STATE_BASE, CFG_MPS_OUTPUT_COUNT):
+        return mpsLocalGetDiscreteGoodState(offset - REG_GOOD_STATE_BASE);
+
+    case RANGE(REG_FIRST_FAULT_BASE, CFG_MPS_OUTPUT_COUNT):
+        return mpsLocalGetFirstFaultDiscrete(offset - REG_FIRST_FAULT_BASE);
+
+    case RANGE(REG_FAULT_SECONDS_BASE, CFG_MPS_OUTPUT_COUNT):
+        return mpsLocalGetFirstFaultSeconds(offset - REG_FAULT_SECONDS_BASE);
+
+    case RANGE(REG_FAULT_TICKS_BASE, CFG_MPS_OUTPUT_COUNT):
+        return mpsLocalGetFirstFaultTicks(offset - REG_FAULT_TICKS_BASE);
+
+    default:
+        return (~(uint32_t)0);
+    }
 }

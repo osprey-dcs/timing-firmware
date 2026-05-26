@@ -30,19 +30,7 @@
 #define _MPS_LOCAL_H_
 
 void mpsLocalDumpReg(void);
-
-void mpsLocalSetDiscreteBitmap(int outputIndex, uint32_t map);
-void mpsLocalSetDiscreteGoodState(int outputIndex, uint32_t goodState);
-void mpsLocalSetInvertedInputs(uint32_t map);
-void mpsLocalSetForceTrip(uint32_t mpsOutputs);
-
-uint32_t mpsLocalGetDiscreteBitmap(int outputIndex);
-uint32_t mpsLocalGetDiscreteGoodState(int outputIndex);
-uint32_t mpsLocalGetInvertedInputs(void);
-uint32_t mpsLocalGetForceTrip(void);
-uint32_t mpsLocalGetFirstFaultDiscrete(int outputIndex);
-uint32_t mpsLocalGetFirstFaultSeconds(int outputIndex);
-uint32_t mpsLocalGetFirstFaultTicks(int outputIndex);
-uint32_t mpsLocalGetStatus(int outputIndex);
+void mpsLocalWrite(int offset, uint32_t value);
+uint32_t mpsLocalRead(int offset);
 
 #endif /* _MPS_LOCAL_H_ */

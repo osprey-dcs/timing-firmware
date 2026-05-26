@@ -308,8 +308,140 @@ def base_build():
     }
     return R
 
+def mpsLocal_build(MPS_REG_BASE=10000, mpsOutputCount=2):
+    R = {
+        "MPS:invert": {
+            "access": "rw",
+            "addr_width": 0,
+            "base_addr": MPS_REG_BASE + 0,
+            "data_width": 32,
+            "sign": "unsigned",
+        },
+        "MPS:forceTrip": {
+            "access": "rw",
+            "addr_width": 0,
+            "base_addr": MPS_REG_BASE + 1,
+            "data_width": 32,
+            "sign": "unsigned",
+        },
+    }
+
+    for addr, idx in enumerate(range(1, mpsOutputCount+1), MPS_REG_BASE+100):
+        R[f"MPS:out{idx}:status"] = {
+            "access": "r",
+            "addr_width": 0,
+            "base_addr": addr,
+            "data_width": 8,
+            "sign": "unsigned",
+        }
+
+    for addr, idx in enumerate(range(1, mpsOutputCount+1), MPS_REG_BASE+200):
+        R[f"MPS:out{idx}:mask"] = {
+            "access": "rw",
+            "addr_width": 0,
+            "base_addr": addr,
+            "data_width": 8,
+            "sign": "unsigned",
+        }
+
+    for addr, idx in enumerate(range(1, mpsOutputCount+1), MPS_REG_BASE+300):
+        R[f"MPS:out{idx}:goodState"] = {
+            "access": "rw",
+            "addr_width": 0,
+            "base_addr": addr,
+            "data_width": 8,
+            "sign": "unsigned",
+        }
+
+    for addr, idx in enumerate(range(1, mpsOutputCount+1), MPS_REG_BASE+400):
+        R[f"MPS:out{idx}:firstFault"] = {
+            "access": "r",
+            "addr_width": 0,
+            "base_addr": addr,
+            "data_width": 8,
+            "sign": "unsigned",
+        }
+
+    for addr, idx in enumerate(range(1, mpsOutputCount+1), MPS_REG_BASE+500):
+        R[f"MPS:out{idx}:faultSeconds"] = {
+            "access": "r",
+            "addr_width": 0,
+            "base_addr": addr,
+            "data_width": 8,
+            "sign": "unsigned",
+        }
+
+    for addr, idx in enumerate(range(1, mpsOutputCount+1), MPS_REG_BASE+600):
+        R[f"MPS:out{idx}:faultTicks"] = {
+            "access": "r",
+            "addr_width": 0,
+            "base_addr": addr,
+            "data_width": 8,
+            "sign": "unsigned",
+        }
+
+#    for addr, tmr in enumerate(range(1, timerCount+1), EVG_REG_BASE+120):
+#        R[f"EVG:TMR:{tmr}:divisor"] = {
+#            "access": "w",
+#            "addr_width": 0,
+#            "base_addr": addr,
+#            "data_width": 32,
+#            "sign": "unsigned",
+#        }
+#
+#    for off, trg in enumerate(range(1, hwTriggerCount+1)):
+#        R[f"EVG:TRG:r{trg}:ev"] = {
+#            "access": "w",
+#            "addr_width": 0,
+#            "base_addr": EVG_REG_BASE+140+2*off+0,
+#            "data_width": 8,
+#            "sign": "unsigned",
+#        }
+#        R[f"EVG:TRG:f{trg}:ev"] = {
+#            "access": "w",
+#            "addr_width": 0,
+#            "base_addr": EVG_REG_BASE+140+2*off+1,
+#            "data_width": 8,
+#            "sign": "unsigned",
+#        }
+#
+#    for off, seq in enumerate(range(1, seqBankCount+1)):
+#        R[f"EVG:SEQ:{seq}:hw:r"] = {
+#            "access": "w",
+#            "addr_width": 0,
+#            "base_addr": EVG_REG_BASE+180+2*off+0,
+#            "data_width": 8,
+#            "sign": "unsigned",
+#        }
+#        R[f"EVG:SEQ:{seq}:hw:f"] = {
+#            "access": "w",
+#            "addr_width": 0,
+#            "base_addr": EVG_REG_BASE+180+2*off+1,
+#            "data_width": 8,
+#            "sign": "unsigned",
+#        }
+#        R[f"EVG:SEQ:{seq}:pattern"] = {
+#            "access": "w",
+#            "addr_width": seqAddrWidth+1,
+#            "base_addr": EVG_REG_BASE+8192*seq, # seq1 @8192
+#            "data_width": 32,
+#            "sign": "unsigned",
+#        }
+#
+#    for addr, rx in enumerate(range(1, rxCount+1), EVG_REG_BASE+200):
+#        R[f"EVG:LINK:{rx}:latency"] = {
+#            "access": "r",
+#            "addr_width": 0,
+#            "base_addr": addr,
+#            "data_width": 8,
+#            "sign": "unsigned",
+#        }
+    return R
+
 def evt_merge():
     R = base_build()
+    R.update(mpsLocal_build(MPS_REG_BASE=100000,
+                            mpsOutputCount=8))
     R.update(ospreyEVG.ospreyEVG_build(
         EVG_REG_BASE=1000000,
         timerCount=8,
