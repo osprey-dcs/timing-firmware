@@ -1,0 +1,179 @@
+/*
+ * MIT License
+ *
+ * Copyright (c) 2026 Osprey DCS
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
+/*
+ * Local machine protection support
+ */
+
+#include <stdio.h>
+#include <xparameters.h>
+#include "gpio.h"
+#include "mpsLocal.h"
+#include "util.h"
+
+#define CSR_MPS_OUTPUT_SEL_MASK         0x0F
+#define CSR_MPS_REG_SEL_MASK            0x0F0
+#define CSR_MPS_REG_SEL_SHIFT           4
+#define CSR_MPS_R_INVERT_MASK           0xFF00
+#define CSR_MPS_R_INVERT_SHIFT          8
+#define CSR_MPS_R_FORCE_TRIP_MASK       0xFF0000
+#define CSR_MPS_R_FORCE_TRIP_SHIFT      16
+#define CSR_MPS_W_INVERT                0x1000000
+#define CSR_MPS_W_FORCE_TRIP            0x2000000
+# define CSR_REG_DISCRETE_BITMAP        0x000
+# define CSR_REG_DISCRETE_GOOD_STATE    0x010
+# define CSR_REG_FIRST_FAULT_DISCRETE   0x020
+# define CSR_REG_FIRST_FAULT_SECONDS    0x030
+# define CSR_REG_FIRST_FAULT_TICKS      0x040
+# define CSR_REG_STATUS                 0x050
+
+#define STATUS_REG_TRIPPED  0x1
+#define STATUS_REG_FAULTED  0x2
+
+#define CSR_WRITE(x)  GPIO_WRITE(GPIO_IDX_MPS_LOCAL_CSR, (x))
+#define CSR_READ()    GPIO_READ(GPIO_IDX_MPS_LOCAL_CSR)
+#define DATA_WRITE(x) GPIO_WRITE(GPIO_IDX_MPS_LOCAL_DATA, (x))
+#define DATA_READ()   GPIO_READ(GPIO_IDX_MPS_LOCAL_DATA)
+
+static uint32_t
+getReg(int regSel, int outputIndex)
+{
+    uint32_t sel = (regSel & CSR_MPS_REG_SEL_MASK) |
+                                        (outputIndex & CSR_MPS_OUTPUT_SEL_MASK);
+    CSR_WRITE(sel);
+    return DATA_READ();
+}
+
+static void
+setReg(int regSel, int outputIndex, uint32_t value)
+{
+    uint32_t sel = (regSel & CSR_MPS_REG_SEL_MASK) |
+                                        (outputIndex & CSR_MPS_OUTPUT_SEL_MASK);
+    CSR_WRITE(sel);
+    DATA_WRITE(value);
+}
+
+void
+mpsLocalDumpReg(void)
+{
+    int o;
+    for (o = 0 ; o < CFG_MPS_OUTPUT_COUNT ; o++) {
+        int r;
+        uint32_t v = getReg(CSR_REG_STATUS, o);
+        static const char * const names[] = {
+            "Check Digital",
+            "GOOD state",
+            "First Fault Digital",
+            "First Fault Seconds",
+            "First Fault Ticks",
+            "Status" };
+        printf("Output %d:%sripped%s\n", o + 1,
+                            (v & STATUS_REG_TRIPPED) ? "T" : " Not T",
+                            (v & STATUS_REG_FAULTED) ? " (Fault Present)" : "");
+        for (r = 0 ; r < sizeof names / sizeof names[0] ; r++) {
+            v = getReg((r << CSR_MPS_REG_SEL_SHIFT), o);
+            printf("%24s: %04X:%04X\n", names[r], (v >> 16), v & 0xFFFF);
+        }
+    }
+}
+
+void
+mpsLocalSetDiscreteBitmap(int outputIndex, uint32_t map)
+{
+    setReg(CSR_REG_DISCRETE_BITMAP, outputIndex, map);
+}
+
+void
+mpsLocalSetDiscreteGoodState(int outputIndex, uint32_t goodState)
+{
+    setReg(CSR_REG_DISCRETE_GOOD_STATE, outputIndex, goodState);
+}
+
+void
+mpsLocalSetInvertedInputs(uint32_t map)
+{
+    map &= (1 << CFG_MPS_INPUT_COUNT) - 1;
+    CSR_WRITE(CSR_MPS_W_INVERT | map);
+}
+
+void
+mpsLocalSetForceTrip(uint32_t mpsOutputs)
+{
+    mpsOutputs &= (1 << CFG_MPS_OUTPUT_COUNT) - 1;
+    CSR_WRITE(CSR_MPS_W_FORCE_TRIP | mpsOutputs);
+}
+
+uint32_t
+mpsLocalGetDiscreteBitmap(int outputIndex)
+{
+    return getReg(CSR_REG_DISCRETE_BITMAP, outputIndex);
+}
+
+uint32_t
+mpsLocalGetDiscreteGoodState(int outputIndex)
+{
+    return getReg(CSR_REG_DISCRETE_GOOD_STATE, outputIndex);
+}
+
+uint32_t
+mpsLocalGetInvertedInputs(void)
+{
+    return (CSR_READ() & CSR_MPS_R_INVERT_MASK) >> CSR_MPS_R_INVERT_SHIFT;
+}
+
+uint32_t
+mpsLocalGetForceTrip(void)
+{
+    return (CSR_READ()&CSR_MPS_R_FORCE_TRIP_MASK) >> CSR_MPS_R_FORCE_TRIP_SHIFT;
+}
+
+uint32_t
+mpsLocalGetFirstFaultDiscrete(int outputIndex)
+{
+    return getReg(CSR_REG_FIRST_FAULT_DISCRETE, outputIndex);
+}
+
+uint32_t
+mpsLocalGetFirstFaultSeconds(int outputIndex)
+{
+    return getReg(CSR_REG_FIRST_FAULT_SECONDS, outputIndex);
+}
+
+uint32_t
+mpsLocalGetFirstFaultTicks(int outputIndex)
+{
+    return getReg(CSR_REG_FIRST_FAULT_TICKS, outputIndex);
+}
+
+uint32_t
+mpsLocalGetStatus(int outputIndex)
+{
+    return getReg(CSR_REG_STATUS, outputIndex);
+}
+
+uint32_t
+mpsLocalFetchSysmon(int index)
+{
+    return 0;
+}
