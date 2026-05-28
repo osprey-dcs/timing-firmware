@@ -63,6 +63,7 @@ localparam SCALE_SHIFT = 6; // Integer arithmetic scaling
 localparam FINE_ERROR_WIDTH = 3;
 localparam LOW_JITTER_THRESHOLD_NS = 32;
 localparam JITTER_HYSTERESIS_NS = 5;
+localparam PPS_RANGE = $rtoi(((1<<DAC_WIDTH) * 1.1) / DAC_COUNTS_PER_HZ);
 
 //////////////////////////////////////////////////////////////////////////////
 // System clock domain
@@ -151,6 +152,7 @@ IDELAYE2 #(
 //
 marbleClockSyncIsPPSvalid #(
     .CLK_RATE(CLK_RATE),
+    .PPS_RANGE(PPS_RANGE),
     .DEBOUNCE_NS(2000),
     .IOBDELAY("NONE"),
     .DEBUG(DEBUG))
@@ -166,6 +168,7 @@ marbleClockSyncIsPPSvalid #(
 
 marbleClockSyncIsPPSvalid #(
     .CLK_RATE(CLK_RATE),
+    .PPS_RANGE(PPS_RANGE),
     .DEBOUNCE_NS(2000),
     .IOBDELAY("NONE"),
     .DEBUG(DEBUG))
@@ -181,6 +184,7 @@ marbleClockSyncIsPPSvalid #(
 
 marbleClockSyncIsPPSvalid #(
     .CLK_RATE(CLK_RATE),
+    .PPS_RANGE(PPS_RANGE),
     .DEBOUNCE_NS(2000),
     .IOBDELAY("BOTH"),
     .DEBUG(DEBUG))
@@ -270,23 +274,23 @@ localparam CTRL_WIDTH = PHASE_ERROR_WIDTH + SCALE_SHIFT + 1;
 
 // Saturate (avoid integrator windup)
 // Limit DAC output to linear part of VCXO range
+// Add some guard bits to ensure we don't overflow before saturating.
+localparam WIDE_DAC_WIDTH = DAC_WIDTH + 2;
 (*MARK_DEBUG=DEBUG*)
-wire signed [DAC_WIDTH:0] dacLimitWide = (((1 << (DAC_WIDTH - 1)) - 1) * 7) / 8;
+wire signed [WIDE_DAC_WIDTH-1:0] dacLimitWide = (((1<<(DAC_WIDTH-1))-1)*7)/8;
 
 // VCXO scaling
 // Choose widths to match DSP48.
-// Explicitly specify sign extension
-//   Vivado fails to do the sign extension implicitly.
 (*MARK_DEBUG=DEBUG*) wire signed [24:0] termA = ctrlDelta;
 (*MARK_DEBUG=DEBUG*) wire signed [17:0] termB = DAC_PER_HZ_SCALED;
 (*MARK_DEBUG=DEBUG*) reg  signed [42:0] product;
-(*MARK_DEBUG=DEBUG*) wire signed [DAC_WIDTH:0] dacDeltaWide =
-           product[(SCALE_SHIFT+FINE_ERROR_WIDTH+DAC_SCALE_SHIFT)+:DAC_WIDTH+1];
+(*MARK_DEBUG=DEBUG*) wire signed [WIDE_DAC_WIDTH-1:0] dacDeltaWide =
+        product[(SCALE_SHIFT+FINE_ERROR_WIDTH+DAC_SCALE_SHIFT)+:WIDE_DAC_WIDTH];
 (*MARK_DEBUG=DEBUG*) reg signed [DAC_WIDTH-1:0] dacValue = 0;
 (*MARK_DEBUG=DEBUG*)
-wire signed [DAC_WIDTH:0] dacValueWide = dacValue;
+wire signed [WIDE_DAC_WIDTH-1:0] dacValueWide = dacValue;
 (*MARK_DEBUG=DEBUG*)
-wire signed [DAC_WIDTH:0] dacNextWide = dacValueWide + dacDeltaWide;
+wire signed [WIDE_DAC_WIDTH-1:0] dacNextWide = dacValueWide + dacDeltaWide;
 
 // DAC data transfer
 (*MARK_DEBUG=DEBUG*) reg dacUpdateToggle = 0;
@@ -632,6 +636,7 @@ endmodule
  */
 module marbleClockSyncIsPPSvalid #(
     parameter CLK_RATE    = -1,
+    parameter PPS_RANGE   = -1,
     parameter DEBOUNCE_NS = -1,
     parameter IOBDELAY    = "NONE",
     parameter DEBUG       = "false"
@@ -651,8 +656,8 @@ localparam DEBOUNCE_COUNTER_WIDTH = $clog2(DEBOUNCE_RELOAD+1) + 1;
 reg [DEBOUNCE_COUNTER_WIDTH-1:0] debounceCounter = DEBOUNCE_RELOAD;
 (*MARK_DEBUG=DEBUG*)wire debounceDone=debounceCounter[DEBOUNCE_COUNTER_WIDTH-1];
 
-localparam PPS_TOOSLOW_RELOAD = (CLK_RATE / 100) * 101;
-localparam PPS_TOOFAST_RELOAD = (CLK_RATE / 100) * 99;
+localparam PPS_TOOSLOW_RELOAD = CLK_RATE + PPS_RANGE;
+localparam PPS_TOOFAST_RELOAD = CLK_RATE - PPS_RANGE;
 localparam PPS_RELOAD         = CLK_RATE - 2;
 localparam PPS_COUNTER_WIDTH = $clog2(PPS_TOOSLOW_RELOAD+1) + 1;
 

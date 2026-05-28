@@ -103,6 +103,7 @@
 
 
 
+
               Must be valid when sysCsrStrobe is asserted.<br>
             </span></td>
         </tr>
@@ -209,8 +210,8 @@
               New Roman, Times, serif;">Clock to be synchronized to the
               PPS marker.</span><span style="font-family: Times New
               Roman, Times, serif;">&nbsp; Should be output of MMCM
-              driven by Marble VCXO.&nbsp; Provides CLKDIV to internal
-              ISERDES blocks.<br>
+              driven by Marble VCXO (Y1).&nbsp; Provides CLKDIV to
+              internal ISERDES blocks.<br>
             </span></td>
         </tr>
         <tr>
@@ -277,6 +278,7 @@
               New Roman, Times, serif;">Secondary PPS marker.</span><span
               style="font-family: Times New Roman, Times, serif;"><span
                 style="font-family: Times New Roman, Times, serif;">&nbsp;
+
 
 
                 Connection from FPGA pin through some type of input
@@ -501,6 +503,7 @@
 
 
 
+
         Interface</span></h2>
     <span style="font-family: Times New Roman, Times, serif;"> </span>
     <p><span style="font-family: Times New Roman, Times, serif;">Nets
@@ -512,6 +515,7 @@
       </span> </p>
     <span style="font-family: Times New Roman, Times, serif;"> </span>
     <h3><span style="font-family: Times New Roman, Times, serif;">Control
+
 
 
 
@@ -782,6 +786,7 @@
 
 
 
+
         Status Register</span></h3>
     <div style="margin-left: 40px;"><span style="font-family: Times New
         Roman, Times, serif;"> </span></div>
@@ -818,10 +823,12 @@
 
 
 
+
               the </span><span style="font-family: Times New Roman,
               Times, serif;"><span style="font-family: Times New Roman,
                 Times, serif;">internal PPS marker and the </span><span
                 style="font-family: Times New Roman, Times, serif;">currently
+
 
 
 
@@ -938,8 +945,10 @@
                 style="font-family: Times New Roman, Times, serif;">Toggles
 
 
+
                 state on rising edge of </span><span
                 style="font-family: Times New Roman, Times, serif;">currently
+
 
 
                 selected PPS marker input (same as status register bit
@@ -961,6 +970,7 @@
 
 
 
+
               selected PPS marker input.&nbsp; Valid only if bit 31 is
               set.</span><span style="font-family: Times New Roman,
               Times, serif;"></span> </td>
@@ -974,7 +984,6 @@
     <div style="margin-left: 120px;"> </div>
     <div style="margin-left: 40px;"> </div>
     <div style="margin-left: 80px;"><span style="font-family: Times New
-        Roman, Times, serif;"> </span><br>
-    </div>
+        Roman, Times, serif;"> </span></div>
   </body>
 </html>
