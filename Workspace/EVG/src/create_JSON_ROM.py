@@ -327,7 +327,7 @@ def mpsLocal_build(MPS_REG_BASE=10000, mpsOutputCount=2):
     }
 
     for addr, idx in enumerate(range(1, mpsOutputCount+1), MPS_REG_BASE+100):
-        R[f"MPS:out{idx}:status"] = {
+        R[f"MPS:status:{idx}"] = {
             "access": "r",
             "addr_width": 0,
             "base_addr": addr,
@@ -336,7 +336,7 @@ def mpsLocal_build(MPS_REG_BASE=10000, mpsOutputCount=2):
         }
 
     for addr, idx in enumerate(range(1, mpsOutputCount+1), MPS_REG_BASE+200):
-        R[f"MPS:out{idx}:mask"] = {
+        R[f"MPS:check:{idx}"] = {
             "access": "rw",
             "addr_width": 0,
             "base_addr": addr,
@@ -345,7 +345,7 @@ def mpsLocal_build(MPS_REG_BASE=10000, mpsOutputCount=2):
         }
 
     for addr, idx in enumerate(range(1, mpsOutputCount+1), MPS_REG_BASE+300):
-        R[f"MPS:out{idx}:goodState"] = {
+        R[f"MPS:goodState:{idx}"] = {
             "access": "rw",
             "addr_width": 0,
             "base_addr": addr,
@@ -354,7 +354,7 @@ def mpsLocal_build(MPS_REG_BASE=10000, mpsOutputCount=2):
         }
 
     for addr, idx in enumerate(range(1, mpsOutputCount+1), MPS_REG_BASE+400):
-        R[f"MPS:out{idx}:firstFault"] = {
+        R[f"MPS:firstFault:{idx}"] = {
             "access": "r",
             "addr_width": 0,
             "base_addr": addr,
@@ -363,7 +363,7 @@ def mpsLocal_build(MPS_REG_BASE=10000, mpsOutputCount=2):
         }
 
     for addr, idx in enumerate(range(1, mpsOutputCount+1), MPS_REG_BASE+500):
-        R[f"MPS:out{idx}:faultSeconds"] = {
+        R[f"MPS:faultSeconds:{idx}"] = {
             "access": "r",
             "addr_width": 0,
             "base_addr": addr,
@@ -372,7 +372,7 @@ def mpsLocal_build(MPS_REG_BASE=10000, mpsOutputCount=2):
         }
 
     for addr, idx in enumerate(range(1, mpsOutputCount+1), MPS_REG_BASE+600):
-        R[f"MPS:out{idx}:faultTicks"] = {
+        R[f"MPS:faultTicks:{idx}"] = {
             "access": "r",
             "addr_width": 0,
             "base_addr": addr,

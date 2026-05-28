@@ -40,6 +40,7 @@
 #include "iicFPGA.h"
 #include "mgt.h"
 #include "mgtClkSwitch.h"
+#include "mpsLocal.h"
 #include "systemParameters.h"
 #include "tftp.h"
 #include "util.h"
@@ -267,6 +268,10 @@ cmdDEBUG(int argc, char **argv)
     /*
      * Single-shot commands
      */
+    if (debugFlags & DEBUGFLAG_MPS_LOCAL_SHOW) {
+        mpsLocalDumpReg();
+        debugFlags &= ~DEBUGFLAG_MPS_LOCAL_SHOW;
+    }
     if (debugFlags & DEBUGFLAG_MGT_STATUS_SHOW) {
         mgtShowStatus();
         debugFlags &= ~DEBUGFLAG_MGT_STATUS_SHOW;

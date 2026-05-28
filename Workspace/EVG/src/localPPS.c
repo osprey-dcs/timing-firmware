@@ -28,15 +28,17 @@
 #include "util.h"
 
 #define CSR_RW_LOCAL_PPS_ENABLE     0x1
+#define CSR_RW_CLK20_PPS_ENABLE     0x2
 
 void
 localPPSenable(int enable)
 {
-    GPIO_WRITE(GPIO_IDX_LOCAL_PPS_CSR, enable ? CSR_RW_LOCAL_PPS_ENABLE : 0);
+    GPIO_WRITE(GPIO_IDX_LOCAL_PPS_CSR, enable & (CSR_RW_CLK20_PPS_ENABLE |
+                                                 CSR_RW_LOCAL_PPS_ENABLE));
 }
 
 int
 localPPSstatus(void)
 {
-    return (GPIO_READ(GPIO_IDX_LOCAL_PPS_CSR) & CSR_RW_LOCAL_PPS_ENABLE) != 0;
+    return GPIO_READ(GPIO_IDX_LOCAL_PPS_CSR);
 }
