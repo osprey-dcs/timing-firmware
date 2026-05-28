@@ -23,11 +23,12 @@
  */
 
 /*
- * Generate local PPS marker from 20 MHz VCXO (Y3)
+ * Generate local PPS marker from 20 MHz VCXO (Y3) or system clock.
  */
 `default_nettype none
 module localPPS #(
-    parameter DEBUG = "false"
+    parameter SYSCLK_RATE = 100000000,
+    parameter DEBUG       = "false"
     ) (
     input  wire        sysClk,
     input  wire        sysCsrStrobe,
@@ -37,18 +38,44 @@ module localPPS #(
     input  wire clk20,
     output wire localPPSmarker);
 
-localparam VCXO_RATE = 20000000;
-
-reg sysEnable = 0;
+reg sysEnableLocal = 0;
+reg sysEnableClk20 = 0;
+wire ppsClk20, ppsSys;
 
 always @(posedge sysClk) begin
     if (sysCsrStrobe) begin
-        sysEnable <= sysGPIO_OUT[0];
+        sysEnableLocal <= sysGPIO_OUT[0];
+        sysEnableClk20 <= sysGPIO_OUT[1] & !sysGPIO_OUT[0];
     end
 end
-assign sysStatus = { {31{1'b0}}, sysEnable };
+assign sysStatus = { {30{1'b0}}, sysEnableClk20, sysEnableLocal };
 
-localparam COUNTER_RELOAD = VCXO_RATE - 2;
+localPPSsrc #(
+    .CLK_RATE(SYSCLK_RATE))
+  localPPSsrc_sys (
+    .clk(sysClk),
+    .enable_a(sysEnableLocal),
+    .pps(ppsSys));
+
+localPPSsrc #(
+    .CLK_RATE(20000000))
+  localPPSsrc_clk20 (
+    .clk(clk20),
+    .enable_a(sysEnableClk20),
+    .pps(ppsClk20));
+
+assign localPPSmarker = ppsClk20 | ppsSys;
+
+endmodule
+
+module localPPSsrc #(
+    parameter CLK_RATE = -1,
+    parameter DEBUG    = "false") (
+    input  wire clk,
+    input  wire enable_a,
+    output wire pps);
+
+localparam COUNTER_RELOAD = CLK_RATE - 2;
 localparam COUNTER_WIDTH = $clog2(COUNTER_RELOAD+1) + 1;
 reg [COUNTER_WIDTH-1:0] counter = COUNTER_RELOAD;
 wire counterDone = counter[COUNTER_WIDTH-1];
@@ -56,25 +83,21 @@ wire counterDone = counter[COUNTER_WIDTH-1];
 (*ASYNC_REG=DEBUG*) reg enable_m = 0;
 (*MARK_DEBUG=DEBUG*) reg enable = 0;
 (*MARK_DEBUG=DEBUG*) reg [3:0] ppsStretch = 0;
-assign localPPSmarker = ppsStretch[3];
-
-always @(posedge clk20) begin
-    enable_m <= sysEnable;
+assign pps = ppsStretch[3];
+always @(posedge clk) begin
+    enable_m <= enable_a;
     enable   <= enable_m;
-    if (counterDone) begin
+    if (counterDone || !enable) begin
         counter <= COUNTER_RELOAD;
     end
     else begin
         counter <= counter - 1;
     end
-
-    if (localPPSmarker) begin
+    if (pps) begin
         ppsStretch <= ppsStretch - 1;
     end
-    else if (enable) begin
-        if (counterDone) begin
-            ppsStretch <= ~0;
-        end
+    else if (counterDone && enable) begin
+        ppsStretch <= ~0;
     end
 end
 endmodule
