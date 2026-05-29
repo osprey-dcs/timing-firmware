@@ -196,9 +196,9 @@ always @(posedge acqClk) begin
         acqTripped <= 0;
     end
     else if (trip && (acqClearTrip || !acqTripped)) begin
-        firstFault   <= faults;
-        whenFaulted  <= acqTimestamp;
-        acqTripped   <= 1;
+        firstFault  <= faults;
+        whenFaulted <= acqTimestamp;
+        acqTripped  <= 1;
     end
 end
 endmodule

@@ -238,7 +238,7 @@ assign GPIO_IN[GPIO_IDX_PMOD_FMC_MONITOR] = {8'b0, pmodIn,
 BUFG bufClk20 (.I(CLK20_VCXO), .O(clk20));
 wire localPPSmarker;
 localPPS #(
-    .CLK_RATE(CFG_SYSCLK_RATE),
+    .SYSCLK_RATE(CFG_SYSCLK_RATE),
     .DEBUG("false"))
   localPPS_i (
     .sysClk(sysClk),
@@ -380,7 +380,7 @@ mps #(
     .MPS_INPUT_COUNT(CFG_MPS_INPUT_COUNT),
     .MPS_OUTPUT_COUNT(CFG_MPS_OUTPUT_COUNT),
     .TIMESTAMP_WIDTH(TIMESTAMP_WIDTH),
-    .DEBUG("false"))
+    .DEBUG("true"))
   mps_i (
     .sysClk(sysClk),
     .sysLocalCsrStrobe(GPIO_STROBES[GPIO_IDX_MPS_LOCAL_CSR]),
