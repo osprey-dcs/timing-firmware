@@ -237,7 +237,9 @@ assign GPIO_IN[GPIO_IDX_PMOD_FMC_MONITOR] = {8'b0, pmodIn,
 // Generate local PPS
 BUFG bufClk20 (.I(CLK20_VCXO), .O(clk20));
 wire localPPSmarker;
-localPPS #(.DEBUG("false"))
+localPPS #(
+    .CLK_RATE(CFG_SYSCLK_RATE),
+    .DEBUG("false"))
   localPPS_i (
     .sysClk(sysClk),
     .sysCsrStrobe(GPIO_STROBES[GPIO_IDX_LOCAL_PPS_CSR]),
@@ -252,7 +254,7 @@ localPPS #(.DEBUG("false"))
 // DAC2 adjusts the 20 MHz system clock.
 wire ppsValid, evgPPSmarker, hwPPSmarker_a, evrPPSmarker;
 marbleClockSync #(
-    .DEBUG("true"))
+    .DEBUG("false"))
   marbleClockSync (
     .sysClk(sysClk),
     .sysCsrStrobe(GPIO_STROBES[GPIO_IDX_MARBLE_VCXO_PLL_CSR]),
@@ -378,7 +380,7 @@ mps #(
     .MPS_INPUT_COUNT(CFG_MPS_INPUT_COUNT),
     .MPS_OUTPUT_COUNT(CFG_MPS_OUTPUT_COUNT),
     .TIMESTAMP_WIDTH(TIMESTAMP_WIDTH),
-    .DEBUG(DEBUG))
+    .DEBUG("false"))
   mps_i (
     .sysClk(sysClk),
     .sysLocalCsrStrobe(GPIO_STROBES[GPIO_IDX_MPS_LOCAL_CSR]),
