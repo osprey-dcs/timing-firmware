@@ -175,8 +175,8 @@ mpsLocalGetStatus(int outputIndex)
 /*
  * FEED I/O support
  */
-#define REG_FORCE_TRIP          0
-#define REG_INVERT_INPUTS       1
+#define REG_INVERT_INPUTS       0
+#define REG_FORCE_TRIP          1
 #define REG_STATUS_BASE         100
 #define REG_IMPORTANT_BASE      200
 #define REG_GOOD_STATE_BASE     300
@@ -189,12 +189,12 @@ void
 mpsLocalWrite(int offset, uint32_t value)
 {
     switch(offset) {
-    case REG_FORCE_TRIP:
-        mpsLocalSetForceTrip(value);
-        break;
-
     case REG_INVERT_INPUTS:
         mpsLocalSetInvertedInputs(value);
+        break;
+
+    case REG_FORCE_TRIP:
+        mpsLocalSetForceTrip(value);
         break;
 
     case RANGE(REG_IMPORTANT_BASE, CFG_MPS_OUTPUT_COUNT):
@@ -211,12 +211,12 @@ uint32_t
 mpsLocalRead(int offset)
 {
     switch(offset) {
-    case REG_FORCE_TRIP:
-        return mpsLocalGetForceTrip();
-        break;
-
     case REG_INVERT_INPUTS:
         return mpsLocalGetInvertedInputs();
+        break;
+
+    case REG_FORCE_TRIP:
+        return mpsLocalGetForceTrip();
         break;
 
     case RANGE(REG_STATUS_BASE, CFG_MPS_OUTPUT_COUNT):
