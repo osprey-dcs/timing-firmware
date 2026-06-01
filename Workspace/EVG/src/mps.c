@@ -131,9 +131,7 @@ static void
 mpsSetRequiredLinks(uint32_t bitmap)
 {
     /* For now the first link is never 'required' since it's the EVR */
-printf("mpsSetRequiredLinks %x", bitmap);
     bitmap &= (1 << CFG_MGT_COUNT) - 1 - 1;
-printf("  %x\n", bitmap);
     GPIO_WRITE(GPIO_IDX_MPS_MERGE_CSR, 0x10000 | bitmap);
 }
 
