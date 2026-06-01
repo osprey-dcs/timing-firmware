@@ -331,7 +331,7 @@ wire                   [CFG_MGT_COUNT-1:0] mgtRxClks;
 wire                   [CFG_MGT_COUNT-1:0] mgtRxLinkUp;
 wire  [(CFG_MGT_COUNT*MGT_DATA_WIDTH)-1:0] mgtRxChars;
 wire [(CFG_MGT_COUNT*MGT_CTYPE_WIDTH)-1:0] mgtRxCharIsK;
-wire            [CFG_MPS_OUTPUT_COUNT-1:0] mpsTripped;
+wire            [CFG_MPS_OUTPUT_COUNT-1:0] mgtTxMPStripped;
 
 fiberLinks #(
     .MGT_COUNT(CFG_MGT_COUNT),
@@ -351,12 +351,12 @@ fiberLinks #(
     .sysMgtStatus(GPIO_IN[GPIO_IDX_MGT_CSR]),
     .sysLinkStatus(GPIO_IN[GPIO_IDX_LINK_STATUS]),
     .isEVG(isEVG),
-    .mpsTripped_a(mpsTripped),
     .mgtRxClks(mgtRxClks),
     .mgtRxLinkUp(mgtRxLinkUp),
     .mgtRxChars(mgtRxChars),
     .mgtRxCharIsK(mgtRxCharIsK),
     .mgtTxClk(evgClk),
+    .mgtTxMPStripped(mgtTxMPStripped),
     .evgTxChars(evgTxChars),
     .evgTxCharIsK(evgTxCharIsK),
     .gtRefClkP(MGTREFCLK0_116_P),
@@ -372,6 +372,7 @@ fiberLinks #(
 ///////////////////////////////////////////////////////////////////////////////
 // Machine protection operations
 wire [TIMESTAMP_WIDTH-1:0] evrTimestamp;
+wire [CFG_MPS_OUTPUT_COUNT-1:0] mgtTxMPSmitigate;
 mps #(
     .EVR_MPS_CLEAR_EVENT(CFG_EVR_MPS_CLEAR_EVENT),
     .MGT_COUNT(CFG_MGT_COUNT),
@@ -390,6 +391,7 @@ mps #(
     .sysLocalStatus(GPIO_IN[GPIO_IDX_MPS_LOCAL_CSR]),
     .sysLocalData(GPIO_IN[GPIO_IDX_MPS_LOCAL_DATA]),
     .sysMergeStatus(GPIO_IN[GPIO_IDX_MPS_MERGE_CSR]),
+    .isEVG_a(isEVG),
     .mgtRxClks(mgtRxClks),
     .mgtRxChars(mgtRxChars),
     .mgtRxCharIsK(mgtRxCharIsK),
@@ -397,7 +399,8 @@ mps #(
     .evrTimestamp(evrTimestamp),
     .mpsInputStates_a(evgHwInputs[CFG_MPS_INPUT_COUNT-1:0]),
     .mgtTxClk(evgClk),
-    .mpsTripped(mpsTripped));
+    .mgtTxMPStripped(mgtTxMPStripped),
+    .mgtTxMPSmitigate(mgtTxMPSmitigate));
 
 ///////////////////////////////////////////////////////////////////////////////
 // Measure clocks

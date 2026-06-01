@@ -61,16 +61,15 @@ module fiberLinks #(
     (*MARK_DEBUG=DEBUG*) output wire                [31:0] sysLinkStatus,
                          input  wire                       isEVG,
 
-    input  wire [MPS_OUTPUT_COUNT-1:0] mpsTripped_a,
-
     output wire                   [MGT_COUNT-1:0] mgtRxClks,
     output wire                   [MGT_COUNT-1:0] mgtRxLinkUp,
     output wire  [(MGT_COUNT*MGT_DATA_WIDTH)-1:0] mgtRxChars,
     output wire [(MGT_COUNT*MGT_CTYPE_WIDTH)-1:0] mgtRxCharIsK,
 
-    output wire                       mgtTxClk,
-    input  wire  [MGT_DATA_WIDTH-1:0] evgTxChars,
-    input  wire [MGT_CTYPE_WIDTH-1:0] evgTxCharIsK,
+    output wire                        mgtTxClk,
+    input  wire [MPS_OUTPUT_COUNT-1:0] mgtTxMPStripped,
+    input  wire   [MGT_DATA_WIDTH-1:0] evgTxChars,
+    input  wire  [MGT_CTYPE_WIDTH-1:0] evgTxCharIsK,
 
     input  wire                 gtRefClkP,
     input  wire                 gtRefClkN,
@@ -87,16 +86,12 @@ assign sysLinkStatus = { {32-MGT_COUNT{1'b0}}, mgtRxLinkUp};
 // Select event source and set up transmit values
 (*ASYNC_REG="true"*) reg mgtIsEVG_m;
                      reg mgtIsEVG;
-(*ASYNC_REG="true"*) reg [MPS_OUTPUT_COUNT-1:0] mgtMPStripped_m = 0;
-                     reg [MPS_OUTPUT_COUNT-1:0] mgtMPStripped = 0;
 wire  [MGT_DATA_WIDTH-1:0] evfTxChars;
 wire [MGT_CTYPE_WIDTH-1:0] evfTxCharIsK;
 
 always @(posedge mgtTxClk) begin
     mgtIsEVG_m <= isEVG;
     mgtIsEVG   <= mgtIsEVG_m;
-    mgtMPStripped_m <= mpsTripped_a;
-    mgtMPStripped   <= mgtMPStripped;
 end
 
 (*MARK_DEBUG=DEBUG_EVS*) wire  [MGT_DATA_WIDTH-1:0] evsTxChars =
@@ -105,9 +100,9 @@ end
                                         mgtIsEVG ? evgTxCharIsK : evfTxCharIsK;
 
 wire [(MGT_COUNT*MGT_DATA_WIDTH)-1:0] mgtTxChars = {
-                                     {MGT_COUNT-1{evsTxChars}},
-                                     evsTxChars[15:8],
-                                     {8-MPS_OUTPUT_COUNT{1'b0}}, mgtMPStripped};
+                                    {MGT_COUNT-1{evsTxChars}},
+                                    evsTxChars[15:8],
+                                    {8-MPS_OUTPUT_COUNT{1'b0}}, mgtTxMPStripped};
 wire [(MGT_COUNT*MGT_CTYPE_WIDTH)-1:0] mgtTxCharIsK = {
                             {MGT_COUNT-1{evsTxCharIsK}}, evsTxCharIsK[1], 1'b0};
 

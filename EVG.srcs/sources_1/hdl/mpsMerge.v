@@ -37,7 +37,7 @@ module mpsMerge #(
     input  wire [31:0] sysGPIO_OUT,
     output wire [31:0] sysStatus,
 
-    input  wire        evrClear,
+    input  wire        evrClear_a,
 
     (*MARK_DEBUG=DEBUG*)input wire [(MGT_COUNT*MGT_DATA_WIDTH)-1:0] mgtRxChars,
     (*MARK_DEBUG=DEBUG*)input wire                  [MGT_COUNT-1:0] mgtRxLinkUp,
@@ -47,12 +47,13 @@ module mpsMerge #(
 
 ///////////////////////////////////////////////////////////////////////////////
 // System clock domain
-(*MARK_DEBUG=DEBUG*) reg [MGT_COUNT-1:0] linkImportant = ~0;
+(*MARK_DEBUG=DEBUG*) reg [MGT_COUNT-1:0] linkImportant = {{MGT_COUNT-1{1'b1}},
+                                                                          1'b0};
 wire [MPS_OUTPUT_COUNT-1:0] mpsTripped_a;
 
 always @(posedge sysClk) begin
     if (sysCsrStrobe) begin
-        if (sysGPIO_OUT[12]) begin
+        if (sysGPIO_OUT[16]) begin
             linkImportant <= sysGPIO_OUT[0+:MGT_COUNT] &
                                                     {{MGT_COUNT-1{1'b1}}, 1'b0};
         end
@@ -87,7 +88,7 @@ reg [2:0] mpfTxPhase = 0;
 (*ASYNC_REG="true"*) reg mpsClear_m = 0;
 reg mpsClear = 0;
 always @(posedge mgtTxClk) begin
-    mpsClear_m <= evrClear; //FIXME: Needs stretching!
+    mpsClear_m <= evrClear_a;
     mpsClear   <= mpsClear_m;
     mpsTripped_m <= mpsTripped_a;
     mpsTripped   <= mpsTripped_m | (mpsTripped & ~{MPS_OUTPUT_COUNT{mpsClear}});
