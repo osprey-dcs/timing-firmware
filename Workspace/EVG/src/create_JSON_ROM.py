@@ -324,6 +324,20 @@ def mpsLocal_build(MPS_REG_BASE=10000, mpsOutputCount=2):
             "data_width": 32,
             "sign": "unsigned",
         },
+        "MPS:required": {
+            "access": "rw",
+            "addr_width": 0,
+            "base_addr": MPS_REG_BASE + 2,
+            "data_width": 32,
+            "sign": "unsigned",
+        },
+        "MPS:tripped": {
+            "access": "r",
+            "addr_width": 0,
+            "base_addr": MPS_REG_BASE + 3,
+            "data_width": 32,
+            "sign": "unsigned",
+        },
     }
 
     for addr, idx in enumerate(range(1, mpsOutputCount+1), MPS_REG_BASE+100):

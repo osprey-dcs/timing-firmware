@@ -37,8 +37,8 @@ softwareBuildDate.h: clockAdjust.c \
                      mgtClkSwitch.h \
                      mmcMailbox.c \
                      mmcMailbox.h \
-                     mpsLocal.c \
-                     mpsLocal.h \
+                     mps.c \
+                     mps.h \
                      ospreyRFIN.c \
                      ospreyRFIN.h \
                      ntpTime.c \

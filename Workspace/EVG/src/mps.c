@@ -23,13 +23,13 @@
  */
 
 /*
- * Local machine protection support
+ * Machine protection support
  */
 
 #include <stdio.h>
 #include <xparameters.h>
 #include "gpio.h"
-#include "mpsLocal.h"
+#include "mps.h"
 #include "util.h"
 
 #define CSR_MPS_OUTPUT_SEL_MASK         0x0F
@@ -75,12 +75,13 @@ setReg(int regSel, int outputIndex, uint32_t value)
 }
 
 void
-mpsLocalDumpReg(void)
+mpsDumpReg(void)
 {
     int o;
+    uint32_t v;
     for (o = 0 ; o < CFG_MPS_OUTPUT_COUNT ; o++) {
         int r;
-        uint32_t v = getReg(CSR_REG_STATUS, o);
+        v = getReg(CSR_REG_STATUS, o);
         static const char * const names[] = {
             "Check Digital",
             "GOOD state",
@@ -96,78 +97,103 @@ mpsLocalDumpReg(void)
             printf("%24s: %04X:%04X\n", names[r], (v >> 16), v & 0xFFFF);
         }
     }
+    v = GPIO_READ(GPIO_IDX_MPS_MERGE_CSR);
+    printf("Tripped:%02x  Required:%02X\n", v >> 16, v & 0xFFFF);
 }
 
 static void
-mpsLocalSetDiscreteBitmap(int outputIndex, uint32_t map)
+mpsSetDiscreteBitmap(int outputIndex, uint32_t map)
 {
     setReg(CSR_REG_DISCRETE_BITMAP, outputIndex, map);
 }
 
 static void
-mpsLocalSetDiscreteGoodState(int outputIndex, uint32_t goodState)
+mpsSetDiscreteGoodState(int outputIndex, uint32_t goodState)
 {
     setReg(CSR_REG_DISCRETE_GOOD_STATE, outputIndex, goodState);
 }
 
 static void
-mpsLocalSetInvertedInputs(uint32_t map)
+mpsSetInvertedInputs(uint32_t map)
 {
     map &= (1 << CFG_MPS_INPUT_COUNT) - 1;
     CSR_WRITE(CSR_MPS_W_INVERT | map);
 }
 
 static void
-mpsLocalSetForceTrip(uint32_t mpsOutputs)
+mpsSetForceTrip(uint32_t mpsOutputs)
 {
     mpsOutputs &= (1 << CFG_MPS_OUTPUT_COUNT) - 1;
     CSR_WRITE(CSR_MPS_W_FORCE_TRIP | mpsOutputs);
 }
 
+static void
+mpsSetRequiredLinks(uint32_t bitmap)
+{
+    /* For now the first link is never 'required' since it's the EVR */
+printf("mpsSetRequiredLinks %x", bitmap);
+    bitmap &= (1 << CFG_MGT_COUNT) - 1 - 1;
+printf("  %x\n", bitmap);
+    GPIO_WRITE(GPIO_IDX_MPS_MERGE_CSR, 0x10000 | bitmap);
+}
+
 static uint32_t
-mpsLocalGetDiscreteBitmap(int outputIndex)
+mpsGetDiscreteBitmap(int outputIndex)
 {
     return getReg(CSR_REG_DISCRETE_BITMAP, outputIndex);
 }
 
 static uint32_t
-mpsLocalGetDiscreteGoodState(int outputIndex)
+mpsGetDiscreteGoodState(int outputIndex)
 {
     return getReg(CSR_REG_DISCRETE_GOOD_STATE, outputIndex);
 }
 
 static uint32_t
-mpsLocalGetInvertedInputs(void)
+mpsGetInvertedInputs(void)
 {
     return (CSR_READ() & CSR_MPS_R_INVERT_MASK) >> CSR_MPS_R_INVERT_SHIFT;
 }
 
 static uint32_t
-mpsLocalGetForceTrip(void)
+mpsGetForceTrip(void)
 {
     return (CSR_READ()&CSR_MPS_R_FORCE_TRIP_MASK) >> CSR_MPS_R_FORCE_TRIP_SHIFT;
 }
 
 static uint32_t
-mpsLocalGetFirstFaultDiscrete(int outputIndex)
+mpsGetRequiredLinks(void)
+{
+    return GPIO_READ(GPIO_IDX_MPS_MERGE_CSR) & ((1 << CFG_MGT_COUNT) - 1);
+}
+
+static uint32_t
+mpsGetTripped(void)
+{
+    return (GPIO_READ(GPIO_IDX_MPS_MERGE_CSR) >> 16) &
+                                                ((1<<CFG_MPS_OUTPUT_COUNT) - 1);
+}
+
+static uint32_t
+mpsGetFirstFaultDiscrete(int outputIndex)
 {
     return getReg(CSR_REG_FIRST_FAULT_DISCRETE, outputIndex);
 }
 
 static uint32_t
-mpsLocalGetFirstFaultSeconds(int outputIndex)
+mpsGetFirstFaultSeconds(int outputIndex)
 {
     return getReg(CSR_REG_FIRST_FAULT_SECONDS, outputIndex);
 }
 
 static uint32_t
-mpsLocalGetFirstFaultTicks(int outputIndex)
+mpsGetFirstFaultTicks(int outputIndex)
 {
     return getReg(CSR_REG_FIRST_FAULT_TICKS, outputIndex);
 }
 
 static uint32_t
-mpsLocalGetStatus(int outputIndex)
+mpsGetStatus(int outputIndex)
 {
     return getReg(CSR_REG_STATUS, outputIndex);
 }
@@ -177,6 +203,8 @@ mpsLocalGetStatus(int outputIndex)
  */
 #define REG_INVERT_INPUTS       0
 #define REG_FORCE_TRIP          1
+#define REG_REQUIRED_LINKS      2
+#define REG_MERGED_TRIPPED      3
 #define REG_STATUS_BASE         100
 #define REG_IMPORTANT_BASE      200
 #define REG_GOOD_STATE_BASE     300
@@ -186,56 +214,68 @@ mpsLocalGetStatus(int outputIndex)
 #define RANGE(base, count) (base) ... ((base)+(count)-1)
 
 void
-mpsLocalWrite(int offset, uint32_t value)
+mpsWrite(int offset, uint32_t value)
 {
     switch(offset) {
     case REG_INVERT_INPUTS:
-        mpsLocalSetInvertedInputs(value);
+        mpsSetInvertedInputs(value);
         break;
 
     case REG_FORCE_TRIP:
-        mpsLocalSetForceTrip(value);
+        mpsSetForceTrip(value);
+        break;
+
+    case REG_REQUIRED_LINKS:
+        mpsSetRequiredLinks(value);
         break;
 
     case RANGE(REG_IMPORTANT_BASE, CFG_MPS_OUTPUT_COUNT):
-        mpsLocalSetDiscreteBitmap(offset - REG_IMPORTANT_BASE, value);
+        mpsSetDiscreteBitmap(offset - REG_IMPORTANT_BASE, value);
         break;
 
     case RANGE(REG_GOOD_STATE_BASE, CFG_MPS_OUTPUT_COUNT):
-        mpsLocalSetDiscreteGoodState(offset - REG_GOOD_STATE_BASE, value);
+        mpsSetDiscreteGoodState(offset - REG_GOOD_STATE_BASE, value);
         break;
     }
 }
 
 uint32_t
-mpsLocalRead(int offset)
+mpsRead(int offset)
 {
     switch(offset) {
     case REG_INVERT_INPUTS:
-        return mpsLocalGetInvertedInputs();
+        return mpsGetInvertedInputs();
         break;
 
     case REG_FORCE_TRIP:
-        return mpsLocalGetForceTrip();
+        return mpsGetForceTrip();
+        break;
+
+    case REG_REQUIRED_LINKS:
+        return mpsGetRequiredLinks();
+        break;
+
+    case REG_MERGED_TRIPPED:
+        return mpsGetTripped();
         break;
 
     case RANGE(REG_STATUS_BASE, CFG_MPS_OUTPUT_COUNT):
-        return mpsLocalGetStatus(offset - REG_STATUS_BASE);
+        return mpsGetStatus(offset - REG_STATUS_BASE);
 
     case RANGE(REG_IMPORTANT_BASE, CFG_MPS_OUTPUT_COUNT):
-        return mpsLocalGetDiscreteBitmap(offset - REG_IMPORTANT_BASE);
+        return mpsGetDiscreteBitmap(offset - REG_IMPORTANT_BASE);
 
     case RANGE(REG_GOOD_STATE_BASE, CFG_MPS_OUTPUT_COUNT):
-        return mpsLocalGetDiscreteGoodState(offset - REG_GOOD_STATE_BASE);
+        return mpsGetDiscreteGoodState(offset - REG_GOOD_STATE_BASE);
 
     case RANGE(REG_FIRST_FAULT_BASE, CFG_MPS_OUTPUT_COUNT):
-        return mpsLocalGetFirstFaultDiscrete(offset - REG_FIRST_FAULT_BASE);
+        return mpsGetFirstFaultDiscrete(offset - REG_FIRST_FAULT_BASE);
 
     case RANGE(REG_FAULT_SECONDS_BASE, CFG_MPS_OUTPUT_COUNT):
-        return mpsLocalGetFirstFaultSeconds(offset - REG_FAULT_SECONDS_BASE);
+        return mpsGetFirstFaultSeconds(offset - REG_FAULT_SECONDS_BASE);
 
     case RANGE(REG_FAULT_TICKS_BASE, CFG_MPS_OUTPUT_COUNT):
-        return mpsLocalGetFirstFaultTicks(offset - REG_FAULT_TICKS_BASE);
+        return mpsGetFirstFaultTicks(offset - REG_FAULT_TICKS_BASE);
 
     default:
         return (~(uint32_t)0);

@@ -26,11 +26,11 @@
  * Local machine protection support
  */
 
-#ifndef _MPS_LOCAL_H_
-#define _MPS_LOCAL_H_
+#ifndef _MPS_H_
+#define _MPS_H_
 
-void mpsLocalDumpReg(void);
-void mpsLocalWrite(int offset, uint32_t value);
-uint32_t mpsLocalRead(int offset);
+void mpsDumpReg(void);
+void mpsWrite(int offset, uint32_t value);
+uint32_t mpsRead(int offset);
 
-#endif /* _MPS_LOCAL_H_ */
+#endif /* _MPS_H_ */

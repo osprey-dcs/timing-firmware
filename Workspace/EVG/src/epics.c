@@ -39,7 +39,7 @@
 #include "mgt.h"
 #include "mgtClkSwitch.h"
 #include "mmcMailbox.h"
-#include "mpsLocal.h"
+#include "mps.h"
 #include "ospreyRFIN.h"
 #include "softwareBuildDate.h"
 #include "systemParameters.h"
@@ -172,7 +172,7 @@ writeReg(int address, uint32_t value)
     }
     if ((address >= REG_MPS_LOCAL_START)
      && (address < (REG_MPS_LOCAL_START + REG_MPS_LOCAL_COUNT))) {
-        mpsLocalWrite(address - REG_MPS_LOCAL_START, value);
+        mpsWrite(address - REG_MPS_LOCAL_START, value);
         return;
     }
     switch(address) {
@@ -206,7 +206,7 @@ readReg(int address)
     }
     if ((address >= REG_MPS_LOCAL_START)
      && (address < (REG_MPS_LOCAL_START + REG_MPS_LOCAL_COUNT))) {
-        return mpsLocalRead(address - REG_MPS_LOCAL_START);
+        return mpsRead(address - REG_MPS_LOCAL_START);
     }
     switch(address) {
     case REG_POWERUP_STATE:       return powerUpFlag;
