@@ -174,8 +174,9 @@ always @(posedge sysClk) begin
                (sysREGsel == 4'h2) ? {{32-MPS_INPUT_COUNT{1'b0}}, firstFault} :
                (sysREGsel == 4'h3) ? whenFaulted[32+:32] :
                (sysREGsel == 4'h4) ? whenFaulted[ 0+:32] :
-               (sysREGsel == 4'h5) ? {{16-1-MPS_INPUT_COUNT{1'b0}},
-                                      sysForceTrip, mpsInputs,
+               (sysREGsel == 4'h5) ? {sysForceTrip,
+                                      {16-1-MPS_INPUT_COUNT{1'b0}},
+                                      mpsInputs,
                                       {14{1'b0}}, trip, acqTripped} : 0;
 end
 
