@@ -98,7 +98,8 @@ mpsDumpReg(void)
         }
     }
     v = GPIO_READ(GPIO_IDX_MPS_MERGE_CSR);
-    printf("Tripped:%02x  Required:%02X\n", v >> 16, v & 0xFFFF);
+    printf("Mitigation Outputs:%02x  Required Fiber Links:%02X\n", v >> 16,
+                                                                   v & 0xFFFF);
 }
 
 static void
