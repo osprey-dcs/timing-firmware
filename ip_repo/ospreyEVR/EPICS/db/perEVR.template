@@ -1,0 +1,242 @@
+# P - Name prefix
+# NAME - Device name
+# NOUT - Number of perPVRoutputDriver.template instances
+
+# On Connect process
+# 1. Read __metadata__ (sync.)
+# 2. Read constants (async.)
+#   SERDES_FACTOR
+# 3. Write settings except enable/arm
+#   per. output delay/width
+# 4. Write enable/arm
+#   event action mapping table
+# 5. live!
+record(longin, "$(P)EVR:onConn_") {
+    field(DTYP, "FEED On Connect")
+    field(INP, "@name=$(NAME)")
+    field(SCAN, "I/O Intr")
+    field(FLNK, "$(P)EVR:status_")
+}
+record(longin, "$(P)EVR:status_") {
+    field(DESC, "EVR status register")
+    field(DTYP, "FEED Register Read")
+    field(INP, "@name=$(NAME) reg=EVR:status") # async
+    field(FLNK, "$(P)EVR:Mlt")
+}
+record(calc, "$(P)EVR:Mlt") {
+    field(DESC, "dly/wdth res mult")
+    field(INPA, "$(P)EVR:status_")
+    field(INPB, "0x00001e00")
+    field(CALC, "(A&B)>>9")
+    field(HIGH, "14") # highest possible with kintex7 SERDES
+    field(LOW , "1")
+    field(HSV , "INVALID")
+    field(LSV , "INVALID")
+    field(FLNK, "$(P)EVR:LOG:Nscl_")
+}
+record(ao, "$(P)EVR:LOG:Nscl_") { # set scale for nsec column
+    field(DTYP, "FEED Signal Scale")
+    field(OUT , "@name=$(NAME) signal=$(P)EVR:LOG:N")
+    field(OMSL, "closed_loop")
+    field(DOL , "$(P)Ref:TN_")
+    field(FLNK, "$(P)EVR:LOG2:Nscl_")
+}
+record(ao, "$(P)EVR:LOG2:Nscl_") {
+    field(DTYP, "Event Table Set Mult")
+    field(OUT , "@log=$(P)")
+    field(OMSL, "closed_loop")
+    field(DOL , "$(P)Ref:TN_")
+    field(FLNK, "$(P)EVR:init2_")
+}
+record(longout, "$(P)EVR:init2_") {
+    field(OUT, "$(P)EVR:init4_ NPP") # prepare down counter
+    field(VAL, "$(NOUT)")
+    field(FLNK, "$(P)EVR:init3_")
+}
+record(event, "$(P)EVR:init3_") {
+    field(VAL, "$(NAME):initOutputs") # --> perPVRoutputDriver.template
+}
+
+record(calcout, "$(P)EVR:init4_") {
+    field(SCAN, "Event")
+    field(EVNT, "$(NAME):afterOutputs") # <-- perPVRoutputDriver.template
+    field(CALC, "VAL-1")
+    field(OOPT, "Transition To Zero")
+    field(OUT , "$(P)EVR:init5_.PROC PP") # all outputs writes queued
+}
+record(longin, "$(P)EVR:init5_") {
+    field(DTYP, "FEED Sync")
+    field(INP, "@name=$(NAME)")
+    field(FLNK, "$(P)EVR:mapsz_") # all output writes completed
+}
+
+record(longin, "$(P)EVR:mapsz_") {
+    field(DTYP, "FEED __metadata__")
+    field(INP , "@name=$(NAME) reg=evrActionWidth")
+    field(PHAS, "1")
+    field(FLNK, "$(P)EVR:mapsz")
+}
+record(longout, "$(P)EVR:mapsz") {
+    field(OMSL, "closed_loop")
+    field(DOL , "$(P)EVR:mapsz_")
+    field(DTYP, "Bit Table Set Words")
+    field(OUT , "@table=$(NAME)") # will scan $(P)EVR:map_
+}
+
+record(aai, "$(P)EVR:map_") {
+    field(DTYP, "Bit Table Read")
+    field(INP , "@table=$(NAME)")
+    field(SCAN, "I/O Intr")
+    field(FTVL, "ULONG")
+    field(NELM, "256") # max 1 words per event
+    field(FLNK, "$(P)EVR:map")
+}
+
+record(aao, "$(P)EVR:map") {
+    field(OMSL, "closed_loop")
+    field(DOL , "$(P)EVR:map_")
+    field(DTYP, "FEED Register Write")
+    field(OUT, "@name=$(NAME) reg=EVR:evnt:map")
+    field(FTVL, "ULONG")
+    field(NELM, "256") # max 1 words per event
+}
+
+
+# EVR:status
+# 0x00000001 - EVR link up
+# 0x00000002 - timestamp valid
+# 0x00000004 - FIFO not empty
+# 0x00000008 - FIFO overflow
+# 0x000001f0 - Output count       (static)
+# 0x00001e00 - SERDES_FACTOR      (static)
+# 0x00002000 - ACTIVE_LOW_OUTPUTS (static)
+# 0x001fc000 - evrTriStateIn
+#
+record(longin, "$(P)EVR:status") {
+    field(DESC, "EVR status register")
+    field(DTYP, "FEED Register Read")
+    field(INP, "@name=$(NAME) reg=EVR:status")
+    field(SCAN, "2 second")
+}
+record(bi, "$(P)EVR:Lnk:Ok") {
+    field(DESC, "EVR status register")
+    field(DTYP, "FEED Register Read")
+    field(INP, "@name=$(NAME) reg=EVR:status")
+    field(SCAN, "I/O Intr")
+    field(MASK, "0x00000001")
+    field(ZNAM, "Err")
+    field(ZSV , "MAJOR")
+    field(ONAM, "Ok")
+}
+record(bi, "$(P)EVR:TS:Ok") {
+    field(DTYP, "FEED Register Read")
+    field(INP, "@name=$(NAME) reg=EVR:status")
+    field(SCAN, "I/O Intr")
+    field(MASK, "0x00000002")
+    field(ZNAM, "Invalid")
+    field(ZSV , "MAJOR")
+    field(ONAM, "Ok")
+}
+
+record(aai, "$(P)EVR:LOG:L_") {
+    field(FTVL, "STRING")
+    field(NELM, "3")
+    field(INP , {const:["Evt", "Sec", "NS"]})
+    info(Q:group, {
+        "$(P)EVR:LOG":{
+            +id:"epics:nt/NTTable:1.0",
+            "labels":{+type:"plain", +channel:"VAL"}
+        }
+    })
+}
+
+record(aai, "$(P)EVR:LOG:E") {
+    field(FTVL, "ULONG")
+    field(NELM, "128")
+    field(DTYP, "FEED Register Read")
+    field(INP , "@name=$(NAME) reg=EVR:evnt:log wait=true offset=1 step=3")
+    field(SCAN, "1 second")
+    field(TSE , "-2")
+    field(FLNK, "$(P)EVR:LOG:S")
+    info(Q:group, {
+        "$(P)EVR:LOG":{
+            "":{+type:"meta", +channel:"VAL"},
+            "value.evt":{+type:"plain", +channel:"VAL", +putorder:0}
+        }
+    })
+    info(autosaveFields_pass0, "SCAN")
+}
+record(aai, "$(P)EVR:LOG:S") {
+    field(FTVL, "ULONG")
+    field(NELM, "128")
+    field(DTYP, "FEED Register Read")
+    field(INP , "@name=$(NAME) reg=EVR:evnt:log wait=false offset=2 step=3")
+    field(TSEL, "$(P)EVR:LOG:E.TIME")
+    field(FLNK, "$(P)EVR:LOG:N")
+    info(Q:group, {
+        "$(P)EVR:LOG":{
+            "value.sec":{+type:"plain", +channel:"VAL", +putorder:1}
+        }
+    })
+}
+record(aai, "$(P)EVR:LOG:N") {
+    field(FTVL, "DOUBLE")
+    field(NELM, "128")
+    field(DTYP, "FEED Register Read")
+    field(INP , "@name=$(NAME) reg=EVR:evnt:log wait=false offset=3 step=3 signal=$(P)EVR:LOG:N")
+    field(TSEL, "$(P)EVR:LOG:E.TIME")
+    field(FLNK, "$(P)EVR:LOG1_")
+    info(Q:group, {
+        "$(P)EVR:LOG":{
+            "value.ns":{+type:"plain", +channel:"VAL", +putorder:2, +trigger:"*"}
+        }
+    })
+}
+record(aai, "$(P)EVR:LOG1_") {
+    field(FTVL, "ULONG")
+    field(NELM, "256")
+    field(DTYP, "FEED Register Read")
+    field(INP , "@name=$(NAME) reg=EVR:evnt:log wait=false offset=1")
+    field(TSEL, "$(P)EVR:LOG:E.TIME")
+    field(FLNK, "$(P)EVR:LOG2_")
+}
+record(aao, "$(P)EVR:LOG2_") {
+    field(FTVL, "ULONG")
+    field(NELM, "256")
+    field(DTYP, "Event Table Input")
+    field(OUT , "@log=$(P)")
+    field(OMSL, "closed_loop")
+    field(DOL , "$(P)EVR:LOG1_ MSS")
+    field(TSEL, "$(P)EVR:LOG:E.TIME")
+}
+
+record(longin, "$(P)EVR:nowS_") {
+    field(DTYP, "FEED Register Read")
+    field(INP , "@name=$(NAME) reg=EVR:now wait=true offset=0")
+    field(SCAN, "1 second")
+    field(FLNK, "$(P)EVR:nowN_")
+}
+record(longin, "$(P)EVR:nowN_") {
+    field(DTYP, "FEED Register Read")
+    field(INP , "@name=$(NAME) reg=EVR:now wait=false offset=1")
+    field(FLNK, "$(P)EVR:now_")
+}
+record(calcout, "$(P)EVR:now_") {
+    field(INPA, "$(P)EVR:nowS_ MS") # sec
+    field(INPB, "$(P)EVR:nowN_ MS") # ticks
+    field(INPC, "$(P)Ref:T NPP MS") # sec/tick
+    field(CALC, "A+B*C")
+    field(EGU , "s")
+    field(FLNK, "$(P)EVR:nowF_")
+}
+record(ai, "$(P)EVR:nowF_") {
+    field(DTYP, "Copy VAL 2 TIME")
+    field(INP , "$(P)EVR:now_")
+    field(TSE,  "-2")
+    field(FLNK, "$(P)EVR:now")
+}
+record(stringin, "$(P)EVR:now") {
+    field(DTYP, "Soft Timestamp")
+    field(INP , "@%Y-%m-%d %H:%M:%S.%03f")
+    field(TSEL, "$(P)EVR:nowF_.TIME")
+}
