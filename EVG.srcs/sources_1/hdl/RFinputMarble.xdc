@@ -91,7 +91,7 @@ set_property -dict {PACKAGE_PIN D10 IOSTANDARD LVCMOS25} [get_ports {FMC1_ADS725
 #set_property -dict {PACKAGE_PIN C11 IOSTANDARD LVCMOS25} [get_ports {FMC1_LA_N[18]}]
 
 # FMC1 LA19 -- FMC1 H22/H23
-#set_property -dict {PACKAGE_PIN H14 IOSTANDARD LVCMOS25} [get_ports {FMC1_LA_P[19]}]
+#set_property -dict {PACKAGE_PIN H14 IOSTANDARD LVCMOS25} [get_ports {FMC1_DI_ENb}]
 #set_property -dict {PACKAGE_PIN G14 IOSTANDARD LVCMOS25} [get_ports {FMC1_LA_N[19]}]
 
 # FMC1 LA20 -- FMC1 G21/G22
@@ -111,12 +111,12 @@ set_property -dict {PACKAGE_PIN G12 IOSTANDARD LVCMOS25} [get_ports {FMC1_ADS725
 set_property -dict {PACKAGE_PIN F12 IOSTANDARD LVCMOS25} [get_ports {FMC1_ADS7253_CLK}]
 
 # FMC1 LA24 -- FMC1 H28/H29
-set_property -dict {PACKAGE_PIN A9 IOSTANDARD LVCMOS25} [get_ports {FMC1_DIN[13]}]
-set_property -dict {PACKAGE_PIN A8 IOSTANDARD LVCMOS25} [get_ports {FMC1_DIN[12]}]
+set_property -dict {PACKAGE_PIN A9 IOSTANDARD LVCMOS25} [get_ports {FMC1_DIN[3]}]
+set_property -dict {PACKAGE_PIN A8 IOSTANDARD LVCMOS25} [get_ports {FMC1_DIN[4]}]
 
 # FMC1 LA25 -- FMC1 G27/G28
-set_property -dict {PACKAGE_PIN G10 IOSTANDARD LVCMOS25} [get_ports {FMC1_DIN[15]}]
-set_property -dict {PACKAGE_PIN G9 IOSTANDARD LVCMOS25} [get_ports {FMC1_DIN[14]}]
+set_property -dict {PACKAGE_PIN G10 IOSTANDARD LVCMOS25} [get_ports {FMC1_DIN[1]}]
+set_property -dict {PACKAGE_PIN G9 IOSTANDARD LVCMOS25} [get_ports {FMC1_DIN[2]}]
 
 # FMC1 LA26 -- FMC1 D26/D27
 set_property -dict {PACKAGE_PIN E13 IOSTANDARD LVCMOS25} [get_ports {FMC1_ADS7253_CSB}]
@@ -127,27 +127,27 @@ set_property -dict {PACKAGE_PIN E12 IOSTANDARD LVCMOS25} [get_ports {FMC1_ADS725
 #set_property -dict {PACKAGE_PIN F13 IOSTANDARD LVCMOS25} [get_ports {FMC1_LA_N[27]}]
 
 # FMC1 LA28 -- FMC1 H31/H32
-set_property -dict {PACKAGE_PIN J13 IOSTANDARD LVCMOS25} [get_ports {FMC1_DIN[10]}]
+set_property -dict {PACKAGE_PIN J13 IOSTANDARD LVCMOS25} [get_ports {FMC1_DIN[6]}]
 set_property -dict {PACKAGE_PIN H13 IOSTANDARD LVCMOS25} [get_ports {FMC1_DIN[8]}]
 
 # FMC1 LA29 -- FMC1 G30/G31
-set_property -dict {PACKAGE_PIN F9 IOSTANDARD LVCMOS25} [get_ports {FMC1_DIN[11]}]
-set_property -dict {PACKAGE_PIN F8 IOSTANDARD LVCMOS25} [get_ports {FMC1_DIN[9]}]
+set_property -dict {PACKAGE_PIN F9 IOSTANDARD LVCMOS25} [get_ports {FMC1_DIN[5]}]
+set_property -dict {PACKAGE_PIN F8 IOSTANDARD LVCMOS25} [get_ports {FMC1_DIN[7]}]
 
 # FMC1 LA30 -- FMC1 H34/H35
-set_property -dict {PACKAGE_PIN B12 IOSTANDARD LVCMOS25} [get_ports {FMC1_DIN[5]}]
-set_property -dict {PACKAGE_PIN B11 IOSTANDARD LVCMOS25} [get_ports {FMC1_DIN[4]}]
+set_property -dict {PACKAGE_PIN B12 IOSTANDARD LVCMOS25} [get_ports {FMC1_DIN[11]}]
+set_property -dict {PACKAGE_PIN B11 IOSTANDARD LVCMOS25} [get_ports {FMC1_DIN[12]}]
 
 # FMC1 LA31 -- FMC1 G33/G34
-set_property -dict {PACKAGE_PIN A13 IOSTANDARD LVCMOS25} [get_ports {FMC1_DIN[7]}]
-set_property -dict {PACKAGE_PIN A12 IOSTANDARD LVCMOS25} [get_ports {FMC1_DIN[6]}]
+set_property -dict {PACKAGE_PIN A13 IOSTANDARD LVCMOS25} [get_ports {FMC1_DIN[9]}]
+set_property -dict {PACKAGE_PIN A12 IOSTANDARD LVCMOS25} [get_ports {FMC1_DIN[10]}]
 
 # FMC1 LA32 -- FMC1 H37/H38
-set_property -dict {PACKAGE_PIN C14 IOSTANDARD LVCMOS25} [get_ports {FMC1_DIN[1]}]
+set_property -dict {PACKAGE_PIN C14 IOSTANDARD LVCMOS25} [get_ports {FMC1_DIN[15]}]
 set_property -dict {PACKAGE_PIN C13 IOSTANDARD LVCMOS25} [get_ports FMC1_PPS]
 
 # FMC1 LA33 -- FMC1 G36/G37
-set_property -dict {PACKAGE_PIN B10 IOSTANDARD LVCMOS25} [get_ports {FMC1_DIN[3]}]
-set_property -dict {PACKAGE_PIN A10 IOSTANDARD LVCMOS25} [get_ports {FMC1_DIN[2]}]
+set_property -dict {PACKAGE_PIN B10 IOSTANDARD LVCMOS25} [get_ports {FMC1_DIN[13]}]
+set_property -dict {PACKAGE_PIN A10 IOSTANDARD LVCMOS25} [get_ports {FMC1_DIN[14]}]
 
 

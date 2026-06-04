@@ -108,6 +108,7 @@ module EVG #(
 
     input  wire        FMC1_PPS,
     input  wire [15:1] FMC1_DIN,
+    output wire        FMC1_DI_ENb,
     output wire        FMC1_LMK01801_CLK,
     output wire        FMC1_LMK01801_LE,
     output wire        FMC1_LMK01801_DATA,
@@ -126,6 +127,7 @@ localparam TIMESTAMP_WIDTH      = 64;
 // Static outputs
 assign VCXO_EN = 1'b1;
 assign LD17 = 1'b0;
+assign FMC1_DI_ENb = 1'b0;
 
 ///////////////////////////////////////////////////////////////////////////////
 // PMOD I/O routing
