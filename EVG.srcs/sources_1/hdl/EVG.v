@@ -369,8 +369,6 @@ fiberLinks #(
     .txP(QSFP_TX_P),
     .txN(QSFP_TX_N));
 
-// FIXME: Need some glitch-free way to drive PMOD outputs with either MPS trips or EVR hardware outputs.
-
 ///////////////////////////////////////////////////////////////////////////////
 // Machine protection operations
 wire [TIMESTAMP_WIDTH-1:0] evrTimestamp;
@@ -383,7 +381,7 @@ mps #(
     .MPS_INPUT_COUNT(CFG_MPS_INPUT_COUNT),
     .MPS_OUTPUT_COUNT(CFG_MPS_OUTPUT_COUNT),
     .TIMESTAMP_WIDTH(TIMESTAMP_WIDTH),
-    .DEBUG("true"))
+    .DEBUG("false"))
   mps_i (
     .sysClk(sysClk),
     .sysLocalCsrStrobe(GPIO_STROBES[GPIO_IDX_MPS_LOCAL_CSR]),
@@ -509,7 +507,7 @@ bd bd_i (
     .evrRxCharIsK(mgtRxChars[MGT_CTYPE_WIDTH-1:0]),
     .evrPPSmarker(evrPPSmarker),
     .evrLinkUp(mgtRxLinkUp[0]),
-    .evrHwDriverIn(8'h00),
+    .evrHwDriverIn({{8-CFG_MPS_OUTPUT_COUNT{1'b0}}, mgtTxMPSmitigate}),
     .evrHardwareOutputs(pmodOut),
     .evrTimestamp(evrTimestamp),
 

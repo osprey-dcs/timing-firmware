@@ -91,7 +91,7 @@ set_property -dict {PACKAGE_PIN D10 IOSTANDARD LVCMOS25} [get_ports {FMC1_ADS725
 #set_property -dict {PACKAGE_PIN C11 IOSTANDARD LVCMOS25} [get_ports {FMC1_LA_N[18]}]
 
 # FMC1 LA19 -- FMC1 H22/H23
-#set_property -dict {PACKAGE_PIN H14 IOSTANDARD LVCMOS25} [get_ports {FMC1_DI_ENb}]
+set_property -dict {PACKAGE_PIN H14 IOSTANDARD LVCMOS25} [get_ports {FMC1_DI_ENb}]
 #set_property -dict {PACKAGE_PIN G14 IOSTANDARD LVCMOS25} [get_ports {FMC1_LA_N[19]}]
 
 # FMC1 LA20 -- FMC1 G21/G22
