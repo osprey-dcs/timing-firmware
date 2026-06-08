@@ -507,7 +507,7 @@ bd bd_i (
     .evrRxCharIsK(mgtRxChars[MGT_CTYPE_WIDTH-1:0]),
     .evrPPSmarker(evrPPSmarker),
     .evrLinkUp(mgtRxLinkUp[0]),
-    .evrHwDriverIn({{8-CFG_MPS_OUTPUT_COUNT{1'b0}}, mgtTxMPSmitigate}),
+    .evrHwDriverIn({{8-CFG_MPS_OUTPUT_COUNT{1'b0}}, ~mgtTxMPSmitigate}),
     .evrHardwareOutputs(pmodOut),
     .evrTimestamp(evrTimestamp),
 
