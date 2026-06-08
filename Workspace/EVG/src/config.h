@@ -46,7 +46,7 @@
  */
 #define CFG_MPS_INPUT_COUNT     8
 #define CFG_MPS_OUTPUT_COUNT    8
-#define CFG_EVR_MPS_CLEAR_EVENT 126
+#define CFG_EVR_MPS_CLEAR_EVENT 120
 
 /*
  * Location of alternate boot image in flash memory
