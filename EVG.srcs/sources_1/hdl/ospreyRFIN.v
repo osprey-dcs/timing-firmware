@@ -37,13 +37,13 @@ module ospreyRFIN #(
     input  wire [31:0] GPIO_OUT,
     output reg  [31:0] readback = 0,
 
-    (*MARK_DEBUG=DEBUG*) output reg  RFIN_LMK01801_CLK,
-    (*MARK_DEBUG=DEBUG*) output reg  RFIN_LMK01801_LE,
-    (*MARK_DEBUG=DEBUG*) output reg  RFIN_LMK01801_DATA,
+    (*MARK_DEBUG=DEBUG*) output reg  RFIN_LMK01801_CLK = 0,
+    (*MARK_DEBUG=DEBUG*) output reg  RFIN_LMK01801_LE = 0,
+    (*MARK_DEBUG=DEBUG*) output reg  RFIN_LMK01801_DATA = 0,
 
-    (*MARK_DEBUG=DEBUG*) output reg  RFIN_ADS7253_CLK,
+    (*MARK_DEBUG=DEBUG*) output reg  RFIN_ADS7253_CLK = 0,
     (*MARK_DEBUG=DEBUG*) output reg  RFIN_ADS7253_CSB = 1,
-    (*MARK_DEBUG=DEBUG*) output reg  RFIN_ADS7253_DIN,
+    (*MARK_DEBUG=DEBUG*) output reg  RFIN_ADS7253_DIN = 0,
     (*MARK_DEBUG=DEBUG*) input  wire RFIN_ADS7253_DOUTA,
     (*MARK_DEBUG=DEBUG*) input  wire RFIN_ADS7253_DOUTB);
 
@@ -60,7 +60,7 @@ reg [TICK_COUNTER_WIDTH-1:0] tickCounter = TICK_COUNTER_LOAD;
 reg [BIT_COUNTER_WIDTH-1:0] bitCounter = BIT_COUNTER_LOAD;
 (*MARK_DEBUG=DEBUG*) wire bitCounterDone = bitCounter[BIT_COUNTER_WIDTH-1];
 
-reg [15:0] shiftA, shiftB;
+reg [15:0] shiftA = 0, shiftB = 0;
 
 (*MARK_DEBUG=DEBUG*) reg adcStop = 0, adcStart = 0, adcStopped = 0;
 reg sysADCclk = 0, sysADCcsb = 1, sysADCdin = 0;
