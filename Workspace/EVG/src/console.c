@@ -529,7 +529,7 @@ cmdCLK(int argc, char **argv)
         printf("usage: clk <1|2> <regval>\n");
         return;
     }
-    int err = osrepyEFINlmk01801Set(fmc, value);
+    int err = ospreyEFINlmk01801Set(fmc, value);
     if(err)
         printf("Error: %d\n", err);
 }
