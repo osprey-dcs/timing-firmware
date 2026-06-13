@@ -28,3 +28,5 @@
  */
 void ospreyRFINinit(void);
 int ospreyRFINreadADS7253(int i);
+
+int osrepyEFINlmk01801Set(unsigned fmc, unsigned value);

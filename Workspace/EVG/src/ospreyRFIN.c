@@ -133,6 +133,14 @@ lmk01801writeRegister(uint32_t shiftReg)
     GPIO_WRITE(GPIO_IDX_RFIN_CONTROL, 0);
 }
 
+int osrepyEFINlmk01801Set(unsigned fmc, unsigned value)
+{
+    if(fmc!=1)
+      return -1;
+    lmk01801writeRegister(value);
+    return 0;
+}
+
 /*
  * Configure LMK01801 clock distribution
  *  For now:
