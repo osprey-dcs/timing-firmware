@@ -93,7 +93,8 @@ systemParametersInit(void)
     if (fr != FR_OK) {
         printf("Assigning default parameters:\n");
         systemParameters.startupDebugFlags = 0;
-        systemParameters.mgtClkSwitch0 = MGT_CLK_SWITCH_INPUT_FPGA_REF_CLK0;
+        // preserve previous default for now unused mgtClkSwitch0
+        systemParameters.unused1 = MGT_CLK_SWITCH_INPUT_FPGA_REF_CLK0;
         systemParameters.netmask = 0xFFFFFF00;
         systemParameters.gateway = (networkConfig.ipv4address &
                                                   systemParameters.netmask) | 1;

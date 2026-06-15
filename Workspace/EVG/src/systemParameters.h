@@ -36,7 +36,7 @@
  */
 struct systemParameters {
     unsigned int startupDebugFlags;
-    int          mgtClkSwitch0;
+    int          unused1; // formerly mgtClkSwitch0
     uint32_t     netmask;
     uint32_t     gateway;
     uint32_t     ntpServer;

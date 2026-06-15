@@ -92,7 +92,7 @@ mgtClkSwitchInit(void)
     for (outputIndex = 0 ; outputIndex < 8 ; outputIndex++) {
         outputEnable(outputIndex, 0);
     }
-    setMgtClkSwitch0(systemParameters.mgtClkSwitch0);
+    setMgtClkSwitch0(MGT_CLK_SWITCH_INPUT_FPGA_REF_CLK0);
 }
 
 void

@@ -104,13 +104,12 @@ struct LEEPpacket {
 #define RANGE(base, count) (base) ... ((base)+(count)-1)
 
 static int powerUpFlag = 1;
+// default must match mgtClkSwitch.c
+static int mgtClkSwitch0 = MGT_CLK_SWITCH_INPUT_FPGA_REF_CLK0;
 
 void
 setMgtClkSwitch0(int inputClkIndex)
 {
-    uint32_t now;
-    static uint32_t whenWritten;
-    static int writeCount;
     if ((inputClkIndex < 0)
      || (inputClkIndex >= MGT_CLK_SWITCH_INPUT_DISABLE_OUTPUT)) {
         return;
@@ -121,11 +120,10 @@ setMgtClkSwitch0(int inputClkIndex)
         printf("WARNING -- Setting MGT clock to FMC1 GBTCLK but "
                "RF-IN mezzanine card is not present!\n");
     }
-    if ((whenWritten == 0)
-     || (inputClkIndex != systemParameters.mgtClkSwitch0)) {
+    if (inputClkIndex != mgtClkSwitch0) {
         mgtClkSwitchConnectOutputToInput(MGT_CLK_SWITCH_OUTPUT_MGTCLK0,
                                          inputClkIndex);
-        if ((whenWritten == 0) || (debugFlags & DEBUGFLAG_EPICS_WRITE)) {
+        if (debugFlags & DEBUGFLAG_EPICS_WRITE) {
             printf("Drive MGT clock from ");
             switch(inputClkIndex) {
             case MGT_CLK_SWITCH_INPUT_FPGA_REF_CLK0:
@@ -138,20 +136,7 @@ setMgtClkSwitch0(int inputClkIndex)
             }
             printf(".\n");
         }
-        systemParameters.mgtClkSwitch0 = inputClkIndex;
-        now = GPIO_READ(GPIO_IDX_SECONDS_SINCE_BOOT);
-        if ((now - whenWritten) > 120) {
-            writeCount = 0;
-        }
-        else {
-            writeCount++;
-        }
-        if (writeCount >= 5) {
-            printf("Warning -- MGT clock reference changing rapidly.  "
-                   "Risk of flash wear.\n");
-        }
-        systemParametersStash();
-        whenWritten = now;
+        mgtClkSwitch0 = inputClkIndex;
     }
 }
 
@@ -238,7 +223,7 @@ readReg(int address)
         }
         }
         return 0;
-    case REG_MARBLE_MGT_REFCLK_SOURCE: return systemParameters.mgtClkSwitch0;
+    case REG_MARBLE_MGT_REFCLK_SOURCE: return mgtClkSwitch0;
     case REG_MARBLE_PPS_LOCAL_CSR:     return localPPSstatus();
     }
 
