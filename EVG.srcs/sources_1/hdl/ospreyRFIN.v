@@ -120,7 +120,7 @@ always @(posedge sysClk) begin
                 bitCounter <= bitCounter - 1;
                 if (bitCounterDone) begin
                     RFIN_ADS7253_CSB <= 1;
-                    readback <= {shiftA, shiftB[15:1], 1'b0};
+                    readback <= {shiftB, shiftA[15:1], 1'b0};
                 end
             end
         end

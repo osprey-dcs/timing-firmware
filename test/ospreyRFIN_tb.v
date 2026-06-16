@@ -125,8 +125,8 @@ initial begin
     sMISOB[31] <= 1'bx;
 
     $display("ADC run");
-    sMISOA = 32'hxxxxdead; // first 16 bits are sampling period
-    sMISOB = 32'hxxxxbeef;
+    sMISOA <= 32'hxxxxbeef; // first 16 bits are sampling period
+    sMISOB <= 32'hxxxxdead;
     gpio(8'b00000010); // adcStart
     @(negedge sCS);
     @(posedge sCS);
@@ -135,8 +135,8 @@ initial begin
     @(posedge sysClk); // expect stability until next completion
     `assert_eq(readback, 32'hdeadbeee);
 
-    sMISOA = 32'hxxxx1bad;
-    sMISOB = 32'hxxxxface;
+    sMISOA <= 32'hxxxxface;
+    sMISOB <= 32'hxxxx1bad;
     @(negedge sCS);
     @(posedge sCS);
     @(posedge sysClk);
