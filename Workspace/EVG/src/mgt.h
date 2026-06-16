@@ -27,7 +27,9 @@
  */
 #ifndef _MGT_H_
 #define _MGT_H_
- 
+
+#include <stdint.h>
+
 #define MGT_LOOPBACK_NONE       0
 #define MGT_LOOPBACK_NEAR_PCS   1
 #define MGT_LOOPBACK_NEAR_PMA   2
