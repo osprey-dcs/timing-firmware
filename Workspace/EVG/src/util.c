@@ -25,6 +25,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <xparameters.h>
+#include <xhwicap_l.h>
 #include "gpio.h"
 #include "util.h"
 
@@ -90,7 +91,7 @@ criticalWarning(const char *msg)
 static void
 writeICAP(int value)
 {
-    Xil_Out32(XPAR_HWICAP_BASEADDR+0x100, value); /* Write FIFO */
+    Xil_Out32(XPAR_HWICAP_BASEADDR+XHI_WF_OFFSET, value); /* Write FIFO */
 }
 void
 resetFPGA(int bootAlternateImage)
@@ -109,7 +110,7 @@ resetFPGA(int bootAlternateImage)
     writeICAP(0x0000000F); /* IPROG command */
     writeICAP(0x20000000); /* Type 1 NO-OP */
     microsecondSpin(1000);
-    Xil_Out32(XPAR_HWICAP_BASEADDR+0x10C, 0x1);   /* Initiate WRITE */
+    Xil_Out32(XPAR_HWICAP_BASEADDR+XHI_CR_OFFSET, 0x1);   /* Initiate WRITE */
     microsecondSpin(1000000);
     printf("====== FPGA REBOOT FAILED ======\n\n");
 }
