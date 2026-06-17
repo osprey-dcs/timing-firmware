@@ -104,8 +104,7 @@ struct LEEPpacket {
 #define RANGE(base, count) (base) ... ((base)+(count)-1)
 
 static int powerUpFlag = 1;
-// default must match mgtClkSwitch.c
-static int mgtClkSwitch0 = MGT_CLK_SWITCH_INPUT_FPGA_REF_CLK0;
+static int mgtClkSwitch0 = -1; // spoil
 
 void
 setMgtClkSwitch0(int inputClkIndex)
