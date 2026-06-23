@@ -154,6 +154,7 @@ mgtFetchSysmon(int index)
 {
     switch (index) {
     case 0: return GPIO_READ(GPIO_IDX_LINK_STATUS);
+    case 1: return GPIO_READ(GPIO_IDX_MGT_CSR);
     default: return 0;
     }
 }

@@ -249,6 +249,13 @@ def base_build():
           "data_width": 32,
           "sign": "unsigned"
         },
+        "MGT:clkStatus": {
+          "access": "r",
+          "addr_width": 0,
+          "base_addr": 325,
+          "data_width": 32,
+          "sign": "unsigned"
+        },
         "MARBLE:PLL:SET_Y1": {
           "access": "w",
           "addr_width": 0,
