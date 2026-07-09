@@ -29,7 +29,6 @@
 #include "clockAdjust.h"
 #include "console.h"
 #include "epics.h"
-#include "evg.h"
 #include "gpio.h"
 #include "iicFPGA.h"
 #include "ioSelect.h"
@@ -37,9 +36,9 @@
 #include "mgtClkSwitch.h"
 #include "mmcMailbox.h"
 #include "ospreyRFIN.h"
-#include "ntpTime.h"
 #include "platform.h"
 #include "softwareBuildDate.h"
+#include "si570.h"
 #include "systemParameters.h"
 #include "tftp.h"
 #include "util.h"
@@ -64,34 +63,15 @@ checkEVR(void)
 int
 main(void)
 {
-    uint32_t gateway;
     init_platform();
     printf("Firmware build: %u\n", GPIO_READ(GPIO_IDX_FIRMWARE_DATE));
     printf("Software build: %u\n", SOFTWARE_BUILD_DATE);
     bootFlashInit(XPAR_MARBLEBOOTFLASH_S_AXI_LITE_BASEADDR);
     mmcMailboxInit();
     systemParametersInit();
-    /*
-     * Tests show that the UDP-in-firmware is really unhappy with any gateway
-     * address other than on the local subnet even if the NTP server is on
-     * the local subnet.
-     */
-    gateway = systemParameters.gateway;
-    if ((systemParameters.ntpServer != 0)
-     && ((gateway & systemParameters.netmask) !=
-                      (networkConfig.ipv4address & systemParameters.netmask))) {
-        if ((systemParameters.ntpServer & systemParameters.netmask) !=
-                       (networkConfig.ipv4address & systemParameters.netmask)) {
-            printf("CRITICAL WARNING -- GATEWAY NOT ON LOCAL SUBNET.\n");
-        }
-        gateway = networkConfig.ipv4address & systemParameters.netmask;
-        if (systemParameters.gateway != 0) {
-            showIPv4address("gateway changed to", gateway);
-        }
-    }
     ospreyUDPregisterInterface(XPAR_OSPREYUDP_S_AXI_LITE_BASEADDR,
                                networkConfig.ipv4address,
-                               gateway,
+                               systemParameters.gateway,
                                systemParameters.netmask,
                                networkConfig.macAddress);
     consoleInit();
@@ -99,21 +79,17 @@ main(void)
     ioSelectInit();
     ospreyRFINinit();
     mgtClkSwitchInit();
+
     xadcInit();
     mgtInit();
     tftpInit();
     epicsInit();
-    if (systemParameters.ntpServer) {
-        ospreyEVGInit(XPAR_OSPREYEVG_S_AXI_BASEADDR);
-    }
+    ospreyEVGInit(XPAR_OSPREYEVG_S_AXI_BASEADDR);
     ospreyEVRInit(XPAR_OSPREYEVR_S_AXI_BASEADDR);
     printf("Boot complete @%u\n", (unsigned)microsecondsSinceBoot());
     for (;;) {
         clockAdjustScan();
         mgtCrank();
-        if (systemParameters.ntpServer) {
-            evgCrank();
-        }
         consoleCrank();
         ospreyUDPcrank();
         //checkEVR();

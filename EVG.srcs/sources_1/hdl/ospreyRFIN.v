@@ -37,13 +37,13 @@ module ospreyRFIN #(
     input  wire [31:0] GPIO_OUT,
     output reg  [31:0] readback = 0,
 
-    (*MARK_DEBUG=DEBUG*) output reg  RFIN_LMK01801_CLK = 0,
-    (*MARK_DEBUG=DEBUG*) output reg  RFIN_LMK01801_LE = 0,
-    (*MARK_DEBUG=DEBUG*) output reg  RFIN_LMK01801_DATA = 0,
-
-    (*MARK_DEBUG=DEBUG*) output reg  RFIN_ADS7253_CLK = 0,
-    (*MARK_DEBUG=DEBUG*) output reg  RFIN_ADS7253_CSB = 1,
-    (*MARK_DEBUG=DEBUG*) output reg  RFIN_ADS7253_DIN = 0,
+                         output wire RFIN_DI_ENb,
+                         output wire RFIN_LMK01801_CLK,
+                         output wire RFIN_LMK01801_LE,
+                         output wire RFIN_LMK01801_DATA,
+                         output wire RFIN_ADS7253_CLK,
+                         output wire RFIN_ADS7253_CSB,
+                         output wire RFIN_ADS7253_DIN,
     (*MARK_DEBUG=DEBUG*) input  wire RFIN_ADS7253_DOUTA,
     (*MARK_DEBUG=DEBUG*) input  wire RFIN_ADS7253_DOUTB);
 
@@ -65,16 +65,36 @@ reg [15:0] shiftA = 0, shiftB = 0;
 (*MARK_DEBUG=DEBUG*) reg adcStop = 0, adcStart = 0, adcStopped = 0;
 reg sysADCclk = 0, sysADCcsb = 1, sysADCdin = 0;
 
+///////////////////////////////////////////////////////////////////////////////
+// Drive output pins only when FMC identity has been confirmed
+(*MARK_DEBUG=DEBUG*) reg  FMCtri = 1;
+(*MARK_DEBUG=DEBUG*) reg  RFIN_LMK01801_CLK_o = 0;
+(*MARK_DEBUG=DEBUG*) reg  RFIN_LMK01801_LE_o = 0;
+(*MARK_DEBUG=DEBUG*) reg  RFIN_LMK01801_DATA_o = 0;
+(*MARK_DEBUG=DEBUG*) reg  RFIN_ADS7253_CLK_o = 0;
+(*MARK_DEBUG=DEBUG*) reg  RFIN_ADS7253_CSB_o = 1;
+(*MARK_DEBUG=DEBUG*) reg  RFIN_ADS7253_DIN_o = 0;
+
+OBUFT obta(.I(1'b0),                 .O(RFIN_DI_ENb),        .T(FMCtri));
+OBUFT obtb(.I(RFIN_LMK01801_CLK_o),  .O(RFIN_LMK01801_CLK),  .T(FMCtri));
+OBUFT obtc(.I(RFIN_LMK01801_LE_o),   .O(RFIN_LMK01801_LE),   .T(FMCtri));
+OBUFT obtd(.I(RFIN_LMK01801_DATA_o), .O(RFIN_LMK01801_DATA), .T(FMCtri));
+OBUFT obte(.I(RFIN_ADS7253_CLK_o),   .O(RFIN_ADS7253_CLK),   .T(FMCtri));
+OBUFT obtf(.I(RFIN_ADS7253_CSB_o),   .O(RFIN_ADS7253_CSB),   .T(FMCtri));
+OBUFT obtg(.I(RFIN_ADS7253_DIN_o),   .O(RFIN_ADS7253_DIN),   .T(FMCtri));
+
+///////////////////////////////////////////////////////////////////////////////
 always @(posedge sysClk) begin
     if (csrStrobe) begin
-        RFIN_LMK01801_DATA <=  GPIO_OUT[7];
-        RFIN_LMK01801_LE   <=  GPIO_OUT[6];
-        RFIN_LMK01801_CLK  <=  GPIO_OUT[5];
-        sysADCdin          <=  GPIO_OUT[4];
-        sysADCcsb          <= !GPIO_OUT[3];
-        sysADCclk          <=  GPIO_OUT[2];
-        adcStart           <=  GPIO_OUT[1];
-        adcStop            <=  GPIO_OUT[0];
+        if (GPIO_OUT[31]) FMCtri <= 0;
+        RFIN_LMK01801_DATA_o <=  GPIO_OUT[7];
+        RFIN_LMK01801_LE_o   <=  GPIO_OUT[6];
+        RFIN_LMK01801_CLK_o  <=  GPIO_OUT[5];
+        sysADCdin            <=  GPIO_OUT[4];
+        sysADCcsb            <= !GPIO_OUT[3];
+        sysADCclk            <=  GPIO_OUT[2];
+        adcStart             <=  GPIO_OUT[1];
+        adcStop              <=  GPIO_OUT[0];
     end
 
     /*
@@ -94,32 +114,32 @@ always @(posedge sysClk) begin
         if (adcStart) begin
             adcStopped <= 0;
         end
-        RFIN_ADS7253_CLK <= sysADCclk;
-        RFIN_ADS7253_CSB <= sysADCcsb;
-        RFIN_ADS7253_DIN <= sysADCdin;
+        RFIN_ADS7253_CLK_o <= sysADCclk;
+        RFIN_ADS7253_CSB_o <= sysADCcsb;
+        RFIN_ADS7253_DIN_o <= sysADCdin;
         readback <= {{29{1'b0}}, RFIN_ADS7253_DOUTB, RFIN_ADS7253_DOUTA, 1'b1};
     end
     else if (tick) begin
-        RFIN_ADS7253_CLK <= !RFIN_ADS7253_CLK;
-        RFIN_ADS7253_DIN <= 0;
-        if (RFIN_ADS7253_CSB) begin
+        RFIN_ADS7253_CLK_o <= !RFIN_ADS7253_CLK_o;
+        RFIN_ADS7253_DIN_o <= 0;
+        if (RFIN_ADS7253_CSB_o) begin
             bitCounter <= BIT_COUNTER_LOAD;
             if (adcStop) begin
                 adcStopped <= 1;
             end
-            else if (!RFIN_ADS7253_CLK) begin
-                RFIN_ADS7253_CSB <= 0;
+            else if (!RFIN_ADS7253_CLK_o) begin
+                RFIN_ADS7253_CSB_o <= 0;
             end
         end
         else begin
-            if (RFIN_ADS7253_CLK) begin
+            if (RFIN_ADS7253_CLK_o) begin
                 shiftA <= {shiftA[14:0], RFIN_ADS7253_DOUTA};
                 shiftB <= {shiftB[14:0], RFIN_ADS7253_DOUTB};
             end
             else begin
                 bitCounter <= bitCounter - 1;
                 if (bitCounterDone) begin
-                    RFIN_ADS7253_CSB <= 1;
+                    RFIN_ADS7253_CSB_o <= 1;
                     readback <= {shiftB, shiftA[15:1], 1'b0};
                 end
             end

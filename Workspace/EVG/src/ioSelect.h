@@ -32,6 +32,7 @@
 #define IOSELECT_STATUS_IS_EVG          0x1
 
 void ioSelectInit(void);
+void ioSelectActivateEVG(int isEVG);
 int ioSelectStatus(void);
 
 #endif /* _IOSELECT_H_ */

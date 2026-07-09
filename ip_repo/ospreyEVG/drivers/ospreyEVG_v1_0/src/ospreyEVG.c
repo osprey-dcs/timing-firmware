@@ -377,6 +377,7 @@ ospreyEVGGetDbusInputMap(void)
 #define F_REG_HW_TRIGGER_INPUT_MAP        8
 #define F_REG_DBUS_INPUT_MAP              9
 #define F_REG_TIMER_CSR                   10
+#define F_REG_SET_SECONDS                 11
 #define F_REG_TIMER_EVENT_BASE            100
 #define F_REG_TIMER_DIVISOR_BASE          120
 #define F_REG_HWTRIGGER_EVENT_BASE        140
@@ -392,6 +393,7 @@ ospreyEVG_FEEDwrite(int offset, uint32_t value)
     int idx;
     if (!evgInfo.baseAddr) return -1;
     switch(offset) {
+    case F_REG_SET_SECONDS:      ospreyEVGSetSeconds(value);           return 0;
     case F_REG_HEARTBEAT_DIVISOR:ospreyEVGSetHeartbeatDivisor(value);  return 0;
     case F_REG_SOFTWARE_EVENT:   ospreyEVGSendSoftwareEvent(value);    return 0;
     case F_REG_SEQ_ARM:          ospreyEVGSequencerArm(value);         return 0;

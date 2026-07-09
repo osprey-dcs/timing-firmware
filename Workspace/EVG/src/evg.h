@@ -28,6 +28,8 @@
 #ifndef _EVG_H_
 #define _EVG_H_
 
-void evgCrank(void);
+#include <stdint.h>
+
+uint32_t evgFetchSysmon(int index);
 
 #endif /* _EVG_H_ */

@@ -37,6 +37,7 @@
 #define DEBUGFLAG_MGT                   0x10
 #define DEBUGFLAG_EVG                   0x20
 #define DEBUGFLAG_EVR                   0x40
+#define DEBUGFLAG_SI570                 0x80
 #define DEBUGFLAG_MPS_SHOW              0x100
 #define DEBUGFLAG_CLOCKADJUST_SHOW      0x1000
 #define DEBUGFLAG_NTP                   0x8000

@@ -57,7 +57,7 @@ static struct iicMap {
     { 0x40, 0x40 }, // INA219 power monitor, U17
     { 0x40, 0x41 }, // INA219 power monitor, U32
     { 0x40, 0x42 }, // INA219 power monitor, U57
-    { 0x40, 0x77 }, // SI570 clock generator
+    { 0x40, 0x55 }, // SI570 clock generator
 };
 
 #define FMC_COUNT 2

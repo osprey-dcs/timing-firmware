@@ -1,7 +1,7 @@
 /*
  * MIT License
  *
- * Copyright (c) 2023 Osprey DCS
+ * Copyright (c) 2022 Osprey DCS
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,13 +23,16 @@
  */
 
 /*
- * Get time of day from NTP server
+ * Marble SI570 MGT clock reference
  */
-#ifndef _NTPTIME_H_
-#define _NTPTIME_H_
+#ifndef _SI570_H_
+#define _SI570_H_
 
-#include <stdint.h>
+int si570getR7_9(void);
+int si570getR10_12(void);
+void si570setR7_9(int r7_9);
+void si570setR10_12(int r10_12);
+void si570setR135(int r135);
+void si570setR137(int r137);
 
-uint32_t ntpNewTime(void);
-
-#endif /* _NTPTIME_H_ */
+#endif /* _SI570_H_ */

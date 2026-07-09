@@ -447,46 +447,6 @@ cmdGW(int argc, char **argv)
 }
 
 static void
-cmdNTP(int argc, char **argv)
-{
-    static uint32_t ntpServer;
-    if (modalHandler) {
-        int y = yesOrNo(argc, argv);
-        if (y < 0) {
-            return;
-        }
-        if (y) {
-            systemParameters.ntpServer = ntpServer;
-            systemParametersStash();
-        }
-        modalHandler = NULL;
-        return;
-    }
-    if (argc > 1) {
-        if (argc > 2) {
-            printf("Too many arguments.\n");
-            return;
-        }
-        if (!parseIPv4(argv[1], &ntpServer, NULL)) {
-            return;
-        }
-    }
-    else {
-        ntpServer = systemParameters.ntpServer;
-    }
-    if (ntpServer == 0) {
-        printf("No NTP server.\n");
-    }
-    else {
-        showIPv4address("NTP server", ntpServer);
-    }
-    if (argc > 1) {
-        printf("Save NTP configuration in flash memory? ");
-        modalHandler = cmdNTP;
-    }
-}
-
-static void
 cmdPPS(int argc, char **argv)
 {
     clockAdjustShow();
@@ -554,7 +514,6 @@ findCommand(int argc, char **argv)
         { "gw",    cmdGW,     "Specify network gateway",              },
         { "help",  NULL,      "Show commands"                         },
         { "log",   cmdLOG,    "Replay startup log messages"           },
-        { "ntp",   cmdNTP,    "Specify NTP server"                    },
         { "pps",   cmdPPS,    "PPS/VXCO status"                       },
         { "reg",   cmdREG,    "Show GPIO register(s)"                 },
         { "clk",   cmdCLK,    "Control LMK on RF-IN FMC"              },

@@ -23,9 +23,12 @@
  */
 
 #include <stdio.h>
+#include "iicFPGA.h"
 #include "ospreyRFIN.h"
 #include "gpio.h"
 #include "util.h"
+
+#define FMC_NAME    "RF-IN"
 
 #define CSR_W_STOP_ADC      0x1
 #define CSR_W_START_ADC     0x2
@@ -35,6 +38,7 @@
 #define CSR_W_LMK01801_CLK  0x20
 #define CSR_W_LMK01801_LE   0x40
 #define CSR_W_LMK01801_DATA 0x80
+#define CSR_W_ENABLE_FMC    0x80000000
 #define CSR_R_ADC_STOPPED   0x1
 #define CSR_R_ADS7253_DOUTA 0x2
 #define CSR_R_ADS7253_DOUTB 0x4
@@ -199,16 +203,24 @@ lmk01801init(void)
 void
 ospreyRFINinit(void)
 {
+    const char *fmc1name = iicFPGAgetNameString(0);
     int cfr;
-    GPIO_WRITE(GPIO_IDX_RFIN_CONTROL, CSR_W_STOP_ADC);
-    while ((GPIO_READ(GPIO_IDX_RFIN_CONTROL) & CSR_R_ADC_STOPPED) == 0) {
-        continue;
+
+    if (strcmp(fmc1name, FMC_NAME) == 0) {
+        GPIO_WRITE(GPIO_IDX_RFIN_CONTROL, CSR_W_ENABLE_FMC);
+        GPIO_WRITE(GPIO_IDX_RFIN_CONTROL, CSR_W_STOP_ADC);
+        while ((GPIO_READ(GPIO_IDX_RFIN_CONTROL) & CSR_R_ADC_STOPPED) == 0) {
+            continue;
+        }
+        ads7253writeRegister(ADS7253_CMD_W_CFR, ADS7253_CFR_REF_SEL);
+        cfr = ads7253readRegister(ADS7253_CMD_R_CFR);
+        GPIO_WRITE(GPIO_IDX_RFIN_CONTROL, CSR_W_START_ADC);
+        if (cfr != 0x0040) {
+            printf("WARNING -- RF-IN ADS7253 CFR %04X, expect 0040.\n", cfr);
+        }
+        lmk01801init();
     }
-    ads7253writeRegister(ADS7253_CMD_W_CFR, ADS7253_CFR_REF_SEL);
-    cfr = ads7253readRegister(ADS7253_CMD_R_CFR);
-    GPIO_WRITE(GPIO_IDX_RFIN_CONTROL, CSR_W_START_ADC);
-    if (cfr != 0x0040) {
-        printf("WARNING -- RF-IN ADS7253 CFR 0x%04X (expect 0x0040).\n", cfr);
+    else {
+        printf("WARNING -- FMC1 is \"%s\", expect \"%s\"\n", fmc1name,FMC_NAME);
     }
-    lmk01801init();
 }

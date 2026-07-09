@@ -127,7 +127,6 @@ localparam TIMESTAMP_WIDTH      = 64;
 // Static outputs
 assign VCXO_EN = 1'b1;
 assign LD17 = 1'b0;
-assign FMC1_DI_ENb = 1'b0;
 
 ///////////////////////////////////////////////////////////////////////////////
 // PMOD I/O routing
@@ -191,6 +190,7 @@ ospreyRFIN #(
     .GPIO_OUT(GPIO_OUT),
     .readback(GPIO_IN[GPIO_IDX_RFIN_CONTROL]),
     .RFIN_LMK01801_CLK(FMC1_LMK01801_CLK),
+    .RFIN_DI_ENb(FMC1_DI_ENb),
     .RFIN_LMK01801_LE(FMC1_LMK01801_LE),
     .RFIN_LMK01801_DATA(FMC1_LMK01801_DATA),
     .RFIN_ADS7253_CLK(FMC1_ADS7253_CLK),
@@ -216,9 +216,7 @@ sysClkCounters #(.CLK_RATE(CFG_SYSCLK_RATE), .DEBUG("false"))
 // PMOD2, if present, is a PMOD-IO.
 
 wire [14:0] evgHwInputs;
-wire [31:0] ioSelectStatus;
-wire isEVG = ioSelectStatus[0];
-assign GPIO_IN[GPIO_IDX_IO_SELECT] = ioSelectStatus;
+wire isEVG = GPIO_IN[GPIO_IDX_IO_SELECT][0];
 wire ppsPrimary_out;
 
 ioSelect #(.DEBUG("false"))

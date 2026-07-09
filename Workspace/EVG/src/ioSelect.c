@@ -45,10 +45,14 @@ static void
 ioSelectShow(void)
 {
     int status = ioSelectStatus();
+    printf("Operating as Event ");
     if (status & CSR_RW_IS_EVG) {
-        printf("Operating as Event Generator.\n");
+        printf("Generator.\n");
         printf("Obtaining PPS and hardware inputs from %s.\n",
                     (status & CSR_RW_FMC_IS_PRESENT) ? "FMC RF-IN" : "PMOD-IO");
+    }
+    else {
+        printf("Receiver/Fanout.\n");
     }
 }
 
@@ -56,8 +60,6 @@ void
 ioSelectInit(void)
 {
     const char *fmcName = iicFPGAgetNameString(0);
-    GPIO_WRITE(GPIO_IDX_IO_SELECT, CSR_W_SET_SET_IS_EVG |
-                              (systemParameters.ntpServer ? CSR_RW_IS_EVG: 0));
     if (strcmp(fmcName, FMC_NAME) == 0) {
         GPIO_WRITE(GPIO_IDX_IO_SELECT, CSR_W_SET_FMC_IS_PRESENT |
                                                          CSR_RW_FMC_IS_PRESENT);
@@ -69,7 +71,15 @@ ioSelectInit(void)
                                                                        fmcName);
         }
     }
-    ioSelectShow();
+}
+
+void
+ioSelectActivateEVG(int isEVG)
+{
+    GPIO_WRITE(GPIO_IDX_IO_SELECT,CSR_W_SET_SET_IS_EVG|(isEVG?CSR_RW_IS_EVG:0));
+    if (debugFlags & DEBUGFLAG_EVG) {
+        ioSelectShow();
+    }
 }
 
 int
