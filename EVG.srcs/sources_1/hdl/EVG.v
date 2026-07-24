@@ -157,6 +157,8 @@ assign PMOD1_7 = pmodOut[3];
 wire [7:0] pmodIn = { ~PMOD2_5, ~PMOD2_1, ~PMOD2_4, ~PMOD2_0,
                       ~PMOD1_5, ~PMOD1_1, ~PMOD1_4, ~PMOD1_0 };
 
+wire [15:0] fmcIn = { FMC1_DIN, ppsPrimary_out };
+
 ///////////////////////////////////////////////////////////////////////////////
 // Clocks
 wire sysClk, clk20, clk125, clk200, clk500, evgClk, gtRefClkDiv2;
@@ -228,11 +230,11 @@ ioSelect #(.DEBUG("false"))
     .sysGPIO_OUT(GPIO_OUT),
     .sysStatus(GPIO_IN[GPIO_IDX_IO_SELECT]),
     .evgHwInputs(evgHwInputs),
-    .fmcInputs(FMC1_DIN),
+    .fmcInputs(fmcIn),
     .pmodInputs(pmodIn));
 
 assign GPIO_IN[GPIO_IDX_PMOD_FMC_MONITOR] = {8'b0, pmodIn,
-                                             FMC1_DIN, ppsPrimary_out};
+                                             fmcIn};
 
 
 ///////////////////////////////////////////////////////////////////////////////
