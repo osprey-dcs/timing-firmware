@@ -233,9 +233,7 @@ sysClkCounters #(.CLK_RATE(CFG_SYSCLK_RATE), .DEBUG("false"))
 // PMOD2, if present, is a PMOD-IO.
 
 wire [14:0] evgHwInputs;
-wire [31:0] ioSelectStatus;
-wire isEVG = ioSelectStatus[0];
-assign GPIO_IN[GPIO_IDX_IO_SELECT] = ioSelectStatus;
+wire isEVG = GPIO_IN[GPIO_IDX_IO_SELECT][0];
 
 ioSelect #(.DEBUG("false"))
   ioSelect (
