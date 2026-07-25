@@ -339,6 +339,34 @@ def base_build():
             "base_addr": 89,
             "data_width": 32,
             "sign": "unsigned"
+        },
+        "MARBLE:SI570:R7_9": {
+            "access": "rw",
+            "addr_width": 0,
+            "base_addr": 90,
+            "data_width": 32,
+            "sign": "unsigned"
+        },
+        "MARBLE:SI570:R10_12": {
+            "access": "rw",
+            "addr_width": 0,
+            "base_addr": 91,
+            "data_width": 32,
+            "sign": "unsigned"
+        },
+        "MARBLE:SI570:R135": {
+            "access": "rw",
+            "addr_width": 0,
+            "base_addr": 92,
+            "data_width": 8,
+            "sign": "unsigned"
+        },
+        "MARBLE:SI570:R137": {
+            "access": "rw",
+            "addr_width": 0,
+            "base_addr": 93,
+            "data_width": 8,
+            "sign": "unsigned"
         }
     }
     return R

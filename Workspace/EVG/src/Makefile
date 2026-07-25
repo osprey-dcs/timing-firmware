@@ -45,6 +45,8 @@ softwareBuildDate.h: clockAdjust.c \
                      ntpTime.h \
                      platform.c \
                      platform.h \
+                     si570.c \
+                     si570.h \
                      systemParameters.c \
                      systemParameters.h \
                      tftp.c \
