@@ -24,8 +24,7 @@ def analyze(val: int):
         if ridx!=idx:
             continue
         rval = (val & bmask(blow, bhigh)) >> blow
-        changed = ' #<<' if rval!=defval else ''
-        print(f'  {name} = {rval}{changed}')
+        print(f'  {name} = {rval}')
 
 def construct(vals: [(str, int)]):
     outs = {0:0, 1:1, 2:2, 3:3, 4:4, 5:5, 15:15}

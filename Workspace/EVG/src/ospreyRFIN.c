@@ -145,51 +145,98 @@ int ospreyEFINlmk01801Set(unsigned fmc, unsigned value)
  * Configure LMK01801 clock distribution
  *  For now:
  *   CLK0 input:
- *     CLK0_M2C -- LMK01801 CLK0  -- divide by 2
+ *     CLK0_M2C -- LMK01801 CLK0  -- divide by 1
  *     GBTCLK1  -- LMK01801 CLK4  -- divide by 1
  *   CLK1 input:
  *     GBTCLK0  -- LMK01801 CLK8  -- divide by 1
- *     CLK1_M2C -- LMK01801 CLK12 -- divide by 2 (J20 diagnostic output too)
+ *     CLK1_M2C -- LMK01801 CLK12 -- divide by 1 (J20 diagnostic output too)
  */
 static void
 lmk01801init(void)
 {
+    // See https://www.ti.com/lit/ds/symlink/lmk01801.pdf
+    // also scripts/lmk01801.py for help constructing and unpacking register values
+
     /* Unlock settings */
     lmk01801writeRegister(0x000005EF);
+
+    // setup for pass through (divide by 1, no delays, no sync. functions)
 
     /* R0 -- reset */
     lmk01801writeRegister(0x48003010);
 
-    /* R0 -- bypass input clock input dividers, bipolar inputs */
-    /*     0100 1000 00 000 00 000 11 0 0 0 0 0 0 0 0 0000 */
-    /*     ==== ---- == ==- -- -== == - - - - = = = = ---- */
-    lmk01801writeRegister(0x48003000);
+    /* R0
+      RESET = 0
+      POWERDOWN = 0
+      CLKout0_3_PD = 0
+      CLKout4_7_PD = 0
+      CLKout8_11_PD = 0
+      CLKout12_13_PD = 0
+      CLKin0_BUF_TYPE = 0
+      CLKin1_BUF_TYPE = 0
+      CLKin0_DIV = 1
+      CLKin0_MUX = 0
+      CLKin1_DIV = 1
+      CLKin1_MUX = 0
+     */
+    lmk01801writeRegister(0x48087000);
 
-    /* R1 -- 7:5-Powerdown, 4-LVDS, 3:1-Powerdown, 0-LVDS */
-    /*     0000 0000 0000 0001 000 000 000 001 0001 */
-    /*     ==== ---- ==== ---- === =-- --= === ---- */
+    /* R1
+      CLKout0_TYPE = 1
+      CLKout1_TYPE = 0
+      CLKout2_TYPE = 0
+      CLKout3_TYPE = 0
+      CLKout4_TYPE = 1
+      CLKout5_TYPE = 0
+      CLKout6_TYPE = 0
+      CLKout7_TYPE = 0
+     */
     lmk01801writeRegister(0x00010011);
 
-    /* R2 -- 13-LVCMOS Normal/Off, 12-LVDS, 11:9-Powerdown, 8-LVDS */
+    /* R2
+      CLKout8_TYPE = 1
+      CLKout9_TYPE = 0
+      CLKout10_TYPE = 0
+      CLKout11_TYPE = 0
+      CLKout12_TYPE = 1
+      CLKout13_TYPE = 12
+     */
     lmk01801writeRegister(0x0C100012);
 
-    /* R3 -- SYNC0_AUTO (when register 5 written) */
-    lmk01801writeRegister(0x12000003);
+    /* R3
+      CLKout12_13_ADLY = 0
+      CLKout12_13_HS = 0
+      SYNC1_QUAL = 0
+      SYNC0_POL_INV = 0
+      SYNC1_POL_INV = 0
+      NO_SYNC_CLKout0_3 = 1
+      NO_SYNC_CLKout4_7 = 1
+      NO_SYNC_CLKout8_11 = 1
+      NO_SYNC_CLKout12_13 = 1
+      CLKout0_3_OFFSET_PD = 1
+      CLKout4_7_OFFSET_PD = 1
+      CLKout8_11_OFFSET_PD = 1
+      SYNC0_FAST = 0
+      SYNC1_FAST = 0
+      SYNC0_AUTO = 0
+      SYNC1_AUTO = 0
+     */
+    lmk01801writeRegister(0x107F0003);
 
-    /* R4 -- no delay */
+    /* R4
+      CLKout12_13_DDLY = 0
+     */
     lmk01801writeRegister(0x00000004);
 
-    /* R5 -- FIXME: The divider values should be settable.
-     *       Perhaps as system parameter or perhaps as EPICS records.
-     *       divide by 2 for CLKout0 (CLK0_M2C)
-     *       divide by 1 for CLKout4 (GBTCLK1) 
-     *       divide by 1 for CLKout8 (GBTCLK0)
-     *       divide by 2 for CLKout12 and CLKout13 (CLK1_M2C, J20)
-     *       no ADLY
+    /* R5
+      CLKout0_3_DIV = 1
+      CLKout4_7_DIV = 1
+      CLKout8_11_DIV = 1
+      CLKout12_ADLY_SEL = 0
+      CLKout13_ADLY_SEL = 0
+      CLKout12_13_DIV = 1
      */
-    /* 0000 00000000002 00 0 0 001 001 010 0101 */
-    /* ==== ----====--- -= = = =-- --= === ---- */
-    lmk01801writeRegister(0x000404A5);
+    lmk01801writeRegister(0x00020495);
 
     /* Lock settings */
     lmk01801writeRegister(0x000005FF);
