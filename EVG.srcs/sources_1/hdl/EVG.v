@@ -24,9 +24,7 @@
 
 /*
  * Top level module
- * For development the 'USE_PMOD_GPS' definition should be uncommented.
  */
-//`define USE_PMOD_GPS
 
 `default_nettype none
 module EVG #(
@@ -85,19 +83,12 @@ module EVG #(
     input  wire PMOD1_4,
     input  wire PMOD1_5,
     output wire PMOD1_6,
-    output wire PMOD1_7,  // Optional PPS out
+    output wire PMOD1_7,
 
-`ifdef USE_PMOD_GPS
-    input  wire PMOD2_0,  // PMOD-GPS 3DFix
-    output wire PMOD2_1,  // PMOD-GPS RxD
-    input  wire PMOD2_2,  // PMOD-GPS TxD
-    input  wire PMOD2_3,  // PMOD-GPS PPS
-`else
     input  wire PMOD2_0,
     input  wire PMOD2_1,
     output wire PMOD2_2,
     output wire PMOD2_3,
-`endif
     input  wire PMOD2_4,
     input  wire PMOD2_5,
     output wire PMOD2_6,
@@ -131,32 +122,56 @@ assign FMC1_DI_ENb = 1'b0;
 
 ///////////////////////////////////////////////////////////////////////////////
 // PMOD I/O routing
-// For development a PPS marker from a PMOD-GPS module drives a PMOD-TTL
-// output which is externally looped back to the RF-IN PPS input.
+/* MPS and LVTTL PMOD pinout
+ * +----------------+----------------+
+ * | 1 IN1 PMODx_0  | 2 IN2 PMODx_4  |
+ * | 3 IN3 PMODx_1  | 4 IN4 PMODx_5  |
+ * | 5 OUT1 PMODx_2 | 6 OUT2 PMODx_6 |
+ * | 7 OUT3 PMODx_3 | 8 OUT4 PMODx_7 |
+ * | 9 GND          | 10 GND         |
+ * | 11 3V3         | 12 3V3         |
+ * +----------------+----------------+
+ *
+ * EVT-8-8 chassis connections.
+ * PMOD1  - Marble J12 in 1-4 | out 1-4
+ * PMOD2  - Marble J13 in 5-8 | out 5-8
+ * FMC P1 - N/C
+ * FMC P2 - N/C
+ *
+ * EVG-2-16 chassis connections
+ * PMOD1  - Marble J12 in N/C | out 1-4
+ * PMOD2  - Marble J13       N/C
+ * FMC P1 - Clock Input
+ * FMC P2 - N/C
+ */
 
 wire [7:0] pmodOut;
+
+assign PMOD2_7 = pmodOut[7]; // J13 OUT4
+assign PMOD2_3 = pmodOut[6]; // J13 OUT3
+assign PMOD2_6 = pmodOut[5]; // J13 OUT2
+assign PMOD2_2 = pmodOut[4]; // J13 OUT1
+assign PMOD1_7 = pmodOut[3]; // J12 OUT4
+assign PMOD1_3 = pmodOut[2]; // J12 OUT3
+assign PMOD1_6 = pmodOut[1]; // J12 OUT2
+assign PMOD1_2 = pmodOut[0]; // J12 OUT1
+
+wire ppsPrimary, ppsPrimary_out;
+wire ppsSecondary = ~PMOD1_0; // J12 IN1
 wire ppsSecondary_out;
 
-assign PMOD2_7 = pmodOut[7];
-assign PMOD2_6 = pmodOut[5];
-assign PMOD1_3 = pmodOut[2];
-assign PMOD1_6 = pmodOut[1];
-assign PMOD1_2 = pmodOut[0];
-
-`ifdef USE_PMOD_GPS
-wire ppsSecondary = PMOD2_3;
-assign PMOD1_7 = ~ppsSecondary_out;
-assign PMOD2_1 = 1'b1;
-`else
-wire ppsSecondary = 1'b0;
-assign PMOD2_3 = pmodOut[6];
-assign PMOD2_2 = pmodOut[4];
-assign PMOD1_7 = pmodOut[3];
-`endif
-
+//                    J13 IN4   J13 IN3   J13 IN2   J13 IN1
 wire [7:0] pmodIn = { ~PMOD2_5, ~PMOD2_1, ~PMOD2_4, ~PMOD2_0,
-                      ~PMOD1_5, ~PMOD1_1, ~PMOD1_4, ~PMOD1_0 };
+//                    J12 IN4   J12 IN3   J12 IN2   J12 IN1
+                      ~PMOD1_5, ~PMOD1_1, ~PMOD1_4, ppsSecondary_out };
 
+/* EVG-2-16 wiring
+ * IN1  - J16  - FMC1_PPS
+ * IN2  - J1   - FMC1_DIN[1]
+ * ...
+ * IN16 - J15  - FMC1_DIN[15]
+ */
+assign ppsPrimary = FMC1_PPS;
 wire [15:0] fmcIn = { FMC1_DIN, ppsPrimary_out };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -221,7 +236,6 @@ wire [14:0] evgHwInputs;
 wire [31:0] ioSelectStatus;
 wire isEVG = ioSelectStatus[0];
 assign GPIO_IN[GPIO_IDX_IO_SELECT] = ioSelectStatus;
-wire ppsPrimary_out;
 
 ioSelect #(.DEBUG("false"))
   ioSelect (
@@ -268,7 +282,7 @@ marbleClockSync #(
     .sysHwInterval(GPIO_IN[GPIO_IDX_MARBLE_VCXO_HW_PPS]),
     .clk125(clk125),
     .clk500(clk500),
-    .ppsPrimary_pin(FMC1_PPS),
+    .ppsPrimary_pin(ppsPrimary),
     .ppsSecondary_pin(ppsSecondary),
     .ppsFromFabric(isEVG ? localPPSmarker : evrPPSmarker),
     .hwPPSmarker_a(hwPPSmarker_a),
