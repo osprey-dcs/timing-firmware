@@ -85,10 +85,8 @@ struct LEEPpacket {
 #define REG_MARBLE_PLL_SET_Y3               87
 #define REG_MARBLE_PPS_LOCAL_CSR            88
 #define REG_IOSELECT                        89
-#define REG_SI570_R7_9                      90
-#define REG_SI570_R10_12                    91
-#define REG_SI570_R135                      92
-#define REG_SI570_R137                      93
+#define REG_SI570_BASE                      90
+#  define REG_SI570_SIZE 4
 #define REG_SYSMON_BASE                     100
 #define SYSMON_SIZE                         300
 
@@ -173,10 +171,9 @@ writeReg(int address, uint32_t value)
     case REG_MARBLE_PLL_SET_Y1:         clockAdjustSetDAC(0, value);     return;
     case REG_MARBLE_PLL_SET_Y3:         clockAdjustSetDAC(1, value);     return;
     case REG_MARBLE_PPS_LOCAL_CSR:      localPPSenable(value);           return;
-    case REG_SI570_R7_9:                si570setR7_9(value);             return;
-    case REG_SI570_R10_12:              si570setR10_12(value);           return;
-    case REG_SI570_R135:                si570setR135(value);             return;
-    case REG_SI570_R137:                si570setR137(value);             return;
+    case RANGE(REG_SI570_BASE, REG_SI570_SIZE):
+        si570Write(address - REG_SI570_BASE, value);
+        return;
     }
 }
 
@@ -218,8 +215,8 @@ readReg(int address)
                                                                        & 0xFFFF;
     case REG_MARBLE_PMOD_INPUTS:  return GPIO_READ(GPIO_IDX_PMOD_FMC_MONITOR)
                                                                           >> 16;
-    case REG_SI570_R7_9:          return si570getR7_9();
-    case REG_SI570_R10_12:        return si570getR10_12();
+    case RANGE(REG_SI570_BASE, REG_SI570_SIZE):
+        return si570Read(address - REG_SI570_BASE);
     case REG_IOSELECT:            return ioSelectStatus();
     case RANGE(REG_SYSMON_BASE, SYSMON_SIZE):
         {

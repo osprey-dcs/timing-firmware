@@ -32,6 +32,7 @@
 #include "evg.h"
 #include "gpio.h"
 #include "iicFPGA.h"
+#include "si570.h"
 #include "ioSelect.h"
 #include "mgt.h"
 #include "mgtClkSwitch.h"
@@ -96,6 +97,7 @@ main(void)
                                networkConfig.macAddress);
     consoleInit();
     iicFPGAinit();
+    si570Init();
     ioSelectInit();
     ospreyRFINinit();
     mgtClkSwitchInit();

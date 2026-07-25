@@ -23,7 +23,15 @@
  */
 
 /*
- * Marble SI570 MGT clock reference 
+ * Marble SI570 MGT clock reference
+ *
+ * Must lookup reference frequency and address by part number
+ *   https://tools.skyworksinc.com/TimingUtility/timing-part-number-search-results.aspx
+ *
+ * Marble 1.4.x has 570NBB001808DGR
+ *   I2C address: 0x55
+ *   Ref. frequency: 270 MHz
+ *   Temperature Stability: 20 PPM
  */
 #include <stdio.h>
 #include <stdint.h>
@@ -32,9 +40,9 @@
 #include "util.h"
 
 static void
-writeRegister(int reg, int val)
+writeRegister(unsigned reg, uint8_t val)
 {
-    unsigned char buf[2];
+    uint8_t buf[2];
     buf[0] = reg;
     buf[1] = val;
     iicFPGAwrite(IIC_FPGA_IDX_SI570, buf, 2);
@@ -44,9 +52,9 @@ writeRegister(int reg, int val)
 }
 
 static int
-readRegister(int reg)
+readRegister(unsigned reg)
 {
-    unsigned char buf[1];
+    uint8_t buf[1];
     iicFPGAread(IIC_FPGA_IDX_SI570, reg, buf, 1);
     if (debugFlags & DEBUGFLAG_SI570) {
         printf("SI570 R%d -> %02X\n", reg, buf[0]);
@@ -54,7 +62,7 @@ readRegister(int reg)
     return buf[0];
 }
 
-int
+static uint32_t
 si570getR7_9(void)
 {
     int r;
@@ -65,51 +73,83 @@ si570getR7_9(void)
     return v;
 }
 
-int
+static uint32_t
 si570getR10_12(void)
 {
-    int r;
     uint32_t v = 0;
-    for (r = 10 ; r <= 12 ; r++) {
+    for (unsigned r = 10 ; r <= 12 ; r++) {
         v = (v << 8) | readRegister(r);
     }
     return v;
 }
 
-void
-si570setR7_9(int r7_9)
+static void
+si570setR7_9(uint32_t r7_9)
 {
-    int r;
-    for (r = 9 ; r >= 7 ; r--) {
+    for (unsigned r = 9 ; r >= 7 ; r--) {
         writeRegister(r, r7_9 & 0xFF);
         r7_9 >>= 8;
     }
 }
 
-void
-si570setR10_12(int r10_12)
+static void
+si570setR10_12(uint32_t r10_12)
 {
-    int r;
-    for (r = 12 ; r >= 10 ; r--) {
+    for (unsigned r = 12 ; r >= 10 ; r--) {
         writeRegister(r, r10_12 & 0xFF);
         r10_12 >>= 8;
     }
 }
 
-void
-si570setR135(int r135)
+static
+uint32_t si570Cal[2];
+
+uint32_t si570Read(int addr)
 {
-    writeRegister(135, r135);
+    switch(addr) {
+    case 0: return si570getR7_9();
+    case 1: return si570getR10_12();
+    case 2: return si570Cal[0];
+    case 3: return si570Cal[1];
+    default: return 0xdeadbeef;
+    }
 }
 
-void
-si570setR137(int r137)
+void si570Write(int addr, uint32_t val)
 {
-    writeRegister(137, r137);
-    /*
-     * Must assert 'New Frequency' bit within 10 ms of unfreezing DCO.
-     */
-    if (r137 == 0) {
-        si570setR135(0x40);
+    static uint32_t scratch7_9 = 0;
+    switch(addr) {
+    case 0: scratch7_9 = val; break;
+    case 1:
+        // programming sequence for arbitrary freq (not small jump) from si570 datasheet,
+
+        writeRegister(137, 0x10); // Freeze DCO
+
+        si570setR7_9(scratch7_9);
+        si570setR10_12(val);
+
+        writeRegister(137, 0x00); // Un-Freeze DCO
+        writeRegister(135, 0x40); // NewFreq
+        break;
     }
+}
+
+void si570Init(void)
+{
+    /* The Si570 is an odd one.  On reset it reverts to a specified default output frequency,
+     * which can not be introspected.
+     * To compute new outputs, we first have to read back the burned in default settings
+     * which achieve this specified output.
+     * The datasheet is emphatic that these values can vary from part to part, so no cheating!
+     *
+     * f_out = f_xtal * RFREQ / HSDIV / N1
+     */
+    writeRegister(135, 0x01); // RECALL defaults
+    do {
+        microsecondSpin(1000);
+    } while(readRegister(135)&0x01);
+    si570Cal[0] = si570getR7_9();
+    si570Cal[1] = si570getR10_12();
+
+    printf("Si570 read calib: 0x%06x%06x\n", si570Cal[0], si570Cal[1]);
 }

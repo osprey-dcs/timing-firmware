@@ -28,11 +28,10 @@
 #ifndef _SI570_H_
 #define _SI570_H_
 
-int si570getR7_9(void);
-int si570getR10_12(void);
-void si570setR7_9(int r7_9);
-void si570setR10_12(int r10_12);
-void si570setR135(int r135);
-void si570setR137(int r137);
+#include <stdint.h>
+
+void si570Init(void);
+uint32_t si570Read(int addr);
+void si570Write(int addr, uint32_t val);
 
 #endif /* _SI570_H_ */

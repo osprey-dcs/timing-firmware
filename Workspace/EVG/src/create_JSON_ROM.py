@@ -340,34 +340,20 @@ def base_build():
             "data_width": 32,
             "sign": "unsigned"
         },
-        "MARBLE:SI570:R7_9": {
+        "MARBLE:SI570:SET": {
             "access": "rw",
-            "addr_width": 0,
+            "addr_width": 1,
             "base_addr": 90,
-            "data_width": 32,
+            "data_width": 24,
             "sign": "unsigned"
         },
-        "MARBLE:SI570:R10_12": {
-            "access": "rw",
-            "addr_width": 0,
-            "base_addr": 91,
-            "data_width": 32,
-            "sign": "unsigned"
-        },
-        "MARBLE:SI570:R135": {
-            "access": "rw",
-            "addr_width": 0,
+        "MARBLE:SI570:CAL": {
+            "access": "r",
+            "addr_width": 1,
             "base_addr": 92,
-            "data_width": 8,
+            "data_width": 24,
             "sign": "unsigned"
         },
-        "MARBLE:SI570:R137": {
-            "access": "rw",
-            "addr_width": 0,
-            "base_addr": 93,
-            "data_width": 8,
-            "sign": "unsigned"
-        }
     }
     return R
 
@@ -474,6 +460,7 @@ def evt_merge():
         EVR_REG_BASE=1100000,
         hwOutputCount=8,
     ))
+    R["__metadata__"]["si570Ref"] = 270 # MHz for 570NBB001808DGR on Marble 1.4.x
     return R
 
 def sortOrdered(D: dict) -> OrderedDict:
