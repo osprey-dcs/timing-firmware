@@ -401,62 +401,6 @@ def mpsLocal_build(MPS_REG_BASE=10000, mpsOutputCount=2):
             "sign": "unsigned",
         }
 
-#    for addr, tmr in enumerate(range(1, timerCount+1), EVG_REG_BASE+120):
-#        R[f"EVG:TMR:{tmr}:divisor"] = {
-#            "access": "w",
-#            "addr_width": 0,
-#            "base_addr": addr,
-#            "data_width": 32,
-#            "sign": "unsigned",
-#        }
-#
-#    for off, trg in enumerate(range(1, hwTriggerCount+1)):
-#        R[f"EVG:TRG:r{trg}:ev"] = {
-#            "access": "w",
-#            "addr_width": 0,
-#            "base_addr": EVG_REG_BASE+140+2*off+0,
-#            "data_width": 8,
-#            "sign": "unsigned",
-#        }
-#        R[f"EVG:TRG:f{trg}:ev"] = {
-#            "access": "w",
-#            "addr_width": 0,
-#            "base_addr": EVG_REG_BASE+140+2*off+1,
-#            "data_width": 8,
-#            "sign": "unsigned",
-#        }
-#
-#    for off, seq in enumerate(range(1, seqBankCount+1)):
-#        R[f"EVG:SEQ:{seq}:hw:r"] = {
-#            "access": "w",
-#            "addr_width": 0,
-#            "base_addr": EVG_REG_BASE+180+2*off+0,
-#            "data_width": 8,
-#            "sign": "unsigned",
-#        }
-#        R[f"EVG:SEQ:{seq}:hw:f"] = {
-#            "access": "w",
-#            "addr_width": 0,
-#            "base_addr": EVG_REG_BASE+180+2*off+1,
-#            "data_width": 8,
-#            "sign": "unsigned",
-#        }
-#        R[f"EVG:SEQ:{seq}:pattern"] = {
-#            "access": "w",
-#            "addr_width": seqAddrWidth+1,
-#            "base_addr": EVG_REG_BASE+8192*seq, # seq1 @8192
-#            "data_width": 32,
-#            "sign": "unsigned",
-#        }
-#
-#    for addr, rx in enumerate(range(1, rxCount+1), EVG_REG_BASE+200):
-#        R[f"EVG:LINK:{rx}:latency"] = {
-#            "access": "r",
-#            "addr_width": 0,
-#            "base_addr": addr,
-#            "data_width": 8,
-#            "sign": "unsigned",
-#        }
     return R
 
 def evt_merge():
