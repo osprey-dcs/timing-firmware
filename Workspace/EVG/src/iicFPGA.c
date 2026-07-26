@@ -237,6 +237,24 @@ iicFPGAinit(void)
         }
     }
 
+    /* U39 I/O expander
+     *  Configure as outputs:
+     *   P0_0 - SI570_OE (active low)
+     *   P1_7 - U2 reset (active low)
+     *   P1_3 - LD13
+     *   P1_2 - LD14
+     */
+    // prepare output state
+    cbuf[0] = 0x02;
+    cbuf[1] = 0x00; // si570 output enabled
+    cbuf[2] = 0x8c; // U2 not reset, LEDs off
+    iicFPGAwrite(IIC_FPGA_IDX_PCA9555_U39, cbuf, 3);
+    // set direction (1 - input)
+    cbuf[0] = 0x06;
+    cbuf[1] = 0xfe;
+    cbuf[2] = 0x73;
+    iicFPGAwrite(IIC_FPGA_IDX_PCA9555_U39, cbuf, 3);
+
     /*
      * Assert both ModSelL lines.
      */
