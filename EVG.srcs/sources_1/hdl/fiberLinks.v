@@ -73,7 +73,6 @@ module fiberLinks #(
 
     input  wire                 gtRefClkP,
     input  wire                 gtRefClkN,
-    output wire                 gtRefClkDiv2,
     input  wire [MGT_COUNT-1:0] rxP,
     input  wire [MGT_COUNT-1:0] rxN,
     output wire [MGT_COUNT-1:0] txP,
@@ -121,7 +120,6 @@ mgtWrapper_i (
     .sysStatus(sysMgtStatus),
     .gtRefClkP(gtRefClkP),
     .gtRefClkN(gtRefClkN),
-    .gtRefClkDiv2(gtRefClkDiv2),
     .rxP(rxP),
     .rxN(rxN),
     .txP(txP),

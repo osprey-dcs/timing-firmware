@@ -313,7 +313,7 @@ cmdFMON(int argc, char **argv)
     int i;
     uint32_t csr, rate;
     static const char *names[] = { "System",
-                                   "MGT Ref/2",
+                                   "Unused",
                                    "IDELAY Ref",
                                    "VCXO20",
                                    "FMC1 M2C0",

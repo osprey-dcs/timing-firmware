@@ -186,7 +186,7 @@ wire [15:0] fmcIn = { FMC1_DIN, ppsPrimary_out };
 
 ///////////////////////////////////////////////////////////////////////////////
 // Clocks
-wire sysClk, clk20, clk125, clk200, clk500, evgClk, gtRefClkDiv2;
+wire sysClk, clk20, clk125, clk200, clk500, evgClk;
 
 wire clkFMC1_M2C0, clkFMC1_M2C1;
 IBUFGDS FMC1_M2C0_IB(.I(FMC1_CLK0_M2C_P),.IB(FMC1_CLK0_M2C_N),.O(clkFMC1_M2C0));
@@ -387,7 +387,6 @@ fiberLinks #(
     .evgTxCharIsK(evgTxCharIsK),
     .gtRefClkP(MGTREFCLK0_116_P),
     .gtRefClkN(MGTREFCLK0_116_N),
-    .gtRefClkDiv2(gtRefClkDiv2),
     .rxP(QSFP_RX_P),
     .rxN(QSFP_RX_N),
     .txP(QSFP_TX_P),
@@ -450,7 +449,7 @@ frequencyCounters #(
                       clkFMC1_M2C0,
                       clk20,
                       clk200,
-                      gtRefClkDiv2,
+                      1'b0,
                       sysClk }),
     .acqMarker_a(hwPPSmarker_a),
     .useInternalAcqMarker(measuredUsingInteralAcqMarker),
