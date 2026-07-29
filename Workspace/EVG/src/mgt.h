@@ -37,6 +37,7 @@
 #define MGT_LOOPBACK_FAR_PCS    6
 
 void mgtInit(void);
+void mgtReset(void);
 void mgtCrank(void);
 void mgtShowStatus(void);
 uint32_t mgtFetchSysmon(int index);

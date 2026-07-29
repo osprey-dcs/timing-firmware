@@ -534,6 +534,22 @@ cmdLMK(int argc, char **argv)
         printf("Error: %d\n", err);
 }
 
+static void
+cmdMGT(int argc, char **argv)
+{
+    const char* cmd = "invalid";
+    if(argc>=2)
+        cmd = argv[1];
+
+    if(strcmp(cmd, "reinit")==0) {
+        mgtInit();
+    } else if(strcmp(cmd, "reset")==0) {
+        mgtReset();
+    } else {
+        printf("usage: mgt <reinit|reset>\n");
+    }
+}
+
 /*
  * Search for and execute command
  */
@@ -558,6 +574,7 @@ findCommand(int argc, char **argv)
         { "pps",   cmdPPS,    "PPS/VXCO status"                       },
         { "reg",   cmdREG,    "Show GPIO register(s)"                 },
         { "lmk",   cmdLMK,    "Control LMK on RF-IN FMC"              },
+        { "mgt",   cmdMGT,    "MGT operations"                        },
     };
     if ((argc == 0) || ((l = strlen(argv[0])) == 0)) {
         return;
