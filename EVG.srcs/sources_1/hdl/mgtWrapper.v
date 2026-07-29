@@ -356,7 +356,6 @@ MGT_common # (
 /*
  * Status register
  */
-wire [1:0] qpllLock, qpllRefClkLost;
 assign sysStatus = { busy, 3'b0,
                      gt1_qplllock_in, gt1_qpllrefclklost_in,
                      gt0_qplllock_in, gt0_qpllrefclklost_in,
