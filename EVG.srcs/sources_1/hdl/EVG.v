@@ -117,6 +117,7 @@ localparam TIMESTAMP_WIDTH      = 64;
 ///////////////////////////////////////////////////////////////////////////////
 // Static outputs
 assign VCXO_EN = 1'b1;
+assign LD16 = 1'b0;
 assign LD17 = 1'b0;
 assign FMC1_DI_ENb = 1'b0;
 
