@@ -100,6 +100,15 @@ reg busy = 0;
 (*MARK_DEBUG=DEBUG*) reg [MGT_COUNT-1:0] sysRxSlideToggle = 0;
 (*MARK_DEBUG=DEBUG*) reg [MGT_COUNT-1:0] pmareset = 0;
 
+wire [MGT_COUNT-1:0] pllLocked_a = {
+    mgtStatus[0][4], mgtStatus[1][4], mgtStatus[2][4], mgtStatus[3][4],
+    mgtStatus[4][4], mgtStatus[5][4], mgtStatus[6][4], mgtStatus[7][4]
+};
+(*ASYNC_REG="TRUE"*)
+reg [MGT_COUNT-1:0] pllLocked = 0;
+wire refClkFault;
+reg refClkLost = 1'b1;
+
 /*
  * Soft reset (common to all lanes)
  */
@@ -140,6 +149,12 @@ always @(posedge sysClk) begin
             busy <= 1;
         end
     end
+
+    pllLocked <= pllLocked_a;
+    if (sysCsrStrobe && !sysGPIO_OUT[31] && sysGPIO_OUT[29])
+        refClkLost <= 1'b0; // Clear latch... unless still unlocked
+    if (refClkFault)
+        refClkLost <= 1'b1;
 
     /*
      * Soft reset
@@ -358,11 +373,13 @@ wire gt0_qpllrefclklost_in = mgtStatus[6][5] || mgtStatus[4][5] || mgtStatus[5][
 // equivalent CPLLs for second quad
 wire gt1_qplllock_in = mgtStatus[2][4] && mgtStatus[0][4] && mgtStatus[1][4] && mgtStatus[3][4];
 wire gt1_qpllrefclklost_in = mgtStatus[2][5] || mgtStatus[0][5] || mgtStatus[1][5] || mgtStatus[3][5];
+// if any PLL not locked, or any reference (really FB) clock lost
+assign refClkFault = ~(&pllLocked) || gt0_qpllrefclklost_in || gt1_qpllrefclklost_in;
 
 /*
  * Status register
  */
-assign sysStatus = { busy, 3'b0,
+assign sysStatus = { busy, 1'b0, refClkLost, 1'b0,
                      gt1_qplllock_in, gt1_qpllrefclklost_in,
                      gt0_qplllock_in, gt0_qpllrefclklost_in,
                      {32-8-MGT_STATUS_WIDTH-DRP_DATA_WIDTH{1'b0}},

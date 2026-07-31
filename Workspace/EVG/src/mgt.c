@@ -35,6 +35,7 @@
 
 #define CSR_W_DRP_ENABLE        0x80000000
 #define CSR_W_DRP_WRITE         0x40000000
+#define CSR_W_LOL_CLEAR         0x20000000
 #define CSR_W_SEL_SHIFT         27
 #define CSR_W_DRP_ADDR_SHIFT    16
 #define CSR_RW_DRP_DATA_MASK    0xFFFF
@@ -49,6 +50,7 @@
 #define CSR_W_RX_SOFT_RESET     0x00100000
 
 #define CSR_R_DRP_BUSY                  0x80000000
+#define CSR_R_LOL_LATCHED               0x20000000
 #define CSR_R_QPLL1_LOCKED              0x08000000
 #define CSR_R_QPLL1_REFCLK_LOST         0x04000000
 #define CSR_R_QPLL0_LOCKED              0x02000000
@@ -124,7 +126,8 @@ mgtInit(void)
      */
     GPIO_WRITE(GPIO_IDX_MGT_CSR, CSR_W_RX_LANE_RESET|((1UL<<CFG_MGT_COUNT)-1));
     microsecondSpin(1);
-    GPIO_WRITE(GPIO_IDX_MGT_CSR, CSR_W_RX_LANE_RESET | 0);
+    // deassert resets, attempt to clear ref. clock loss-of-lock latch
+    GPIO_WRITE(GPIO_IDX_MGT_CSR, CSR_W_RX_LANE_RESET | CSR_W_LOL_CLEAR);
 }
 
 /*
@@ -137,6 +140,12 @@ mgtCrank(void)
     static unsigned int wasUp = ~0;
     uint32_t now = microsecondsSinceBoot();
     static uint32_t then;
+
+    if(GPIO_READ(GPIO_IDX_MGT_CSR) & CSR_R_LOL_LATCHED) {
+        if(debugFlags & DEBUGFLAG_MGT)
+            printf("MGT ref. clock lost.  Resetting all channels.\n");
+        mgtInit();
+    }
 
     if ((now - then) < 100000) {
         return;
