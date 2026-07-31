@@ -119,7 +119,6 @@ module EVG #(
     );
 
 localparam MGT_DATA_WIDTH       = 16;
-localparam MGT_COMMA_ALIGN_BYTE = 1;
 localparam TIMESTAMP_WIDTH      = 64;
 genvar i;
 
