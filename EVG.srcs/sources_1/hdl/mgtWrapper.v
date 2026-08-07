@@ -41,8 +41,7 @@ module mgtWrapper #(
     input  wire [31:0] sysGPIO_OUT,
     output wire [31:0] sysStatus,
 
-    input  wire                 gtRefClkP,
-    input  wire                 gtRefClkN,
+    input  wire                 gtRefClk,
     input  wire [MGT_COUNT-1:0] rxP,
     input  wire [MGT_COUNT-1:0] rxN,
     output wire [MGT_COUNT-1:0] txP,
@@ -306,17 +305,6 @@ end
 
 end /* Generate 'for' loop */
 endgenerate
-
-///////////////////////////////////////////////////////////////////////////////
-/*
- * Produce reference clock
- */
-wire gtRefClk;
-IBUFDS_GTE2 gtRefClkBuf (.O(gtRefClk),
-                         .ODIV2(),
-                         .CEB(1'b0),
-                         .I(gtRefClkP),
-                         .IB(gtRefClkN));
 
 /*
  * Instantiate the MGT common blocks.

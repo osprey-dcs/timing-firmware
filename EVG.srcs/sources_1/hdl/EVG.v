@@ -359,6 +359,13 @@ wire  [(CFG_MGT_COUNT*MGT_DATA_WIDTH)-1:0] mgtRxChars;
 wire [(CFG_MGT_COUNT*MGT_CTYPE_WIDTH)-1:0] mgtRxCharIsK;
 wire            [CFG_MPS_OUTPUT_COUNT-1:0] mgtTxMPStripped;
 
+wire gtRefClk;
+IBUFDS_GTE2 gtRefClkBuf (.O(gtRefClk),
+                         .ODIV2(),
+                         .CEB(1'b0),
+                         .I(MGTREFCLK0_116_P),
+                         .IB(MGTREFCLK0_116_N));
+
 fiberLinks #(
     .MGT_COUNT(CFG_MGT_COUNT),
     .MGT_DATA_WIDTH(MGT_DATA_WIDTH),
@@ -385,8 +392,7 @@ fiberLinks #(
     .mgtTxMPStripped(mgtTxMPStripped),
     .evgTxChars(evgTxChars),
     .evgTxCharIsK(evgTxCharIsK),
-    .gtRefClkP(MGTREFCLK0_116_P),
-    .gtRefClkN(MGTREFCLK0_116_N),
+    .gtRefClk(gtRefClk),
     .rxP(QSFP_RX_P),
     .rxN(QSFP_RX_N),
     .txP(QSFP_TX_P),
