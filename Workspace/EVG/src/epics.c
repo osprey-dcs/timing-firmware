@@ -113,7 +113,7 @@ void
 setMgtClkSwitch0(int inputClkIndex)
 {
     if ((inputClkIndex < 0)
-     || (inputClkIndex >= MGT_CLK_SWITCH_INPUT_DISABLE_OUTPUT)) {
+     || (inputClkIndex > MGT_CLK_SWITCH_INPUT_DISABLE_OUTPUT)) {
         return;
     }
     if (((inputClkIndex == MGT_CLK_SWITCH_INPUT_FMC1_GBTCLK0)
