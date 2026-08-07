@@ -27,6 +27,7 @@ set_false_path -from [get_clocks bd_i/mdm_1/U0/Use_E2.BSCAN_I/Use_E2.BSCANE2_I/D
 set_false_path -from [get_clocks bd_i/mdm_1/U0/Use_E2.BSCAN_I/Use_E2.BSCANE2_I/UPDATE] -to [get_clocks bd_i/mdm_1/U0/Use_E2.BSCAN_I/Use_E2.BSCANE2_I/DRCK]
 set_false_path -from [get_clocks clk20_vcxo] -to [get_clocks -of_objects [get_pins bd_i/clk_wiz_1/inst/mmcm_adv_inst/CLKOUT0]]
 set_false_path -from [get_clocks clk20_vcxo] -to [get_clocks -of_objects [get_pins bd_i/clk_wiz_1/inst/mmcm_adv_inst/CLKOUT3]]
+set_false_path -from [get_clocks MGT_REFCLK0] -to [get_clocks clk_out1_bd_clk_wiz_1_0]
 set_false_path -from [get_clocks fiberLinks/mgtWrapper_i/mgt_i/inst/mgt_i/gt0_mgt_i/gtxe2_i/RXOUTCLK] -to [get_clocks clk_out1_bd_clk_wiz_1_0]
 set_false_path -from [get_clocks fiberLinks/mgtWrapper_i/mgt_i/inst/mgt_i/gt0_mgt_i/gtxe2_i/RXOUTCLK] -to [get_clocks clk_out2_bd_clk_wiz_2_0]
 set_false_path -from [get_clocks fiberLinks/mgtWrapper_i/mgt_i/inst/mgt_i/gt0_mgt_i/gtxe2_i/TXOUTCLK] -to [get_clocks clk_out1_bd_clk_wiz_1_0]

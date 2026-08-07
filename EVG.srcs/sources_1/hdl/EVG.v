@@ -455,7 +455,7 @@ frequencyCounters #(
                       clkFMC1_M2C0,
                       clk20,
                       clk200,
-                      1'b0,
+                      gtRefClk,
                       sysClk }),
     .acqMarker_a(hwPPSmarker_a),
     .useInternalAcqMarker(measuredUsingInteralAcqMarker),
