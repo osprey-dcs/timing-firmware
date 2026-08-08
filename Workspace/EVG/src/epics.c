@@ -123,6 +123,12 @@ setMgtClkSwitch0(int inputClkIndex)
                "RF-IN mezzanine card is not present!\n");
     }
     if (inputClkIndex != mgtClkSwitch0) {
+        // The MGTs do not react well to having the reference frequency change,
+        // and get stuck in an inoperative state with no status indicating an issue.
+        // So briefly disable the reference to trigger PLL loss of lock.
+        mgtClkSwitchConnectOutputToInput(MGT_CLK_SWITCH_OUTPUT_MGTCLK0,
+                                         MGT_CLK_SWITCH_INPUT_DISABLE_OUTPUT);
+        microsecondSpin(10);
         mgtClkSwitchConnectOutputToInput(MGT_CLK_SWITCH_OUTPUT_MGTCLK0,
                                          inputClkIndex);
         if (debugFlags & DEBUGFLAG_EPICS_WRITE) {
@@ -172,7 +178,22 @@ writeReg(int address, uint32_t value)
     case REG_MARBLE_PLL_SET_Y3:         clockAdjustSetDAC(1, value);     return;
     case REG_MARBLE_PPS_LOCAL_CSR:      localPPSenable(value);           return;
     case RANGE(REG_SI570_BASE, REG_SI570_SIZE):
+        if((mgtClkSwitch0==MGT_CLK_SWITCH_INPUT_SI570_CLK)
+            && ((address - REG_SI570_BASE)==1) )
+        {
+            // The MGTs do not react well to having the reference frequency change,
+            // and get stuck in an inoperative state with no status indicating an issue.
+            // So disable the reference to trigger PLL loss of lock.
+            mgtClkSwitchConnectOutputToInput(MGT_CLK_SWITCH_OUTPUT_MGTCLK0,
+                                             MGT_CLK_SWITCH_INPUT_DISABLE_OUTPUT);
+        }
         si570Write(address - REG_SI570_BASE, value);
+        if((mgtClkSwitch0==MGT_CLK_SWITCH_INPUT_SI570_CLK)
+            && ((address - REG_SI570_BASE)==1) )
+        {
+            mgtClkSwitchConnectOutputToInput(MGT_CLK_SWITCH_OUTPUT_MGTCLK0,
+                                             mgtClkSwitch0);
+        }
         return;
     }
 }
