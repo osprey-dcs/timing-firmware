@@ -236,7 +236,7 @@ mgtLinkStatus #(
     .DEBUG(DEBUG))
   mgtLinkStatus_i (
     .clk(mgtRxClks[i]),
-    .powerdown(sysRxPowerdown[i]),
+    .reset(sysRxPowerdown[i] || refClkLost),
     .mgtData(mgtRxData[i]),
     .mgtDataIsK(mgtRxDataK[i]),
     .mgtRxNotInTable(mgtRxNotInTable[i]),
@@ -292,6 +292,11 @@ localparam RX_RESET_S_APPLY_RESET     = 2'd0,
 always @(posedge sysClk) begin
     rxResetLinkUp_m <= mgtRxLinkUp[i];
     rxResetLinkUp   <= rxResetLinkUp_m;
+    if(refClkLost) begin
+        // hold idle while global reset in progress
+        rxResetState <= RX_RESET_S_APPLY_RESET;
+        pmareset[i] <= 0;
+    end else
     case (rxResetState)
     RX_RESET_S_APPLY_RESET: begin
         pmareset[i] <= 1;
@@ -1089,7 +1094,7 @@ module mgtLinkStatus #(
     parameter DEBUG            = "false"
     ) (
     input  wire                                            clk,
-    input  wire                                            powerdown,
+    input  wire                                            reset,
     (*MARK_DEBUG=DEBUG*) input  wire  [MGT_DATA_WIDTH-1:0] mgtData,
     (*MARK_DEBUG=DEBUG*) input  wire [MGT_CTYPE_WIDTH-1:0] mgtDataIsK,
     (*MARK_DEBUG=DEBUG*) input  wire [MGT_CTYPE_WIDTH-1:0] mgtRxNotInTable,
@@ -1110,8 +1115,8 @@ assign rxLinkUp = commasNeeded[COMMA_COUNTER_WIDTH-1];
 
 localparam EVCODE_K28_5 = 8'hBC;
 
-always @(posedge clk or posedge powerdown) begin
-    if (powerdown) begin
+always @(posedge clk or posedge reset) begin
+    if (reset) begin
         commasNeeded <= COMMA_COUNTER_LOAD;
         rxChars <= 0;
         rxCharIsK <= 0;
