@@ -62,8 +62,10 @@ module mgtWrapper #(
  * 3 - gt*_txresetdone_out       (async)
  * 4 - gt*_cplllock_out          (async)
  * 5 - gt*_cpllfbclklost_out
+ * 6 - sysTxPowerdown
+ * 7 - sysRxPowerdown
  */
-localparam MGT_STATUS_WIDTH = 6;
+localparam MGT_STATUS_WIDTH = 8;
 localparam MGT_SEL_WIDTH = (MGT_COUNT < 2) ? 1 : $clog2(MGT_COUNT);
 
 localparam RESET_APPLY_COUNTER_LOAD = SYSCLK_RATE / 10000;
@@ -199,6 +201,10 @@ for (i = 0 ; i < MGT_COUNT ; i = i + 1) begin : perLane
  */
 assign    mgtTxData[i] = mgtTxChars[MGT_DATA_WIDTH*i+:MGT_DATA_WIDTH];
 assign mgtTxDataIsK[i] = mgtTxCharIsK[MGT_CTYPE_WIDTH*i+:MGT_CTYPE_WIDTH];
+
+
+assign mgtStatus[i][6] = sysTxPowerdown[i];
+assign mgtStatus[i][7] = sysRxPowerdown[i];
 
 /*
  * Buffer recovered clock
