@@ -33,7 +33,7 @@
 /*
  * 2 values per INA219, 2 values per QSFP, 1 value per QSFP channel
  */
-#define SYSMON_BUF_CAPACITY ((2*3) + (2*2) + (1*4*2))
+#define SYSMON_BUF_CAPACITY ((2*3) + (2*2) + (2*4*2))
 
 #define IIC_MUX_ADDRESS 0x70
 #define NAMESTRING_CAPACITY 64
@@ -495,9 +495,12 @@ iicFPGAfetchSysmon(int index)
             uint16_t temp = 0;
             uint16_t vcc = 0;
             uint16_t rxPower[4] = {0, 0, 0, 0};
+            uint16_t txPower[4] = {0, 0, 0, 0};
             if (iicMap[i].address7) {
+                // See document SFF-8636
                 if (iicFPGAread(i, 22, cbuf, 6) == 6) {
                     temp = (cbuf[0] << 8) | cbuf[1];
+                    // 2,3 Reserved and unused
                     vcc  = (cbuf[4] << 8) | cbuf[5];
                 }
                 if (iicFPGAread(i, 34, cbuf, 8) == 8) {
@@ -505,17 +508,20 @@ iicFPGAfetchSysmon(int index)
                         rxPower[r] = (cbuf[(2*r)+0] << 8) | cbuf[(2*r)+1];
                     }
                 }
-            }
-            else {
-                temp = vcc = 0;
-                for (r = 0 ; r < 4 ; r++) {
-                    rxPower[r] = 0;
+                // 42..49 Tx Bias
+                if (iicFPGAread(i, 50, cbuf, 8) == 8) {
+                    for (r = 0 ; r < 4 ; r++) {
+                        txPower[r] = (cbuf[(2*r)+0] << 8) | cbuf[(2*r)+1];
+                    }
                 }
             }
             *sp++ = temp;
             *sp++ = vcc;
             for (r = 0 ; r < 4 ; r++) {
                 *sp++ = rxPower[r];
+            }
+            for (r = 0 ; r < 4 ; r++) {
+                *sp++ = txPower[r];
             }
         }
     }
