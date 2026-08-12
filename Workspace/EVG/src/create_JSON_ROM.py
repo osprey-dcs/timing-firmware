@@ -74,6 +74,13 @@ def base_build():
           "data_width": 32,
           "sign": "unsigned"
         },
+        "MGT:reset": {
+          "access": "w",
+          "addr_width": 0,
+          "base_addr": 56,
+          "data_width": 1,
+          "sign": "unsigned"
+        },
         "MARBLE:mgtRefClk0": {
           "access": "rw",
           "addr_width": 0,
