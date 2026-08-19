@@ -299,6 +299,13 @@
           <Attr Name="ProcessingOrder" Val="LATE"/>
         </FileInfo>
       </File>
+      <File Path="$PSRCDIR/sources_1/hdl/TriggerOutputFMC.xdc">
+        <FileInfo>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="implementation"/>
+          <Attr Name="ProcessingOrder" Val="LATE"/>
+        </FileInfo>
+      </File>
       <File Path="$PSRCDIR/sources_1/hdl/FalseClockContraints.xdc">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
