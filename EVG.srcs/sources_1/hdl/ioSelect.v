@@ -28,7 +28,7 @@
 `default_nettype none
 module ioSelect #(
     parameter EVG_HW_INPUT_COUNT  = 15,
-    parameter FMC_INPUT_COUNT     = 16,
+    parameter FMC1_INPUT_COUNT    = 16,
     parameter PMOD_INPUT_COUNT    = 8,
     parameter DEBUG               = "false"
     ) (
@@ -39,28 +39,28 @@ module ioSelect #(
 
     output wire  [EVG_HW_INPUT_COUNT-1:0] evgHwInputs,
 
-    input  wire   [FMC_INPUT_COUNT-1:0] fmcInputs,
+    input  wire  [FMC1_INPUT_COUNT-1:0] fmcInputs,
     input  wire  [PMOD_INPUT_COUNT-1:0] pmodInputs);
 
 ///////////////////////////////////////////////////////////////////////////////
 // System clock domain
 reg sysIsEVG = 0;
-reg sysFMCisPresent = 0;
+reg sysFMC1isPresent = 0;
 
 always @(posedge sysClk) begin
     if (sysCsrStrobe) begin
         if (sysGPIO_OUT[8])  sysIsEVG        <= sysGPIO_OUT[0];
-        if (sysGPIO_OUT[9])  sysFMCisPresent <= sysGPIO_OUT[1];
+        if (sysGPIO_OUT[9])  sysFMC1isPresent <= sysGPIO_OUT[1];
     end
 end
 
-assign sysStatus = { {32-2{1'b0}}, sysFMCisPresent, sysIsEVG };
+assign sysStatus = { {32-2{1'b0}}, sysFMC1isPresent, sysIsEVG };
 
 genvar i;
 generate
 
 for (i = 0 ; i < EVG_HW_INPUT_COUNT ; i = i + 1) begin : evgHwIn
-    assign evgHwInputs[i] = sysFMCisPresent ? fmcInputs[i] :
+    assign evgHwInputs[i] = sysFMC1isPresent ? fmcInputs[i] :
                             (i < PMOD_INPUT_COUNT) ? pmodInputs[i] :
                             1'b0;
 end

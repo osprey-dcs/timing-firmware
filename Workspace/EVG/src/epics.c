@@ -119,7 +119,7 @@ setMgtClkSwitch0(int inputClkIndex)
     }
     if (((inputClkIndex == MGT_CLK_SWITCH_INPUT_FMC1_GBTCLK0)
       || (inputClkIndex == MGT_CLK_SWITCH_INPUT_FMC1_GBTCLK1))
-     && (!(ioSelectStatus() & IOSELECT_STATUS_FMC_IS_PRESENT))) {
+     && (!(ioSelectStatus() & IOSELECT_STATUS_FMC1_IS_PRESENT))) {
         printf("WARNING -- Setting MGT clock to FMC1 GBTCLK but "
                "RF-IN mezzanine card is not present!\n");
     }

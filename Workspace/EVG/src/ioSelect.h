@@ -28,8 +28,9 @@
 #ifndef _IOSELECT_H_
 #define _IOSELECT_H_
 
-#define IOSELECT_STATUS_FMC_IS_PRESENT  0x2
-#define IOSELECT_STATUS_IS_EVG          0x1
+// partial duplication of register list in ioSelect.c
+#define IOSELECT_STATUS_FMC1_IS_PRESENT  0x2
+#define IOSELECT_STATUS_IS_EVG           0x1
 
 void ioSelectInit(void);
 int ioSelectStatus(void);

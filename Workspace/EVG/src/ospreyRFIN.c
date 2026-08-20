@@ -23,6 +23,7 @@
  */
 
 #include <stdio.h>
+#include "ioSelect.h"
 #include "ospreyRFIN.h"
 #include "gpio.h"
 #include "util.h"
@@ -246,6 +247,8 @@ lmk01801init(void)
 void
 ospreyRFINinit(void)
 {
+    if(!(ioSelectStatus() & IOSELECT_STATUS_FMC1_IS_PRESENT))
+        return;
     int cfr;
     GPIO_WRITE(GPIO_IDX_RFIN_CONTROL, CSR_W_STOP_ADC);
     while ((GPIO_READ(GPIO_IDX_RFIN_CONTROL) & CSR_R_ADC_STOPPED) == 0) {
