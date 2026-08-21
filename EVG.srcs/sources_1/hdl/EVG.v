@@ -121,6 +121,7 @@ module EVG #(
 localparam MGT_DATA_WIDTH       = 16;
 localparam MGT_COMMA_ALIGN_BYTE = 1;
 localparam TIMESTAMP_WIDTH      = 64;
+genvar i;
 
 ///////////////////////////////////////////////////////////////////////////////
 // Static outputs
@@ -197,7 +198,7 @@ wire [31:0] GPIO_OUT;
 wire [GPIO_IDX_COUNT-1:0] GPIO_STROBES;
 wire [31:0] GPIO_IN [0:GPIO_IDX_COUNT-1];
 wire [(GPIO_IDX_COUNT*32)-1:0] GPIO_IN_FLATTENED;
-genvar i;
+
 generate
 for (i = 0 ; i < GPIO_IDX_COUNT ; i = i + 1) begin
     assign GPIO_IN_FLATTENED[i*32+:32] = GPIO_IN[i];
