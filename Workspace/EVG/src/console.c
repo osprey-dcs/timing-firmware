@@ -318,6 +318,8 @@ cmdFMON(int argc, char **argv)
                                    "VCXO20",
                                    "FMC1 M2C0",
                                    "FMC1 M2C1",
+                                   "FMC2 CLN0",
+                                   "FMC2 CLN1",
                                    "EVG",
                                    "MGT Rx[0]",
                                    "MGT Rx[1]",
