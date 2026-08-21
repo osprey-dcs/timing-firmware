@@ -31,16 +31,20 @@ module EVG #(
     `include "gpio.v"
     parameter DEBUG = "false"
     ) (
+    // Fixed 125 MHz
     input  wire DDR_REF_CLK_P,
     input  wire DDR_REF_CLK_N,
+    // Fixed 20 MHz
+    input  wire CLK20_VCXO,
+    output wire VCXO_EN,
+    // From U2 cross-point switch
     input  wire MGTREFCLK0_116_P,
     input  wire MGTREFCLK0_116_N,
+    // Direct from FMC1
     input  wire FMC1_CLK0_M2C_P,
     input  wire FMC1_CLK0_M2C_N,
     input  wire FMC1_CLK1_M2C_P,
     input  wire FMC1_CLK1_M2C_N,
-    input  wire CLK20_VCXO,
-    output wire VCXO_EN,
 
     output wire BOOT_CS_B,
     output wire BOOT_MOSI,
@@ -53,11 +57,13 @@ module EVG #(
     inout  wire I2C_FPGA_SDA,
     output wire I2C_FPGA_SW_RSTn,
 
+    // DAC to trim 125 MHz
     output wire WR_DAC_SCLK_T,
     output wire WR_DAC_DIN_T,
     output wire WR_DAC1_SYNC_Tn,
     output wire WR_DAC2_SYNC_Tn,
 
+    // MMC Mailbox
     input  wire FPGA_SCLK,
     input  wire FPGA_CSB,
     input  wire FPGA_MOSI,
@@ -97,6 +103,7 @@ module EVG #(
     output wire LD16,
     output wire LD17,
 
+    // FMC1 populated by clk-input-fmc
     input  wire        FMC1_PPS,
     input  wire [15:1] FMC1_DIN,
     output wire        FMC1_DI_ENb,
