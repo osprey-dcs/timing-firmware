@@ -522,11 +522,11 @@ cmdREG(int argc, char **argv)
 }
 
 static void
-cmdCLK(int argc, char **argv)
+cmdLMK(int argc, char **argv)
 {
     unsigned fmc=0, value=0;
     if(argc<3 || !getUInt(argv[1], 0, &fmc) || !getUInt(argv[2], 0, &value)) {
-        printf("usage: clk <1|2> <regval>\n");
+        printf("usage: lmk <1|2> <regval>\n");
         return;
     }
     int err = ospreyEFINlmk01801Set(fmc, value);
@@ -557,7 +557,7 @@ findCommand(int argc, char **argv)
         { "ntp",   cmdNTP,    "Specify NTP server"                    },
         { "pps",   cmdPPS,    "PPS/VXCO status"                       },
         { "reg",   cmdREG,    "Show GPIO register(s)"                 },
-        { "clk",   cmdCLK,    "Control LMK on RF-IN FMC"              },
+        { "lmk",   cmdLMK,    "Control LMK on RF-IN FMC"              },
     };
     if ((argc == 0) || ((l = strlen(argv[0])) == 0)) {
         return;
