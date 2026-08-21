@@ -27,6 +27,7 @@
  * As application-agnostic as possible
  */
 `default_nettype none
+`timescale 1ns / 1ps
 module mgtWrapper #(
     parameter MGT_COUNT        = -1,
     parameter MGT_DATA_WIDTH   = -1,

@@ -27,6 +27,7 @@
  */
 
 `default_nettype none
+`timescale 1ns / 1ps
 module EVG #(
     `include "gpio.v"
     parameter DEBUG = "false"
