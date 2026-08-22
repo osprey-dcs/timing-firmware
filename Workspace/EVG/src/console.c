@@ -42,6 +42,7 @@
 #include "mgtClkSwitch.h"
 #include "mps.h"
 #include "ospreyRFIN.h"
+#include "ospreyTRGOUT.h"
 #include "systemParameters.h"
 #include "tftp.h"
 #include "util.h"
@@ -552,6 +553,37 @@ cmdMGT(int argc, char **argv)
     }
 }
 
+static void
+cmdJTR(int argc, char **argv)
+{
+    unsigned ch = argc>=1 && strcmp(argv[0], "jtr2")==0;
+    const char* cmd = argc>=2 ? argv[1] : "";
+    unsigned addr=0, set=0;
+    if(argc>=3 && !getUInt(argv[2], 0, &addr))
+        cmd = argv[1];
+    if(argc>=4 && getUInt(argv[3], 0, &set))
+        cmd = ""; // error
+
+    if(strcmp(cmd, "r")==0 && argc>=3) { // jtr# r <addr>
+        si539xWrite(ch, 0x01, addr>>8); // page select
+        unsigned got = si539xRead(ch, addr);
+        printf("  %u 0x%02x -> 0x%02x\n", ch, addr, got);
+        return;
+
+    } else if(strcmp(cmd, "w")==0 && argc>=4) { // jtr# w <addr> <value>
+        si539xWrite(ch, 0x01, addr>>8); // page select
+        si539xWrite(ch, addr, set);
+        printf("  %u 0x%02x <- 0x%02x\n", ch, addr, set);
+        return;
+
+    } else if(strcmp(cmd, "s")==0) { // jtr# s
+        printf("  %u s 0x%08x\n", ch, GPIO_READ(GPIO_IDX_TRGOUT_JTR2_SPI+ch));
+        return;
+    }
+
+    printf("usage: jtr<1|2> <s | r <addr> | w <addr> <value>>\n");
+}
+
 /*
  * Search for and execute command
  */
@@ -576,6 +608,8 @@ findCommand(int argc, char **argv)
         { "pps",   cmdPPS,    "PPS/VXCO status"                       },
         { "reg",   cmdREG,    "Show GPIO register(s)"                 },
         { "lmk",   cmdLMK,    "Control LMK on RF-IN FMC"              },
+        { "jtr1",  cmdJTR,    "Control Si539x on TRIG-OUT FMC"        },
+        { "jtr2",  cmdJTR,    "Control Si539x on TRIG-OUT FMC"        },
         { "mgt",   cmdMGT,    "MGT operations"                        },
     };
     if ((argc == 0) || ((l = strlen(argv[0])) == 0)) {
