@@ -593,9 +593,9 @@ findCommand(int argc, char **argv)
     int i, l;
     int match = -1;
     static const struct {
-        const char *const name;
-        const void (*fp)(int argc, char **argv);
-        const char *const description;
+        const char * name;
+        void (*fp)(int argc, char **argv);
+        const char * description;
     } cmdTable[] = {
         { "boot",  cmdBOOT,   "Reboot FPGA"                           },
         { "debug", cmdDEBUG,  "Set/show debugging flags"              },
