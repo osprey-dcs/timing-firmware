@@ -27,20 +27,25 @@
  */
 
 `default_nettype none
+`timescale 1ns / 1ps
 module EVG #(
     `include "gpio.v"
     parameter DEBUG = "false"
     ) (
+    // Fixed 125 MHz
     input  wire DDR_REF_CLK_P,
     input  wire DDR_REF_CLK_N,
+    // Fixed 20 MHz
+    input  wire CLK20_VCXO,
+    output wire VCXO_EN,
+    // From U2 cross-point switch
     input  wire MGTREFCLK0_116_P,
     input  wire MGTREFCLK0_116_N,
+    // Direct from FMC1
     input  wire FMC1_CLK0_M2C_P,
     input  wire FMC1_CLK0_M2C_N,
     input  wire FMC1_CLK1_M2C_P,
     input  wire FMC1_CLK1_M2C_N,
-    input  wire CLK20_VCXO,
-    output wire VCXO_EN,
 
     output wire BOOT_CS_B,
     output wire BOOT_MOSI,
@@ -53,11 +58,13 @@ module EVG #(
     inout  wire I2C_FPGA_SDA,
     output wire I2C_FPGA_SW_RSTn,
 
+    // DAC to trim 125 MHz
     output wire WR_DAC_SCLK_T,
     output wire WR_DAC_DIN_T,
     output wire WR_DAC1_SYNC_Tn,
     output wire WR_DAC2_SYNC_Tn,
 
+    // MMC Mailbox
     input  wire FPGA_SCLK,
     input  wire FPGA_CSB,
     input  wire FPGA_MOSI,
@@ -97,6 +104,7 @@ module EVG #(
     output wire LD16,
     output wire LD17,
 
+    // FMC1 populated by clk-input-fmc
     input  wire        FMC1_PPS,
     input  wire [15:1] FMC1_DIN,
     output wire        FMC1_DI_ENb,
@@ -111,8 +119,8 @@ module EVG #(
     );
 
 localparam MGT_DATA_WIDTH       = 16;
-localparam MGT_COMMA_ALIGN_BYTE = 1;
 localparam TIMESTAMP_WIDTH      = 64;
+genvar i;
 
 ///////////////////////////////////////////////////////////////////////////////
 // Static outputs
@@ -177,7 +185,7 @@ wire [15:0] fmcIn = { FMC1_DIN, ppsPrimary_out };
 
 ///////////////////////////////////////////////////////////////////////////////
 // Clocks
-wire sysClk, clk20, clk125, clk200, clk500, evgClk, gtRefClkDiv2;
+wire sysClk, clk20, clk125, clk200, clk500, evgClk;
 
 wire clkFMC1_M2C0, clkFMC1_M2C1;
 IBUFGDS FMC1_M2C0_IB(.I(FMC1_CLK0_M2C_P),.IB(FMC1_CLK0_M2C_N),.O(clkFMC1_M2C0));
@@ -189,7 +197,7 @@ wire [31:0] GPIO_OUT;
 wire [GPIO_IDX_COUNT-1:0] GPIO_STROBES;
 wire [31:0] GPIO_IN [0:GPIO_IDX_COUNT-1];
 wire [(GPIO_IDX_COUNT*32)-1:0] GPIO_IN_FLATTENED;
-genvar i;
+
 generate
 for (i = 0 ; i < GPIO_IDX_COUNT ; i = i + 1) begin
     assign GPIO_IN_FLATTENED[i*32+:32] = GPIO_IN[i];
@@ -350,6 +358,13 @@ wire  [(CFG_MGT_COUNT*MGT_DATA_WIDTH)-1:0] mgtRxChars;
 wire [(CFG_MGT_COUNT*MGT_CTYPE_WIDTH)-1:0] mgtRxCharIsK;
 wire            [CFG_MPS_OUTPUT_COUNT-1:0] mgtTxMPStripped;
 
+wire gtRefClk;
+IBUFDS_GTE2 gtRefClkBuf (.O(gtRefClk),
+                         .ODIV2(),
+                         .CEB(1'b0),
+                         .I(MGTREFCLK0_116_P),
+                         .IB(MGTREFCLK0_116_N));
+
 fiberLinks #(
     .MGT_COUNT(CFG_MGT_COUNT),
     .MGT_DATA_WIDTH(MGT_DATA_WIDTH),
@@ -376,9 +391,7 @@ fiberLinks #(
     .mgtTxMPStripped(mgtTxMPStripped),
     .evgTxChars(evgTxChars),
     .evgTxCharIsK(evgTxCharIsK),
-    .gtRefClkP(MGTREFCLK0_116_P),
-    .gtRefClkN(MGTREFCLK0_116_N),
-    .gtRefClkDiv2(gtRefClkDiv2),
+    .gtRefClk(gtRefClk),
     .rxP(QSFP_RX_P),
     .rxN(QSFP_RX_N),
     .txP(QSFP_TX_P),
@@ -441,7 +454,7 @@ frequencyCounters #(
                       clkFMC1_M2C0,
                       clk20,
                       clk200,
-                      gtRefClkDiv2,
+                      gtRefClk,
                       sysClk }),
     .acqMarker_a(hwPPSmarker_a),
     .useInternalAcqMarker(measuredUsingInteralAcqMarker),

@@ -74,6 +74,13 @@ def base_build():
           "data_width": 32,
           "sign": "unsigned"
         },
+        "MGT:reset": {
+          "access": "w",
+          "addr_width": 0,
+          "base_addr": 56,
+          "data_width": 1,
+          "sign": "unsigned"
+        },
         "MARBLE:mgtRefClk0": {
           "access": "rw",
           "addr_width": 0,
@@ -123,6 +130,7 @@ def base_build():
           "data_width": 16,
           "sign": "unsigned"
         },
+        # sysmonBuf[]
         "MARBLE:FMC1:P12I": {
           "access": "r",
           "addr_width": 0,
@@ -207,45 +215,101 @@ def base_build():
           "data_width": 16,
           "sign": "unsigned"
         },
-        "QSFP2:Temperature": {
+        "QSFP1:TxPower1": {
           "access": "r",
           "addr_width": 0,
           "base_addr": 176,
           "data_width": 16,
           "sign": "unsigned"
         },
-        "QSFP2:Vcc": {
+        "QSFP1:TxPower2": {
           "access": "r",
           "addr_width": 0,
           "base_addr": 177,
           "data_width": 16,
           "sign": "unsigned"
         },
-        "QSFP2:RxPower1": {
+        "QSFP1:TxPower3": {
           "access": "r",
           "addr_width": 0,
           "base_addr": 178,
           "data_width": 16,
           "sign": "unsigned"
         },
-        "QSFP2:RxPower2": {
+        "QSFP1:TxPower4": {
           "access": "r",
           "addr_width": 0,
           "base_addr": 179,
           "data_width": 16,
           "sign": "unsigned"
         },
-        "QSFP2:RxPower3": {
+        "QSFP2:Temperature": {
           "access": "r",
           "addr_width": 0,
           "base_addr": 180,
           "data_width": 16,
           "sign": "unsigned"
         },
-        "QSFP2:RxPower4": {
+        "QSFP2:Vcc": {
           "access": "r",
           "addr_width": 0,
           "base_addr": 181,
+          "data_width": 16,
+          "sign": "unsigned"
+        },
+        "QSFP2:RxPower1": {
+          "access": "r",
+          "addr_width": 0,
+          "base_addr": 182,
+          "data_width": 16,
+          "sign": "unsigned"
+        },
+        "QSFP2:RxPower2": {
+          "access": "r",
+          "addr_width": 0,
+          "base_addr": 183,
+          "data_width": 16,
+          "sign": "unsigned"
+        },
+        "QSFP2:RxPower3": {
+          "access": "r",
+          "addr_width": 0,
+          "base_addr": 184,
+          "data_width": 16,
+          "sign": "unsigned"
+        },
+        "QSFP2:RxPower4": {
+          "access": "r",
+          "addr_width": 0,
+          "base_addr": 185,
+          "data_width": 16,
+          "sign": "unsigned"
+        },
+        "QSFP2:TxPower1": {
+          "access": "r",
+          "addr_width": 0,
+          "base_addr": 186,
+          "data_width": 16,
+          "sign": "unsigned"
+        },
+        "QSFP2:TxPower2": {
+          "access": "r",
+          "addr_width": 0,
+          "base_addr": 187,
+          "data_width": 16,
+          "sign": "unsigned"
+        },
+        "QSFP2:TxPower3": {
+          "access": "r",
+          "addr_width": 0,
+          "base_addr": 188,
+          "data_width": 16,
+          "sign": "unsigned"
+        },
+        "QSFP2:TxPower4": {
+          "access": "r",
+          "addr_width": 0,
+          "base_addr": 189,
           "data_width": 16,
           "sign": "unsigned"
         },

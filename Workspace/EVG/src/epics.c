@@ -76,6 +76,7 @@ struct LEEPpacket {
 #define REG_FMC2_SERIAL_NUMBER              51
 #define REG_FMC1_PART_NUMBER                54
 #define REG_FMC2_PART_NUMBER                55
+#define REG_MGT_RESET                       56
 #define REG_MARBLE_RFIN_INPUTS              70
 #define REG_MARBLE_RFIN_ADC_A               71
 #define REG_MARBLE_RFIN_ADC_B               72
@@ -113,7 +114,7 @@ void
 setMgtClkSwitch0(int inputClkIndex)
 {
     if ((inputClkIndex < 0)
-     || (inputClkIndex >= MGT_CLK_SWITCH_INPUT_DISABLE_OUTPUT)) {
+     || (inputClkIndex > MGT_CLK_SWITCH_INPUT_DISABLE_OUTPUT)) {
         return;
     }
     if (((inputClkIndex == MGT_CLK_SWITCH_INPUT_FMC1_GBTCLK0)
@@ -123,6 +124,12 @@ setMgtClkSwitch0(int inputClkIndex)
                "RF-IN mezzanine card is not present!\n");
     }
     if (inputClkIndex != mgtClkSwitch0) {
+        // The MGTs do not react well to having the reference frequency change,
+        // and get stuck in an inoperative state with no status indicating an issue.
+        // So briefly disable the reference to trigger PLL loss of lock.
+        mgtClkSwitchConnectOutputToInput(MGT_CLK_SWITCH_OUTPUT_MGTCLK0,
+                                         MGT_CLK_SWITCH_INPUT_DISABLE_OUTPUT);
+        microsecondSpin(10);
         mgtClkSwitchConnectOutputToInput(MGT_CLK_SWITCH_OUTPUT_MGTCLK0,
                                          inputClkIndex);
         if (debugFlags & DEBUGFLAG_EPICS_WRITE) {
@@ -171,8 +178,24 @@ writeReg(int address, uint32_t value)
     case REG_MARBLE_PLL_SET_Y1:         clockAdjustSetDAC(0, value);     return;
     case REG_MARBLE_PLL_SET_Y3:         clockAdjustSetDAC(1, value);     return;
     case REG_MARBLE_PPS_LOCAL_CSR:      localPPSenable(value);           return;
+    case REG_MGT_RESET:       if(value) mgtReset();                      return;
     case RANGE(REG_SI570_BASE, REG_SI570_SIZE):
+        if((mgtClkSwitch0==MGT_CLK_SWITCH_INPUT_SI570_CLK)
+            && ((address - REG_SI570_BASE)==1) )
+        {
+            // The MGTs do not react well to having the reference frequency change,
+            // and get stuck in an inoperative state with no status indicating an issue.
+            // So disable the reference to trigger PLL loss of lock.
+            mgtClkSwitchConnectOutputToInput(MGT_CLK_SWITCH_OUTPUT_MGTCLK0,
+                                             MGT_CLK_SWITCH_INPUT_DISABLE_OUTPUT);
+        }
         si570Write(address - REG_SI570_BASE, value);
+        if((mgtClkSwitch0==MGT_CLK_SWITCH_INPUT_SI570_CLK)
+            && ((address - REG_SI570_BASE)==1) )
+        {
+            mgtClkSwitchConnectOutputToInput(MGT_CLK_SWITCH_OUTPUT_MGTCLK0,
+                                             mgtClkSwitch0);
+        }
         return;
     }
 }
@@ -209,6 +232,7 @@ readReg(int address)
     case REG_FMC2_SERIAL_NUMBER:  return iicFPGAgetSerialNumber(1);
     case REG_FMC1_PART_NUMBER:    return iicFPGAgetPartNumber(0);
     case REG_FMC2_PART_NUMBER:    return iicFPGAgetPartNumber(1);
+    case REG_MGT_RESET:           return 0;
     case REG_MARBLE_RFIN_ADC_A:   return ospreyRFINreadADS7253(0);
     case REG_MARBLE_RFIN_ADC_B:   return ospreyRFINreadADS7253(1);
     case REG_MARBLE_RFIN_INPUTS:  return GPIO_READ(GPIO_IDX_PMOD_FMC_MONITOR)

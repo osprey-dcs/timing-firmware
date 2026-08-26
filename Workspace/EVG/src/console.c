@@ -313,7 +313,7 @@ cmdFMON(int argc, char **argv)
     int i;
     uint32_t csr, rate;
     static const char *names[] = { "System",
-                                   "MGT Ref/2",
+                                   "MGT REF",
                                    "IDELAY Ref",
                                    "VCXO20",
                                    "FMC1 M2C0",
@@ -522,16 +522,32 @@ cmdREG(int argc, char **argv)
 }
 
 static void
-cmdCLK(int argc, char **argv)
+cmdLMK(int argc, char **argv)
 {
     unsigned fmc=0, value=0;
     if(argc<3 || !getUInt(argv[1], 0, &fmc) || !getUInt(argv[2], 0, &value)) {
-        printf("usage: clk <1|2> <regval>\n");
+        printf("usage: lmk <1|2> <regval>\n");
         return;
     }
     int err = ospreyEFINlmk01801Set(fmc, value);
     if(err)
         printf("Error: %d\n", err);
+}
+
+static void
+cmdMGT(int argc, char **argv)
+{
+    const char* cmd = "invalid";
+    if(argc>=2)
+        cmd = argv[1];
+
+    if(strcmp(cmd, "reinit")==0) {
+        mgtInit();
+    } else if(strcmp(cmd, "reset")==0) {
+        mgtReset();
+    } else {
+        printf("usage: mgt <reinit|reset>\n");
+    }
 }
 
 /*
@@ -557,7 +573,8 @@ findCommand(int argc, char **argv)
         { "ntp",   cmdNTP,    "Specify NTP server"                    },
         { "pps",   cmdPPS,    "PPS/VXCO status"                       },
         { "reg",   cmdREG,    "Show GPIO register(s)"                 },
-        { "clk",   cmdCLK,    "Control LMK on RF-IN FMC"              },
+        { "lmk",   cmdLMK,    "Control LMK on RF-IN FMC"              },
+        { "mgt",   cmdMGT,    "MGT operations"                        },
     };
     if ((argc == 0) || ((l = strlen(argv[0])) == 0)) {
         return;

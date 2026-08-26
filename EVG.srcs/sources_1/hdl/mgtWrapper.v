@@ -27,6 +27,7 @@
  * As application-agnostic as possible
  */
 `default_nettype none
+`timescale 1ns / 1ps
 module mgtWrapper #(
     parameter MGT_COUNT        = -1,
     parameter MGT_DATA_WIDTH   = -1,
@@ -40,9 +41,7 @@ module mgtWrapper #(
     input  wire [31:0] sysGPIO_OUT,
     output wire [31:0] sysStatus,
 
-    input  wire                 gtRefClkP,
-    input  wire                 gtRefClkN,
-    output wire                 gtRefClkDiv2,
+    input  wire                 gtRefClk,
     input  wire [MGT_COUNT-1:0] rxP,
     input  wire [MGT_COUNT-1:0] rxN,
     output wire [MGT_COUNT-1:0] txP,
@@ -57,7 +56,16 @@ module mgtWrapper #(
     input  wire  [(MGT_COUNT*MGT_DATA_WIDTH)-1:0] mgtTxChars,
     input  wire [(MGT_COUNT*MGT_CTYPE_WIDTH)-1:0] mgtTxCharIsK);
 
-localparam MGT_STATUS_WIDTH = 4;
+/* 0 - gt*_tx_fsm_reset_done_out
+ * 1 - gt*_rx_fsm_reset_done_out
+ * 2 - gt*_rxresetdone_out       (async)
+ * 3 - gt*_txresetdone_out       (async)
+ * 4 - gt*_cplllock_out          (async)
+ * 5 - gt*_cpllfbclklost_out
+ * 6 - sysTxPowerdown
+ * 7 - sysRxPowerdown
+ */
+localparam MGT_STATUS_WIDTH = 8;
 localparam MGT_SEL_WIDTH = (MGT_COUNT < 2) ? 1 : $clog2(MGT_COUNT);
 
 localparam RESET_APPLY_COUNTER_LOAD = SYSCLK_RATE / 10000;
@@ -91,6 +99,15 @@ reg busy = 0;
 (*MARK_DEBUG=DEBUG*) reg [MGT_COUNT-1:0] sysTxPowerdown = ~0;
 (*MARK_DEBUG=DEBUG*) reg [MGT_COUNT-1:0] sysRxSlideToggle = 0;
 (*MARK_DEBUG=DEBUG*) reg [MGT_COUNT-1:0] pmareset = 0;
+
+wire [MGT_COUNT-1:0] pllLocked_a = {
+    mgtStatus[0][4], mgtStatus[1][4], mgtStatus[2][4], mgtStatus[3][4],
+    mgtStatus[4][4], mgtStatus[5][4], mgtStatus[6][4], mgtStatus[7][4]
+};
+(*ASYNC_REG="TRUE"*)
+reg [MGT_COUNT-1:0] pllLocked = 0;
+wire refClkFault;
+reg refClkLost = 1'b1;
 
 /*
  * Soft reset (common to all lanes)
@@ -132,6 +149,12 @@ always @(posedge sysClk) begin
             busy <= 1;
         end
     end
+
+    pllLocked <= pllLocked_a;
+    if (sysCsrStrobe && !sysGPIO_OUT[31] && sysGPIO_OUT[29])
+        refClkLost <= 1'b0; // Clear latch... unless still unlocked
+    if (refClkFault)
+        refClkLost <= 1'b1;
 
     /*
      * Soft reset
@@ -194,6 +217,10 @@ for (i = 0 ; i < MGT_COUNT ; i = i + 1) begin : perLane
 assign    mgtTxData[i] = mgtTxChars[MGT_DATA_WIDTH*i+:MGT_DATA_WIDTH];
 assign mgtTxDataIsK[i] = mgtTxCharIsK[MGT_CTYPE_WIDTH*i+:MGT_CTYPE_WIDTH];
 
+
+assign mgtStatus[i][6] = sysTxPowerdown[i];
+assign mgtStatus[i][7] = sysRxPowerdown[i];
+
 /*
  * Buffer recovered clock
  */
@@ -209,7 +236,7 @@ mgtLinkStatus #(
     .DEBUG(DEBUG))
   mgtLinkStatus_i (
     .clk(mgtRxClks[i]),
-    .powerdown(sysRxPowerdown[i]),
+    .reset(sysRxPowerdown[i] || refClkLost),
     .mgtData(mgtRxData[i]),
     .mgtDataIsK(mgtRxDataK[i]),
     .mgtRxNotInTable(mgtRxNotInTable[i]),
@@ -265,6 +292,11 @@ localparam RX_RESET_S_APPLY_RESET     = 2'd0,
 always @(posedge sysClk) begin
     rxResetLinkUp_m <= mgtRxLinkUp[i];
     rxResetLinkUp   <= rxResetLinkUp_m;
+    if(refClkLost) begin
+        // hold idle while global reset in progress
+        rxResetState <= RX_RESET_S_APPLY_RESET;
+        pmareset[i] <= 0;
+    end else
     case (rxResetState)
     RX_RESET_S_APPLY_RESET: begin
         pmareset[i] <= 1;
@@ -300,25 +332,15 @@ end
 end /* Generate 'for' loop */
 endgenerate
 
-///////////////////////////////////////////////////////////////////////////////
-/*
- * Produce reference clock
- */
-wire gtRefClk;
-IBUFDS_GTE2 gtRefClkBuf (.O(gtRefClk),
-                         .ODIV2(gtRefClkDiv2),
-                         .CEB(1'b0),
-                         .I(gtRefClkP),
-                         .IB(gtRefClkN));
-
 /*
  * Instantiate the MGT common blocks.
  * Common block code (mgt_common.v) copied from example design.
  * Instantiation based on example design mgt_support.v.
+ *
+ * NOTE: included even though unused with CPLL on advise of
+ *       https://adaptivesupport.amd.com/s/article/43339
+ *       to ensure GTXE2_COMMON is configured correctly
  */
-wire gt0_qplllock_in;
-wire gt0_qpllrefclklost_in;
-wire gt0_qpllreset_out;
 wire gt0_qplloutclk_in;
 wire gt0_qplloutrefclk_in;
 MGT_common # (
@@ -328,15 +350,12 @@ MGT_common # (
     .QPLLREFCLKSEL_IN(3'b001),
     .GTREFCLK0_IN(gtRefClk),
     .GTREFCLK1_IN(1'b0),
-    .QPLLLOCK_OUT(gt0_qplllock_in),
+    .QPLLLOCK_OUT(),
     .QPLLLOCKDETCLK_IN(sysClk),
     .QPLLOUTCLK_OUT(gt0_qplloutclk_in),
     .QPLLOUTREFCLK_OUT(gt0_qplloutrefclk_in),
-    .QPLLREFCLKLOST_OUT(gt0_qpllrefclklost_in),
-    .QPLLRESET_IN(gt0_qpllreset_out));
-wire gt1_qplllock_in;
-wire gt1_qpllrefclklost_in;
-wire gt1_qpllreset_out;
+    .QPLLREFCLKLOST_OUT(),
+    .QPLLRESET_IN(1'b0));
 wire gt1_qplloutclk_in;
 wire gt1_qplloutrefclk_in;
 MGT_common # (
@@ -346,17 +365,26 @@ MGT_common # (
     .QPLLREFCLKSEL_IN(3'b001),
     .GTREFCLK0_IN(gtRefClk),
     .GTREFCLK1_IN(1'b0),
-    .QPLLLOCK_OUT(gt1_qplllock_in),
+    .QPLLLOCK_OUT(),
     .QPLLLOCKDETCLK_IN(sysClk),
     .QPLLOUTCLK_OUT(gt1_qplloutclk_in),
     .QPLLOUTREFCLK_OUT(gt1_qplloutrefclk_in),
-    .QPLLREFCLKLOST_OUT(gt1_qpllrefclklost_in),
-    .QPLLRESET_IN(gt1_qpllreset_out));
+    .QPLLREFCLKLOST_OUT(),
+    .QPLLRESET_IN(1'b0));
+
+// equivalent CPLLs for first quad
+wire gt0_qplllock_in = mgtStatus[6][4] && mgtStatus[4][4] && mgtStatus[5][4] && mgtStatus[7][4];
+wire gt0_qpllrefclklost_in = mgtStatus[6][5] || mgtStatus[4][5] || mgtStatus[5][5] || mgtStatus[7][5];
+// equivalent CPLLs for second quad
+wire gt1_qplllock_in = mgtStatus[2][4] && mgtStatus[0][4] && mgtStatus[1][4] && mgtStatus[3][4];
+wire gt1_qpllrefclklost_in = mgtStatus[2][5] || mgtStatus[0][5] || mgtStatus[1][5] || mgtStatus[3][5];
+// if any PLL not locked, or any reference (really FB) clock lost
+assign refClkFault = ~(&pllLocked) || gt0_qpllrefclklost_in || gt1_qpllrefclklost_in;
 
 /*
  * Status register
  */
-assign sysStatus = { busy, 3'b0,
+assign sysStatus = { busy, 1'b0, refClkLost, 1'b0,
                      gt1_qplllock_in, gt1_qpllrefclklost_in,
                      gt0_qplllock_in, gt0_qpllrefclklost_in,
                      {32-8-MGT_STATUS_WIDTH-DRP_DATA_WIDTH{1'b0}},
@@ -990,16 +1018,68 @@ mgt mgt_i (
     .gt7_txresetdone_out            (mgtStatus[3][3]), // output wire gt7_txresetdone_out
 
     //____________________________COMMON PORTS________________________________
-    .gt0_qplllock_in(gt0_qplllock_in),             // input wire gt0_qplllock_in
-    .gt0_qpllrefclklost_in(gt0_qpllrefclklost_in), // input wire gt0_qpllrefclklost_in
-    .gt0_qpllreset_out(gt0_qpllreset_out),         // output wire gt0_qpllreset_out
     .gt0_qplloutclk_in(gt0_qplloutclk_in),         // input wire gt0_qplloutclk_in
     .gt0_qplloutrefclk_in(gt0_qplloutrefclk_in),   // input wire gt0_qplloutrefclk_in
-    .gt1_qplllock_in(gt1_qplllock_in),             // input wire gt1_qplllock_in
-    .gt1_qpllrefclklost_in(gt1_qpllrefclklost_in), // input wire gt1_qpllrefclklost_in
-    .gt1_qpllreset_out(gt1_qpllreset_out),         // output wire gt1_qpllreset_out
     .gt1_qplloutclk_in(gt1_qplloutclk_in),         // input wire gt1_qplloutclk_in
-    .gt1_qplloutrefclk_in(gt1_qplloutrefclk_in)    // input wire gt1_qplloutrefclk_in
+    .gt1_qplloutrefclk_in(gt1_qplloutrefclk_in),   // input wire gt1_qplloutrefclk_in
+
+    .gt0_gtrefclk0_in(gtRefClk),
+    .gt1_gtrefclk0_in(gtRefClk),
+    .gt2_gtrefclk0_in(gtRefClk),
+    .gt3_gtrefclk0_in(gtRefClk),
+    .gt4_gtrefclk0_in(gtRefClk),
+    .gt5_gtrefclk0_in(gtRefClk),
+    .gt6_gtrefclk0_in(gtRefClk),
+    .gt7_gtrefclk0_in(gtRefClk),
+
+    .gt0_gtrefclk1_in(1'b0),
+    .gt1_gtrefclk1_in(1'b0),
+    .gt2_gtrefclk1_in(1'b0),
+    .gt3_gtrefclk1_in(1'b0),
+    .gt4_gtrefclk1_in(1'b0),
+    .gt5_gtrefclk1_in(1'b0),
+    .gt6_gtrefclk1_in(1'b0),
+    .gt7_gtrefclk1_in(1'b0),
+
+    .gt0_cplllock_out(mgtStatus[6][4]),
+    .gt0_cpllreset_in(1'b0),
+    .gt0_cplllockdetclk_in(sysClk),
+    .gt0_cpllfbclklost_out(mgtStatus[6][5]),
+
+    .gt1_cplllock_out(mgtStatus[4][4]),
+    .gt1_cpllreset_in(1'b0),
+    .gt1_cplllockdetclk_in(sysClk),
+    .gt1_cpllfbclklost_out(mgtStatus[4][5]),
+
+    .gt2_cplllock_out(mgtStatus[5][4]),
+    .gt2_cpllreset_in(1'b0),
+    .gt2_cplllockdetclk_in(sysClk),
+    .gt2_cpllfbclklost_out(mgtStatus[5][5]),
+
+    .gt3_cplllock_out(mgtStatus[7][4]),
+    .gt3_cpllreset_in(1'b0),
+    .gt3_cplllockdetclk_in(sysClk),
+    .gt3_cpllfbclklost_out(mgtStatus[7][5]),
+
+    .gt4_cplllock_out(mgtStatus[2][4]),
+    .gt4_cpllreset_in(1'b0),
+    .gt4_cplllockdetclk_in(sysClk),
+    .gt4_cpllfbclklost_out(mgtStatus[2][5]),
+
+    .gt5_cplllock_out(mgtStatus[0][4]),
+    .gt5_cpllreset_in(1'b0),
+    .gt5_cplllockdetclk_in(sysClk),
+    .gt5_cpllfbclklost_out(mgtStatus[0][5]),
+
+    .gt6_cplllock_out(mgtStatus[1][4]),
+    .gt6_cpllreset_in(1'b0),
+    .gt6_cplllockdetclk_in(sysClk),
+    .gt6_cpllfbclklost_out(mgtStatus[1][5]),
+
+    .gt7_cplllock_out(mgtStatus[3][4]),
+    .gt7_cpllreset_in(1'b0),
+    .gt7_cplllockdetclk_in(sysClk),
+    .gt7_cpllfbclklost_out(mgtStatus[3][5])
 );
 
 endmodule
@@ -1014,7 +1094,7 @@ module mgtLinkStatus #(
     parameter DEBUG            = "false"
     ) (
     input  wire                                            clk,
-    input  wire                                            powerdown,
+    input  wire                                            reset,
     (*MARK_DEBUG=DEBUG*) input  wire  [MGT_DATA_WIDTH-1:0] mgtData,
     (*MARK_DEBUG=DEBUG*) input  wire [MGT_CTYPE_WIDTH-1:0] mgtDataIsK,
     (*MARK_DEBUG=DEBUG*) input  wire [MGT_CTYPE_WIDTH-1:0] mgtRxNotInTable,
@@ -1035,8 +1115,8 @@ assign rxLinkUp = commasNeeded[COMMA_COUNTER_WIDTH-1];
 
 localparam EVCODE_K28_5 = 8'hBC;
 
-always @(posedge clk or posedge powerdown) begin
-    if (powerdown) begin
+always @(posedge clk or posedge reset) begin
+    if (reset) begin
         commasNeeded <= COMMA_COUNTER_LOAD;
         rxChars <= 0;
         rxCharIsK <= 0;

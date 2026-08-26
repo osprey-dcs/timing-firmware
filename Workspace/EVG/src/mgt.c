@@ -35,29 +35,33 @@
 
 #define CSR_W_DRP_ENABLE        0x80000000
 #define CSR_W_DRP_WRITE         0x40000000
+#define CSR_W_LOL_CLEAR         0x20000000
 #define CSR_W_SEL_SHIFT         27
 #define CSR_W_DRP_ADDR_SHIFT    16
 #define CSR_RW_DRP_DATA_MASK    0xFFFF
+//                              0x18000000
 #define CSR_W_SEL_MASK          (0x7 << CSR_W_SEL_SHIFT)
-#define CSR_W_LOOPBACK          0x4000000
-#define CSR_W_LANE_RXSLIDE      0x2000000
-#define CSR_W_TX_LANE_POWERDOWN 0x1000000
-#define CSR_W_RX_LANE_POWERDOWN 0x800000
-#define CSR_W_RX_LANE_RESET     0x400000
-#define CSR_W_TX_SOFT_RESET     0x200000
-#define CSR_W_RX_SOFT_RESET     0x100000
+#define CSR_W_LOOPBACK          0x04000000
+#define CSR_W_LANE_RXSLIDE      0x02000000
+#define CSR_W_TX_LANE_POWERDOWN 0x01000000
+#define CSR_W_RX_LANE_POWERDOWN 0x00800000
+#define CSR_W_RX_LANE_RESET     0x00400000
+#define CSR_W_TX_SOFT_RESET     0x00200000
+#define CSR_W_RX_SOFT_RESET     0x00100000
 
 #define CSR_R_DRP_BUSY                  0x80000000
-#define CSR_R_QPLL1_LOCKED              0x8000000
-#define CSR_R_QPLL1_REFCLK_LOST         0x4000000
-#define CSR_R_QPLL0_LOCKED              0x2000000
-#define CSR_R_QPLL0_REFCLK_LOST         0x1000000
-#define CSR_R_TX_LANE_RESET_DONE        0x80000
-#define CSR_R_RX_LANE_RESET_DONE        0x40000
-#define CSR_R_RX_LANE_FSM_RESET_DONE    0x20000
-#define CSR_R_TX_LANE_FSM_RESET_DONE    0x10000
+#define CSR_R_LOL_LATCHED               0x20000000
+#define CSR_R_QPLL1_LOCKED              0x08000000
+#define CSR_R_QPLL1_REFCLK_LOST         0x04000000
+#define CSR_R_QPLL0_LOCKED              0x02000000
+#define CSR_R_QPLL0_REFCLK_LOST         0x01000000
+#define CSR_R_TX_LANE_RESET_DONE        0x00080000
+#define CSR_R_RX_LANE_RESET_DONE        0x00040000
+#define CSR_R_RX_LANE_FSM_RESET_DONE    0x00020000
+#define CSR_R_TX_LANE_FSM_RESET_DONE    0x00010000
 
 #define PLLS_LOCKED    (CSR_R_QPLL1_LOCKED | CSR_R_QPLL0_LOCKED)
+#define PLLS_REFCLK_LOST (CSR_R_QPLL1_REFCLK_LOST|CSR_R_QPLL0_REFCLK_LOST)
 #define FSM_RESET_DONE (CSR_R_RX_FSM_RESET_DONE | CSR_R_TX_FSM_RESET_DONE)
 
 #define LOOBPACK_NONE       0
@@ -90,9 +94,18 @@ mgtShowStatus(void)
     mgtShowLinkStatus();
 }
 
+static enum {
+    rstIdle,
+    rstApply,
+    rstWait1,
+    rstAgain,
+    rstWait2,
+} mgtRst = rstIdle;
+
 void
 mgtInit(void)
 {
+    // we initialize with U2 selecting the local 125MHz crystal.  So we know it will lock.
     uint32_t csr, then = microsecondsSinceBoot();
     for (;;) {
         csr = GPIO_READ(GPIO_IDX_MGT_CSR);
@@ -100,12 +113,12 @@ mgtInit(void)
             break;
         }
         if ((microsecondsSinceBoot() - then) > 1000000) {
-            printf("Warning -- QPLL unlocked: %08X\n", csr);
+            printf("Warning -- MGT PLL unlocked: %08X\n", csr);
             break;
         }
     }
+
     GPIO_WRITE(GPIO_IDX_MGT_CSR, CSR_W_RX_LANE_RESET |
-                                 CSR_W_RX_LANE_POWERDOWN |
                                  CSR_W_RX_LANE_POWERDOWN | 0);
     GPIO_WRITE(GPIO_IDX_MGT_CSR, CSR_W_TX_SOFT_RESET | CSR_W_RX_SOFT_RESET);
     microsecondSpin(100);
@@ -124,7 +137,32 @@ mgtInit(void)
      */
     GPIO_WRITE(GPIO_IDX_MGT_CSR, CSR_W_RX_LANE_RESET|((1UL<<CFG_MGT_COUNT)-1));
     microsecondSpin(1);
-    GPIO_WRITE(GPIO_IDX_MGT_CSR, CSR_W_RX_LANE_RESET | 0);
+    // deassert resets, attempt to clear ref. clock loss-of-lock latch
+    GPIO_WRITE(GPIO_IDX_MGT_CSR, CSR_W_RX_LANE_RESET | CSR_W_LOL_CLEAR);
+
+    mgtRst = rstIdle;
+}
+
+void mgtReset(void)
+{
+    if(mgtRst==rstIdle)
+        mgtRst = rstApply;
+}
+
+// Test if channels TX/RX reset FSMs are not complete
+static
+unsigned mgtRstBusy()
+{
+    uint32_t busy = 0;
+    for(unsigned i=0; i<CFG_MGT_COUNT; i++) {
+        GPIO_WRITE(GPIO_IDX_MGT_CSR, i << CSR_W_SEL_SHIFT);
+        uint32_t csr = GPIO_READ(GPIO_IDX_MGT_CSR);
+        const uint32_t doneMask = CSR_R_RX_LANE_FSM_RESET_DONE|CSR_R_TX_LANE_FSM_RESET_DONE;
+        if((csr&doneMask) != doneMask) {
+            busy |= 1u<<i;
+        }
+    }
+    return busy;
 }
 
 /*
@@ -137,6 +175,60 @@ mgtCrank(void)
     static unsigned int wasUp = ~0;
     uint32_t now = microsecondsSinceBoot();
     static uint32_t then;
+
+    switch(mgtRst) {
+    case rstIdle:
+        if(GPIO_READ(GPIO_IDX_MGT_CSR) & CSR_R_LOL_LATCHED) {
+            mgtRst = rstApply;
+            // if(debugFlags & DEBUGFLAG_MGT)
+            printf("MGT ref. clk. lost, being reset\n");
+        }
+        break;
+    case rstApply:
+    case rstAgain:
+        printf("MGT reset apply %d\n", mgtRst);
+        GPIO_WRITE(GPIO_IDX_MGT_CSR, CSR_W_RX_LANE_RESET |
+                                         CSR_W_RX_LANE_POWERDOWN | 0);
+        GPIO_WRITE(GPIO_IDX_MGT_CSR, CSR_W_TX_SOFT_RESET | CSR_W_RX_SOFT_RESET);
+        if(mgtRst==rstApply)
+            mgtRst = rstWait1;
+        else
+            mgtRst = rstWait2;
+        break;
+    case rstWait1:
+        if(!mgtRstBusy()) {
+            /* HACK: empirically, a reset started while the ref. clock is absent
+             *       will complete after it becomes present, but sometimes something
+             *       goes wrong.  The symptom is all status ok, but no TX optical
+             *       power.  With 8 channels, sometimes one or two will be left in
+             *       this state.  QSFP monitoring shows that TX power blinking on and off
+             *       during the reset process.  I suspect issue is when in the FSM phase(s)
+             *       the ref. clock re-appears.
+             *
+             *       To work around, wait for the ref. clock to re-appear, and all channels
+             *       report to have completed reset.  Then start a new reset sequence
+             *       with the ref. clock present from the beginning.
+             */
+            printf("MGT reset ready %d\n", mgtRst);
+            mgtRst = rstAgain;
+        }
+        break;
+    case rstWait2:
+        if(!mgtRstBusy()) {
+            printf("MGT reset ready %d\n", mgtRst);
+            microsecondSpin(100); // paranoia
+            eyescanInit();
+            // Must reset PMA after enabling eye scan hardware
+            GPIO_WRITE(GPIO_IDX_MGT_CSR, CSR_W_RX_LANE_RESET|((1UL<<CFG_MGT_COUNT)-1));
+            microsecondSpin(1);
+            // deassert resets, attempt to clear ref. clock loss-of-lock latch
+            GPIO_WRITE(GPIO_IDX_MGT_CSR, CSR_W_RX_LANE_RESET | CSR_W_LOL_CLEAR);
+
+            mgtRst = rstIdle;
+            printf("MGT reset complete\n");
+        }
+        break;
+    }
 
     if ((now - then) < 100000) {
         return;

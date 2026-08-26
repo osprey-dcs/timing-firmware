@@ -67,8 +67,11 @@ function [3:0] GrayToBinary (input [3:0] gray); begin
 end
 endfunction
 reg [MUXSEL_WIDTH-1:0] acqSelect = 0;
+reg [MUXSEL_WIDTH-1:0] acqSelect_d0 = -1, acqSelect_d1 = -1, acqSelect_g = -1;
 wire [(CHANNEL_COUNT*GRAY_WIDTH)-1:0] grays_m;
 reg [GRAY_WIDTH-1:0] grayMux, binary_d0, binary_d1, diff;
+reg diff_valid = 1'b0;
+wire [GRAY_WIDTH-1:0] diff_next = diff_valid ? diff : 0;
 reg [OUTPUT_WIDTH-1:0] accumulator;
 reg [OUTPUT_WIDTH-1:0] frequencies [0:CHANNEL_COUNT-1];
 
@@ -101,11 +104,19 @@ always @(posedge clk) begin
 
     // Count measured clocks
     grayMux <= grays_m[acqSelect*GRAY_WIDTH+:GRAY_WIDTH];
+    acqSelect_g <= acqSelect;
+
     binary_d0 <= GrayToBinary(grayMux);
+    acqSelect_d0 <= acqSelect_g;
+
     binary_d1 <= binary_d0;
+    acqSelect_d1 <= acqSelect_d0;
+
     diff <= binary_d0 - binary_d1;
+    diff_valid <= acqSelect_d0 == acqSelect_d1; // avoid counting across acqSelect change
+
     if (acqStrobe) begin
-        accumulator <= diff;
+        accumulator <= diff_next;
         acqPhase <= !acqPhase;
         if (acqPhase) begin
             frequencies[acqSelect] <= accumulator;
@@ -118,7 +129,7 @@ always @(posedge clk) begin
         end
     end
     else begin
-        accumulator <= accumulator + diff;
+        accumulator <= accumulator + diff_next;
     end
 
     // Emit selected value
