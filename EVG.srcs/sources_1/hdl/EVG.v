@@ -251,34 +251,27 @@ endgenerate
 
 assign FMC2_Heartbeat_LED = sysFMCisPresent[2] ? 1'b1 : 1'bz;
 
-generate
-    for (i = 0 ; i < 2 ; i = i + 1) begin : perFMC2Bank
-    reg [5:0] outbank_l = 6'b111000; // outputs disabled, and (invert) reset asserted
-
-    assign FMC2_Cleaner_LevelShift_OEn[i] = sysFMCisPresent[2] ? outbank_l[5] : 1'bz;
-    assign FMC2_Cleaner_ClkBuffer_OEn[i] = sysFMCisPresent[2] ? outbank_l[4] : 1'bz;
-    assign FMC2_Cleaner_RSTn[i] = sysFMCisPresent[2] ? ~outbank_l[3] : 1'bz; // invert
-    assign FMC2_Cleaner_SPI_CSn[i] = sysFMCisPresent[2] ? outbank_l[2] : 1'bz;
-    assign FMC2_Cleaner_SPI_CLK[i] = sysFMCisPresent[2] ? outbank_l[1] : 1'bz;
-    assign FMC2_Cleaner_SPI_SDI[i] = sysFMCisPresent[2] ? outbank_l[0] : 1'bz;
-
-    assign GPIO_IN[GPIO_IDX_TRGOUT_JTR1_SPI + i] = {
-        sysFMCisPresent[2],
-        19'h0,
-        FMC2_Cleaner_Fault_LOL[i],
-        FMC2_Cleaner_Fault_LOS_XO[i],
-        FMC2_Cleaner_Fault_INTR[i],
-        FMC2_Cleaner_SPI_SDO[i],
-        2'h0,
-        outbank_l
-    };
-    always @(posedge sysClk) begin
-        if(GPIO_STROBES[GPIO_IDX_TRGOUT_JTR1_SPI + i]) begin
-          outbank_l <= GPIO_OUT[5:0];
-        end
-    end
-end
-endgenerate
+ospreyTRGOUT fmc2TrgOut(
+  .sysClk(sysClk),
+  .jtrStrobe({
+    GPIO_STROBES[GPIO_IDX_TRGOUT_JTR2_SPI],
+    GPIO_STROBES[GPIO_IDX_TRGOUT_JTR1_SPI]
+  }),
+  .GPIO_OUT(GPIO_OUT),
+  .jtrData1(GPIO_IN[GPIO_IDX_TRGOUT_JTR1_SPI]),
+  .jtrData2(GPIO_IN[GPIO_IDX_TRGOUT_JTR2_SPI]),
+  .sysFMCisPresent(sysFMCisPresent[2]),
+  .Cleaner_LevelShift_OEn(FMC2_Cleaner_LevelShift_OEn),
+  .Cleaner_ClkBuffer_OEn(FMC2_Cleaner_ClkBuffer_OEn),
+  .Cleaner_RSTn(FMC2_Cleaner_RSTn),
+  .Cleaner_SPI_CLK(FMC2_Cleaner_SPI_CLK),
+  .Cleaner_SPI_SDI(FMC2_Cleaner_SPI_SDI),
+  .Cleaner_SPI_CSn(FMC2_Cleaner_SPI_CSn),
+  .Cleaner_SPI_SDO(FMC2_Cleaner_SPI_SDO),
+  .Cleaner_Fault_INTR(FMC2_Cleaner_Fault_INTR),
+  .Cleaner_Fault_LOS_XO(FMC2_Cleaner_Fault_LOS_XO),
+  .Cleaner_Fault_LOL(FMC2_Cleaner_Fault_LOL)
+);
 
 `include "firmwareBuildDate.v"
 assign GPIO_IN[GPIO_IDX_FIRMWARE_DATE] = FIRMWARE_BUILD_DATE;
