@@ -37,13 +37,14 @@ module ospreyRFIN #(
     input  wire [31:0] GPIO_OUT,
     output reg  [31:0] readback = 0,
 
-    (*MARK_DEBUG=DEBUG*) output reg  RFIN_LMK01801_CLK = 0,
-    (*MARK_DEBUG=DEBUG*) output reg  RFIN_LMK01801_LE = 0,
-    (*MARK_DEBUG=DEBUG*) output reg  RFIN_LMK01801_DATA = 0,
+    input  wire        sysFMCisPresent,
+    (*MARK_DEBUG=DEBUG*) output wire RFIN_LMK01801_CLK,
+    (*MARK_DEBUG=DEBUG*) output wire RFIN_LMK01801_LE,
+    (*MARK_DEBUG=DEBUG*) output wire RFIN_LMK01801_DATA,
 
-    (*MARK_DEBUG=DEBUG*) output reg  RFIN_ADS7253_CLK = 0,
-    (*MARK_DEBUG=DEBUG*) output reg  RFIN_ADS7253_CSB = 1,
-    (*MARK_DEBUG=DEBUG*) output reg  RFIN_ADS7253_DIN = 0,
+    (*MARK_DEBUG=DEBUG*) output wire RFIN_ADS7253_CLK,
+    (*MARK_DEBUG=DEBUG*) output wire RFIN_ADS7253_CSB,
+    (*MARK_DEBUG=DEBUG*) output wire RFIN_ADS7253_DIN,
     (*MARK_DEBUG=DEBUG*) input  wire RFIN_ADS7253_DOUTA,
     (*MARK_DEBUG=DEBUG*) input  wire RFIN_ADS7253_DOUTB);
 
@@ -65,11 +66,21 @@ reg [15:0] shiftA = 0, shiftB = 0;
 (*MARK_DEBUG=DEBUG*) reg adcStop = 0, adcStart = 0, adcStopped = 0;
 reg sysADCclk = 0, sysADCcsb = 1, sysADCdin = 0;
 
+reg lmkCLK = 1'b0, lmkLE = 1'b0, lmkDATA = 1'b0;
+assign RFIN_LMK01801_CLK  = sysFMCisPresent ? lmkCLK  : 1'bz;
+assign RFIN_LMK01801_LE   = sysFMCisPresent ? lmkLE   : 1'bz;
+assign RFIN_LMK01801_DATA = sysFMCisPresent ? lmkDATA : 1'bz;
+
+reg adsCLK = 0, adsCSB = 1, adsDIN = 0;
+assign RFIN_ADS7253_CLK  = sysFMCisPresent ? adsCLK  : 1'bz;
+assign RFIN_ADS7253_CSB  = sysFMCisPresent ? adsCSB  : 1'bz;
+assign RFIN_ADS7253_DIN  = sysFMCisPresent ? adsDIN  : 1'bz;
+
 always @(posedge sysClk) begin
     if (csrStrobe) begin
-        RFIN_LMK01801_DATA <=  GPIO_OUT[7];
-        RFIN_LMK01801_LE   <=  GPIO_OUT[6];
-        RFIN_LMK01801_CLK  <=  GPIO_OUT[5];
+        lmkDATA <=  GPIO_OUT[7];
+        lmkLE   <=  GPIO_OUT[6];
+        lmkCLK  <=  GPIO_OUT[5];
         sysADCdin          <=  GPIO_OUT[4];
         sysADCcsb          <= !GPIO_OUT[3];
         sysADCclk          <=  GPIO_OUT[2];
@@ -94,21 +105,21 @@ always @(posedge sysClk) begin
         if (adcStart) begin
             adcStopped <= 0;
         end
-        RFIN_ADS7253_CLK <= sysADCclk;
-        RFIN_ADS7253_CSB <= sysADCcsb;
-        RFIN_ADS7253_DIN <= sysADCdin;
+        adsCLK <= sysADCclk;
+        adsCSB <= sysADCcsb;
+        adsDIN <= sysADCdin;
         readback <= {{29{1'b0}}, RFIN_ADS7253_DOUTB, RFIN_ADS7253_DOUTA, 1'b1};
     end
     else if (tick) begin
-        RFIN_ADS7253_CLK <= !RFIN_ADS7253_CLK;
-        RFIN_ADS7253_DIN <= 0;
-        if (RFIN_ADS7253_CSB) begin
+        adsCLK <= !RFIN_ADS7253_CLK;
+        adsDIN <= 0;
+        if (adsCSB) begin
             bitCounter <= BIT_COUNTER_LOAD;
             if (adcStop) begin
                 adcStopped <= 1;
             end
             else if (!RFIN_ADS7253_CLK) begin
-                RFIN_ADS7253_CSB <= 0;
+                adsCSB <= 0;
             end
         end
         else begin
@@ -119,7 +130,7 @@ always @(posedge sysClk) begin
             else begin
                 bitCounter <= bitCounter - 1;
                 if (bitCounterDone) begin
-                    RFIN_ADS7253_CSB <= 1;
+                    adsCSB <= 1;
                     readback <= {shiftB, shiftA[15:1], 1'b0};
                 end
             end

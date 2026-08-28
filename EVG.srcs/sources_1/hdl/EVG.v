@@ -142,12 +142,17 @@ localparam MGT_DATA_WIDTH       = 16;
 localparam TIMESTAMP_WIDTH      = 64;
 genvar i;
 
+// FMC presense detection
+// FMC[1] - RF-IN
+// FMC[2] - TRG-OUT
+wire [2:1] sysFMCisPresent; // 1 indexed
+
 ///////////////////////////////////////////////////////////////////////////////
 // Static outputs
 assign VCXO_EN = 1'b1;
 assign LD16 = 1'b0;
 assign LD17 = 1'b0;
-assign FMC1_DI_ENb = 1'b0;
+assign FMC1_DI_ENb = sysFMCisPresent[1] ? 1'b0 : 1'bz;
 
 ///////////////////////////////////////////////////////////////////////////////
 // PMOD I/O routing
@@ -216,15 +221,14 @@ wire [1:0] clkFMC2Cleaned;
 IBUFDS clkFMC2Clean0(.I(FMC2_Cleaned_CLK_P[0]),.IB(FMC2_Cleaned_CLK_N[0]),.O(clkFMC2Cleaned[0]));
 IBUFDS clkFMC2Clean1(.I(FMC2_Cleaned_CLK_P[1]),.IB(FMC2_Cleaned_CLK_N[1]),.O(clkFMC2Cleaned[1]));
 
-wire sysFMC2isPresent;
-OBUFT oeDO(.I(1'b1),.T(!sysFMC2isPresent),.O(FMC2_OE_Digital_Outputs));
+OBUFT oeDO(.I(1'b1),.T(!sysFMCisPresent[2]),.O(FMC2_OE_Digital_Outputs));
 wire [1:0] clkFMC2Recovered;
 // reverse polarity
 generate
 for(i=0; i<2; i=i+1) begin :FMC2GTXn
     OBUFTDS FMC2_Recv0(
         .I(clkFMC2Recovered[i]),
-        .T(!sysFMC2isPresent),
+        .T(!sysFMCisPresent[2]),
         .O(FMC2_Recovered_CLK_N[i]),
         .OB(FMC2_Recovered_CLK_P[i]));
 end
@@ -245,21 +249,21 @@ endgenerate
 
 // FMC2 I/O, trigger-output-fmc
 
-OBUFT fmc2HB(.I(1'b1),.T(!sysFMC2isPresent),.O(FMC2_Heartbeat_LED));
+OBUFT fmc2HB(.I(1'b1),.T(!sysFMCisPresent[2]),.O(FMC2_Heartbeat_LED));
 
 generate
     for (i = 0 ; i < 2 ; i = i + 1) begin : perFMC2Bank
     reg [5:0] outbank_l = 6'b111000; // outputs disabled, and (invert) reset asserted
 
-    OBUFT outbank5(.I( outbank_l[5]),.T(!sysFMC2isPresent),.O(FMC2_Cleaner_LevelShift_OEn[i]));
-    OBUFT outbank4(.I( outbank_l[4]),.T(!sysFMC2isPresent),.O(FMC2_Cleaner_ClkBuffer_OEn[i]));
-    OBUFT outbank3(.I(~outbank_l[3]),.T(!sysFMC2isPresent),.O(FMC2_Cleaner_RSTn[i])); // invert
-    OBUFT outbank2(.I( outbank_l[2]),.T(!sysFMC2isPresent),.O(FMC2_Cleaner_SPI_CSn[i]));
-    OBUFT outbank1(.I( outbank_l[1]),.T(!sysFMC2isPresent),.O(FMC2_Cleaner_SPI_CLK[i]));
-    OBUFT outbank0(.I( outbank_l[0]),.T(!sysFMC2isPresent),.O(FMC2_Cleaner_SPI_SDI[i]));
+    OBUFT outbank5(.I( outbank_l[5]),.T(!sysFMCisPresent[2]),.O(FMC2_Cleaner_LevelShift_OEn[i]));
+    OBUFT outbank4(.I( outbank_l[4]),.T(!sysFMCisPresent[2]),.O(FMC2_Cleaner_ClkBuffer_OEn[i]));
+    OBUFT outbank3(.I(~outbank_l[3]),.T(!sysFMCisPresent[2]),.O(FMC2_Cleaner_RSTn[i])); // invert
+    OBUFT outbank2(.I( outbank_l[2]),.T(!sysFMCisPresent[2]),.O(FMC2_Cleaner_SPI_CSn[i]));
+    OBUFT outbank1(.I( outbank_l[1]),.T(!sysFMCisPresent[2]),.O(FMC2_Cleaner_SPI_CLK[i]));
+    OBUFT outbank0(.I( outbank_l[0]),.T(!sysFMCisPresent[2]),.O(FMC2_Cleaner_SPI_SDI[i]));
 
     assign GPIO_IN[GPIO_IDX_TRGOUT_JTR1_SPI + i] = {
-        sysFMC2isPresent,
+        sysFMCisPresent[2],
         19'h0,
         FMC2_Cleaner_Fault_LOL[i],
         FMC2_Cleaner_Fault_LOS_XO[i],
@@ -288,6 +292,7 @@ ospreyRFIN #(
     .csrStrobe(GPIO_STROBES[GPIO_IDX_RFIN_CONTROL]),
     .GPIO_OUT(GPIO_OUT),
     .readback(GPIO_IN[GPIO_IDX_RFIN_CONTROL]),
+    .sysFMCisPresent(sysFMCisPresent[1]),
     .RFIN_LMK01801_CLK(FMC1_LMK01801_CLK),
     .RFIN_LMK01801_LE(FMC1_LMK01801_LE),
     .RFIN_LMK01801_DATA(FMC1_LMK01801_DATA),
@@ -322,7 +327,7 @@ generate
     for(i=0; i<16; i=i+1) begin : fmcOutN
         OBUFTDS outN (
             .I(fmcOutputs[i]),
-            .T(!sysFMC2isPresent), // 1 - tri-state
+            .T(!sysFMCisPresent[2]), // 1 - tri-state
             .O(FMC2_D_Output_P[i]),
             .OB(FMC2_D_Output_N[i])
         );
@@ -337,7 +342,8 @@ ioSelect #(.DEBUG("false"))
     .sysStatus(GPIO_IN[GPIO_IDX_IO_SELECT]),
     .evrHwOutputs(trigOut),
     .pmodOutputs(pmodOut),
-    .sysFMC2isPresent(sysFMC2isPresent),
+    .sysFMC1isPresent(sysFMCisPresent[1]),
+    .sysFMC2isPresent(sysFMCisPresent[2]),
     .fmcOutputs(fmcOutputs),
     .evgHwInputs(evgHwInputs),
     .fmcInputs(fmcIn),

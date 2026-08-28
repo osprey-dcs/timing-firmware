@@ -40,6 +40,7 @@ module ioSelect #(
     input  wire [7:0]  evrHwOutputs, // TODO: expose 8-16!
     output wire [7:0]  pmodOutputs,
     output wire [15:0] fmcOutputs,
+    output reg         sysFMC1isPresent = 0,
     output reg         sysFMC2isPresent = 0,
 
     output wire  [EVG_HW_INPUT_COUNT-1:0] evgHwInputs,
@@ -50,7 +51,6 @@ module ioSelect #(
 ///////////////////////////////////////////////////////////////////////////////
 // System clock domain
 reg sysIsEVG = 0;
-reg sysFMC1isPresent = 0;
 
 always @(posedge sysClk) begin
     if (sysCsrStrobe) begin
