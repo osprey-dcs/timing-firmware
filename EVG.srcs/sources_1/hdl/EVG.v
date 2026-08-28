@@ -221,7 +221,7 @@ wire [1:0] clkFMC2Cleaned;
 IBUFDS clkFMC2Clean0(.I(FMC2_Cleaned_CLK_P[0]),.IB(FMC2_Cleaned_CLK_N[0]),.O(clkFMC2Cleaned[0]));
 IBUFDS clkFMC2Clean1(.I(FMC2_Cleaned_CLK_P[1]),.IB(FMC2_Cleaned_CLK_N[1]),.O(clkFMC2Cleaned[1]));
 
-OBUFT oeDO(.I(1'b1),.T(!sysFMCisPresent[2]),.O(FMC2_OE_Digital_Outputs));
+assign FMC2_OE_Digital_Outputs = sysFMCisPresent[2] ? 1'b1 : 1'bz;
 wire [1:0] clkFMC2Recovered;
 // reverse polarity
 generate
@@ -249,18 +249,18 @@ endgenerate
 
 // FMC2 I/O, trigger-output-fmc
 
-OBUFT fmc2HB(.I(1'b1),.T(!sysFMCisPresent[2]),.O(FMC2_Heartbeat_LED));
+assign FMC2_Heartbeat_LED = sysFMCisPresent[2] ? 1'b1 : 1'bz;
 
 generate
     for (i = 0 ; i < 2 ; i = i + 1) begin : perFMC2Bank
     reg [5:0] outbank_l = 6'b111000; // outputs disabled, and (invert) reset asserted
 
-    OBUFT outbank5(.I( outbank_l[5]),.T(!sysFMCisPresent[2]),.O(FMC2_Cleaner_LevelShift_OEn[i]));
-    OBUFT outbank4(.I( outbank_l[4]),.T(!sysFMCisPresent[2]),.O(FMC2_Cleaner_ClkBuffer_OEn[i]));
-    OBUFT outbank3(.I(~outbank_l[3]),.T(!sysFMCisPresent[2]),.O(FMC2_Cleaner_RSTn[i])); // invert
-    OBUFT outbank2(.I( outbank_l[2]),.T(!sysFMCisPresent[2]),.O(FMC2_Cleaner_SPI_CSn[i]));
-    OBUFT outbank1(.I( outbank_l[1]),.T(!sysFMCisPresent[2]),.O(FMC2_Cleaner_SPI_CLK[i]));
-    OBUFT outbank0(.I( outbank_l[0]),.T(!sysFMCisPresent[2]),.O(FMC2_Cleaner_SPI_SDI[i]));
+    assign FMC2_Cleaner_LevelShift_OEn[i] = sysFMCisPresent[2] ? outbank_l[5] : 1'bz;
+    assign FMC2_Cleaner_ClkBuffer_OEn[i] = sysFMCisPresent[2] ? outbank_l[4] : 1'bz;
+    assign FMC2_Cleaner_RSTn[i] = sysFMCisPresent[2] ? ~outbank_l[3] : 1'bz; // invert
+    assign FMC2_Cleaner_SPI_CSn[i] = sysFMCisPresent[2] ? outbank_l[2] : 1'bz;
+    assign FMC2_Cleaner_SPI_CLK[i] = sysFMCisPresent[2] ? outbank_l[1] : 1'bz;
+    assign FMC2_Cleaner_SPI_SDI[i] = sysFMCisPresent[2] ? outbank_l[0] : 1'bz;
 
     assign GPIO_IN[GPIO_IDX_TRGOUT_JTR1_SPI + i] = {
         sysFMCisPresent[2],
