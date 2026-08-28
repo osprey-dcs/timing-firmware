@@ -242,7 +242,7 @@ wire [31:0] GPIO_IN [0:GPIO_IDX_COUNT-1];
 wire [(GPIO_IDX_COUNT*32)-1:0] GPIO_IN_FLATTENED;
 
 generate
-for (i = 0 ; i < GPIO_IDX_COUNT ; i = i + 1) begin
+for (i = 0 ; i < GPIO_IDX_COUNT ; i = i + 1) begin : gpioFlatten
     assign GPIO_IN_FLATTENED[i*32+:32] = GPIO_IN[i];
 end
 endgenerate
@@ -304,11 +304,10 @@ ospreyRFIN #(
 
 ///////////////////////////////////////////////////////////////////////////////
 // Keep track of elapsed time
-wire microsecondStrobe;
 sysClkCounters #(.CLK_RATE(CFG_SYSCLK_RATE), .DEBUG("false"))
  sysClkCounters (
     .clk(sysClk),
-    .usecStrobe(microsecondStrobe),
+    .usecStrobe(),
     .microsecondsSinceBoot(GPIO_IN[GPIO_IDX_MICROSECONDS_SINCE_BOOT]),
     .secondsSinceBoot(GPIO_IN[GPIO_IDX_SECONDS_SINCE_BOOT]));
 
@@ -372,7 +371,7 @@ localPPS #(
 // Lock clock to PPS marker
 // DAC1 adjusts the 125 MHz MGT reference, DDR reference, and system clocks.
 // DAC2 adjusts the 20 MHz system clock.
-wire ppsValid, evgPPSmarker, hwPPSmarker_a, evrPPSmarker;
+wire evgPPSmarker, hwPPSmarker_a, evrPPSmarker;
 marbleClockSync #(
     .DEBUG("false"))
   marbleClockSync (
@@ -390,7 +389,7 @@ marbleClockSync #(
     .hwPPSmarker_a(hwPPSmarker_a),
     .ppsPrimary_out(ppsPrimary_out),
     .ppsSecondary_out(ppsSecondary_out),
-    .hwPPSvalid(ppsValid),
+    .hwPPSvalid(),
     .ppsMarker(evgPPSmarker),
     .ppsToggle(),
     .SPI_CLK(WR_DAC_SCLK_T),
