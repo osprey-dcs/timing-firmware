@@ -318,7 +318,13 @@ wire [15:0] fmcOutputs;
 generate
     for(i=0; i<16; i=i+1) begin : fmcOutN
         OBUFTDS outN (
-            .I(fmcOutputs[i]),
+            /* HACK
+             * This inverts an invert in ospreyEVRoutputDriver.v as ACTIVE_LOW_OUTPUTS=1
+             * due to issues with using OSERDES with the PMOD outputs.
+             * TODO: sort out FMC vs. PMOD.  And limited number of outputs from ospreyEVR.
+             * Want to instanciate both types in parallel...
+             */
+            .I(~fmcOutputs[i]),
             .T(!sysFMCisPresent[2]), // 1 - tri-state
             .O(FMC2_D_Output_P[i]),
             .OB(FMC2_D_Output_N[i])
