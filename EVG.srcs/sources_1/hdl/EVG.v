@@ -39,8 +39,8 @@ module EVG #(
     input  wire CLK20_VCXO,
     output wire VCXO_EN,
     // From U2 cross-point switch
-    input  wire MGTREFCLK0_116_P,
-    input  wire MGTREFCLK0_116_N,
+    input  wire [3:0] MGTREFCLK_P,
+    input  wire [3:0] MGTREFCLK_N,
     // Direct from FMC1
     input  wire FMC1_CLK0_M2C_P,
     input  wire FMC1_CLK0_M2C_N,
@@ -454,12 +454,16 @@ wire            [CFG_MPS_OUTPUT_COUNT-1:0] mgtTxMPStripped;
 assign clkFMC2Recovered[0] = mgtRxClks[0];
 assign clkFMC2Recovered[1] = mgtRxClks[0];
 
-wire gtRefClk;
-IBUFDS_GTE2 gtRefClkBuf (.O(gtRefClk),
-                         .ODIV2(),
-                         .CEB(1'b0),
-                         .I(MGTREFCLK0_116_P),
-                         .IB(MGTREFCLK0_116_N));
+wire [3:0] gtRefClk;
+generate
+for (i=0; i<4; i=i+1) begin : mgtRef
+  IBUFDS_GTE2 gtRefClkBuf (.O(gtRefClk[i]),
+                           .ODIV2(),
+                           .CEB(1'b0),
+                           .I(MGTREFCLK_P[i]),
+                           .IB(MGTREFCLK_N[i]));
+end
+endgenerate
 
 fiberLinks #(
     .MGT_COUNT(CFG_MGT_COUNT),
@@ -487,7 +491,7 @@ fiberLinks #(
     .mgtTxMPStripped(mgtTxMPStripped),
     .evgTxChars(evgTxChars),
     .evgTxCharIsK(evgTxCharIsK),
-    .gtRefClk(gtRefClk),
+    .gtRefClk(gtRefClk[0]),
     .rxP(QSFP_RX_P),
     .rxN(QSFP_RX_N),
     .txP(QSFP_TX_P),
@@ -528,7 +532,7 @@ mps #(
 
 ///////////////////////////////////////////////////////////////////////////////
 // Measure clocks
-localparam FREQ_MON_CHANNEL_COUNT = 17;
+localparam FREQ_MON_CHANNEL_COUNT = 20;
 wire [29:0] measuredFrequency;
 wire measuredUsingInteralAcqMarker;
 reg [$clog2(FREQ_MON_CHANNEL_COUNT)-1:0] frequencyChannelSelect = 0;
@@ -552,7 +556,7 @@ frequencyCounters #(
                       clkFMC1_M2C0,
                       clk20,
                       clk200,
-                      gtRefClk,
+                      gtRefClk, // 4x
                       sysClk }),
     .acqMarker_a(hwPPSmarker_a),
     .useInternalAcqMarker(measuredUsingInteralAcqMarker),

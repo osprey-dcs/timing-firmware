@@ -314,7 +314,10 @@ cmdFMON(int argc, char **argv)
     int i;
     uint32_t csr, rate;
     static const char *names[] = { "System",
-                                   "MGT REF",
+                                   "MGT REF0",
+                                   "si570 MGT REF1",
+                                   "FMC2.0 MGT REF2",
+                                   "FMC2.1 MGT REF3",
                                    "IDELAY Ref",
                                    "VCXO20",
                                    "FMC1 M2C0",
