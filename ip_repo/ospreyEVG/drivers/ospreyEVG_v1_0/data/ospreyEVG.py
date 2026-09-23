@@ -43,13 +43,7 @@ def ospreyEVG_build(EVG_REG_BASE=1000000,
             "data_width": 32,
             "sign": "unsigned",
         },
-        "EVG:config": {
-            "access": "r",
-            "addr_width": 0,
-            "base_addr": EVG_REG_BASE + 1,
-            "data_width": 32,
-            "sign": "unsigned",
-        },
+        # former "EVG:config" = 1
         "EVG:hbDivisor": {
             "access": "w",
             "addr_width": 0,
@@ -92,20 +86,14 @@ def ospreyEVG_build(EVG_REG_BASE=1000000,
             "data_width": 32,
             "sign": "unsigned",
         },
-        "EVG:MAP:hwTrig": {
+        "EVG:SEQ:trgMode": {
             "access": "rw",
             "addr_width": 0,
             "base_addr": EVG_REG_BASE + 8,
-            "data_width": 32,
+            "data_width": 16,
             "sign": "unsigned",
         },
-        "EVG:MAP:dbus": {
-            "access": "rw",
-            "addr_width": 0,
-            "base_addr": EVG_REG_BASE + 9,
-            "data_width": 32,
-            "sign": "unsigned",
-        },
+        # former "EVG:MAP:dbus" = 9
         "EVG:TMR:control": {
             "access": "w",
             "addr_width": 0,
@@ -120,11 +108,76 @@ def ospreyEVG_build(EVG_REG_BASE=1000000,
             "data_width": 32,
             "sign": "unsigned",
         },
+        "EVG:setSeconds": {
+            "access": "w",
+            "addr_width": 0,
+            "base_addr": EVG_REG_BASE + 11,
+            "data_width": 32,
+            "sign": "unsigned",
+        },
+        "EVG:CONF:nIn": {
+            "access": "r",
+            "addr_width": 0,
+            "base_addr": EVG_REG_BASE + 12,
+            "data_width": 32,
+            "sign": "unsigned",
+        },
+        "EVG:CONF:nTmr": {
+            "access": "r",
+            "addr_width": 0,
+            "base_addr": EVG_REG_BASE + 13,
+            "data_width": 32,
+            "sign": "unsigned",
+        },
+        "EVG:CONF:nBank": {
+            "access": "r",
+            "addr_width": 0,
+            "base_addr": EVG_REG_BASE + 14,
+            "data_width": 32,
+            "sign": "unsigned",
+        },
+        "EVG:CONF:seqAddrWidth": {
+            "access": "r",
+            "addr_width": 0,
+            "base_addr": EVG_REG_BASE + 15,
+            "data_width": 32,
+            "sign": "unsigned",
+        },
+        "EVG:CONF:nRx": {
+            "access": "r",
+            "addr_width": 0,
+            "base_addr": EVG_REG_BASE + 16,
+            "data_width": 32,
+            "sign": "unsigned",
+        },
+        "EVG:TRG:count": {
+            "access": "r",
+            "addr_width": 4, # 16
+            "base_addr": EVG_REG_BASE + 25,
+            "data_width": 8,
+            "sign": "unsigned",
+        },
+        "EVG:SEQ:nTrg": {
+            "access": "r",
+            "addr_width": 3, # 8
+            "base_addr": EVG_REG_BASE + 50,
+            "data_width": 8,
+            "sign": "unsigned",
+        },
     }
+
+    for addr, dbit in enumerate(range(1, 9), EVG_REG_BASE+17):
+        R[f"EVG:DBUS:{dbit}:src"] = {
+            "access": "w",
+            "addr_width": 0,
+            "base_addr": addr,
+            "data_width": 16,
+            "sign": "unsigned",
+        }
 
     for addr, tmr in enumerate(range(1, timerCount+1), EVG_REG_BASE+100):
         R[f"EVG:TMR:{tmr}:event"] = {
-            "access": "w",
+            "access": "rw",
             "addr_width": 0,
             "base_addr": addr,
             "data_width": 8,
@@ -133,7 +186,7 @@ def ospreyEVG_build(EVG_REG_BASE=1000000,
 
     for addr, tmr in enumerate(range(1, timerCount+1), EVG_REG_BASE+120):
         R[f"EVG:TMR:{tmr}:divisor"] = {
-            "access": "w",
+            "access": "rw",
             "addr_width": 0,
             "base_addr": addr,
             "data_width": 32,
@@ -161,18 +214,25 @@ def ospreyEVG_build(EVG_REG_BASE=1000000,
             "access": "w",
             "addr_width": 0,
             "base_addr": EVG_REG_BASE+180+2*off+0,
-            "data_width": 8,
+            "data_width": hwTriggerCount,
             "sign": "unsigned",
         }
         R[f"EVG:SEQ:{seq}:hw:f"] = {
             "access": "w",
             "addr_width": 0,
             "base_addr": EVG_REG_BASE+180+2*off+1,
-            "data_width": 8,
+            "data_width": hwTriggerCount,
+            "sign": "unsigned",
+        }
+        R[f"EVG:SEQ:{seq}:tmr"] = {
+            "access": "w",
+            "addr_width": 0,
+            "base_addr": EVG_REG_BASE+220+off,
+            "data_width": timerCount,
             "sign": "unsigned",
         }
         R[f"EVG:SEQ:{seq}:pattern"] = {
-            "access": "w",
+            "access": "rw",
             "addr_width": seqAddrWidth+1,
             "base_addr": EVG_REG_BASE+8192*seq, # seq1 @8192
             "data_width": 32,

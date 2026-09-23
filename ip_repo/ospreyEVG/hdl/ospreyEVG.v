@@ -36,6 +36,7 @@
  */
 
 `default_nettype none
+`timescale  1 ns / 1 ns
 
 module ospreyEVG_v1_0 #(
     ////////////////////// Application-specific Parameters ///////////////////
@@ -172,7 +173,8 @@ end
 //////////////////////// End of AXI-Lite Boilerplate ////////////////////////
 
 //////////////////////////////////////////////////////////////////////////////
-localparam DBUS_WIDTH     = 8;
+localparam DBUS_BITS     = 8;
+localparam DBUS_WIDTH = $clog2(DBUS_BITS);
 localparam INPUTSEL_WIDTH = $clog2(INPUT_COUNT+1);
 
 /*
@@ -181,8 +183,8 @@ localparam INPUTSEL_WIDTH = $clog2(INPUT_COUNT+1);
 if ((TIMER_COUNT < 2) || (TIMER_COUNT > 8)) begin
     error_TIMER_COUNT_OUT_OF_RANGE();
 end
-if ((HW_TRIGGER_COUNT < 2) || (HW_TRIGGER_COUNT > 8)) begin
-    error_HW_TRIGGER_COUNT_OUT_OF_RANGE();
+if ((INPUT_COUNT < 2) || (INPUT_COUNT > 16)) begin
+    error_INPUT_COUNT_OUT_OF_RANGE();
 end
 if ((SEQRAM_BANK_COUNT < 2) || (SEQRAM_BANK_COUNT > 8)) begin
     error_SEQRAM_BANK_COUNT_OUT_OF_RANGE();
@@ -196,7 +198,7 @@ end
  * timer-driven event, two for each hardware trigger (rising/falling),
  * one for software-driven event (lowest-priority).
  */
-localparam EVCHAIN_LENGTH = 1 + TIMER_COUNT + (2 * HW_TRIGGER_COUNT) + 1;
+localparam EVCHAIN_LENGTH = 1 + TIMER_COUNT + (2 * INPUT_COUNT) + 1;
 genvar i, j;
 
 //
@@ -216,11 +218,15 @@ localparam REG_IDX_HW_TRIGGER_CONFIG = 5'd5;
 localparam REG_IDX_SW_EVENT          = 5'd6;
 localparam REG_IDX_SEQ_ADDR_CODE     = 5'd7;
 localparam REG_IDX_SEQ_GAP           = 5'd8;
-localparam REG_IDX_HW_TRIGGER_MAP    = 5'd9;
+localparam REG_IDX_SEQ_COUNT         = 5'd9;
 localparam REG_IDX_DBUS_MAP          = 5'd10;
 localparam REG_IDX_TIMER_CSR         = 5'd11;
 localparam REG_IDX_LATENCY_CSR       = 5'd12;
+localparam REG_IDX_HW_TRIGGER_COUNT  = 5'd13;
+// 1 bit for timerInitValSel
+// up to 3 bits for timerSel
 localparam REG_IDX_TIMER_CONFIG_BASE = 5'd16;
+localparam REG_IDX_TIMER_CONFIG_MASK = 5'b1zzzz;
 
 reg sysSetSecondsToggle = 0;
 reg [31:0] sysPosixSeconds;
@@ -235,16 +241,48 @@ reg [TIMER_COUNT-1:0] sysTimerCodeToggle = 0, sysTimerInitValToggle = 0;
 localparam TIMERSEL_WIDTH = $clog2(TIMER_COUNT);
 wire timerInitValSel = s_axi_awaddr[2];
 wire [TIMERSEL_WIDTH-1:0] timerSel = s_axi_awaddr[3+:TIMERSEL_WIDTH];
+wire timerInitValSelR = s_axi_araddr[2];
+wire [TIMERSEL_WIDTH-1:0] timerSelR = s_axi_araddr[3+:TIMERSEL_WIDTH];
 wire [(2*TIMER_COUNT)-1:0] timerStatus;
+wire [31:0] timerInitial [0:TIMER_COUNT-1];
 
-reg [(2*HW_TRIGGER_COUNT)-1:0] sysHwUpdateToggle = 0;
-localparam HWSEL_WIDTH = $clog2(2*HW_TRIGGER_COUNT);
+reg [(2*INPUT_COUNT)-1:0] sysHwUpdateToggle = 0;
+localparam HWSEL_WIDTH = $clog2(2*INPUT_COUNT);
 wire [HWSEL_WIDTH-1:0] hwSel = s_axi_wdata[8+:HWSEL_WIDTH];
+reg  [HWSEL_WIDTH-1:0] hwSel_l = 0;
+(*ASYNC_REG="true"*) // crosses from evgClk to s_axi_aclk
+reg  [7:0] hwTrigCount [0:INPUT_COUNT-1];
+reg  [7:0] hwTrigCount_g [0:INPUT_COUNT-1];
+
+function [7:0] B2G(input [7:0] bin);
+    B2G = bin ^ {1'b0, bin[7:1]};
+endfunction
+function [7:0] G2B(input [7:0] gray);
+    G2B = gray ^ {1'b0, gray[7:1]} ^ {2'b0, gray[7:2]} ^ {3'b0, gray[7:3]}
+    ^ {4'b0, gray[7:4]} ^ {5'b0, gray[7:5]} ^ {6'b0, gray[7:6]} ^ {7'b0, gray[7:7]};
+endfunction
+
+generate
+for(i=0 ; i < INPUT_COUNT ; i = i + 1) begin : hwTrigCountInit
+    initial
+        hwTrigCount_g[i] = 0;
+
+    always @(posedge s_axi_aclk)
+        hwTrigCount[i] <= hwTrigCount_g[i];
+end
+endgenerate
+
+wire [7:0] hwTrigCount_hwSel_l = G2B(hwTrigCount[hwSel_l]);
 
 reg sysSwTriggerToggle = 0;
-reg sysHwTriggerMapUpdateToggle = 0, sysDbusMapUpdateToggle = 0;
-reg [(HW_TRIGGER_COUNT*INPUTSEL_WIDTH)-1:0] hwTriggerMap = 0;
-reg [(DBUS_WIDTH*INPUTSEL_WIDTH)-1:0] dbusMap = 0;
+reg sysDbusMapUpdateToggle = 0;
+reg [DBUS_WIDTH-1:0] dbusMapReadMux = 0;
+reg [INPUTSEL_WIDTH-1:0] dbusMap [0:DBUS_BITS-1];
+
+for(i=0 ; i < DBUS_BITS ; i = i + 1) begin : dbusMapInit
+initial
+    dbusMap[i] = 0;
+end
 
 reg [31:0] sysReadData;
 assign s_axi_rdata = sysReadData;
@@ -259,23 +297,26 @@ assign s_axi_rdata = sysReadData;
 (*MARK_DEBUG=DEBUG*) reg evgPPStoggle = 0;
 (*MARK_DEBUG=DEBUG*) reg [31:0] evgPosixSeconds = 0;
 (*MARK_DEBUG=DEBUG*) reg [31:0] evgClkStatus;
-wire [31:0] seqStatus, seqAddrCodeRbk, seqGapRbk, latencyStatus;
+wire [27:0] seqStatus;
+wire [31:0] seqAddrCodeRbk, seqGapRbk, latencyStatus;
+wire [31:0] seqBankTrigCount;
+reg  [(TIMER_COUNT*8)-1:0] timerEventCodes = 0;
 
 // Configuration
 wire [3:0] seqAddrWidth = SEQRAM_ADDR_WIDTH;
 wire [3:0] bankCount    = SEQRAM_BANK_COUNT;
 wire [3:0] timerCount   = TIMER_COUNT;
-wire [3:0] triggerCount = HW_TRIGGER_COUNT;
+wire [7:0] triggerCount = INPUT_COUNT;
 wire [3:0] rxCount      = RX_COUNT;
-wire [31:0] sysConfig = { {32-(5*4){1'b0}},
+wire [31:0] sysConfig = {4'ha,
+                          {32-(7*4){1'b0}},
                           rxCount,
                           seqAddrWidth,
                           bankCount,
                           timerCount,
                           triggerCount };
 // Status
-wire [31:0] sysStatus = { {32-20-4{1'b0}},
-                          seqStatus[19:0],
+wire [31:0] sysStatus = { seqStatus,
                           1'b0, evgPPStoggle, evgSecondsValid, evgPPSvalid };
 
 always @(posedge s_axi_aclk)
@@ -287,7 +328,8 @@ begin
          * Control (write) operations
          */
         if (sysWriteStrobe) begin
-        if (s_wRegIndex & REG_IDX_TIMER_CONFIG_BASE) begin
+        casez (s_wRegIndex)
+        REG_IDX_TIMER_CONFIG_MASK: begin
             if (timerInitValSel) begin
                sysTimerInitValToggle[timerSel] <=
                                                !sysTimerInitValToggle[timerSel];
@@ -296,7 +338,6 @@ begin
                sysTimerCodeToggle[timerSel]<=!sysTimerCodeToggle[timerSel];
             end
         end
-        else case (s_wRegIndex)
         REG_IDX_SECONDS: begin
             sysPosixSeconds <= s_axi_wdata;
             sysSetSecondsToggle <= !sysSetSecondsToggle;
@@ -310,11 +351,11 @@ begin
         REG_IDX_SW_EVENT: begin
             sysSwTriggerToggle <= !sysSwTriggerToggle;
         end
-        REG_IDX_HW_TRIGGER_MAP: begin
-            sysHwTriggerMapUpdateToggle <= !sysHwTriggerMapUpdateToggle;
-        end
         REG_IDX_TIMER_CSR: begin
             sysTimerControlToggle <= !sysTimerControlToggle;
+        end
+        REG_IDX_HW_TRIGGER_COUNT: begin
+            hwSel_l <= hwSel;
         end
         REG_IDX_DBUS_MAP: begin
             sysDbusMapUpdateToggle <= !sysDbusMapUpdateToggle;
@@ -327,20 +368,30 @@ begin
          * Readback operations
          */
         if (s_axi_arvalid && s_axi_arready) begin
-            case (s_rRegIndex)
+            casez (s_rRegIndex)
+            REG_IDX_TIMER_CONFIG_MASK: begin
+                if (timerInitValSelR) begin
+                    sysReadData <= timerInitial[timerSelR];
+                end else begin
+                    sysReadData <= {{24{1'b0}}, timerEventCodes[timerSelR*8+:8]};
+                end
+            end
             REG_IDX_CSR:            sysReadData <= sysStatus;
             REG_IDX_CONFIG:         sysReadData <= sysConfig;
             REG_IDX_CLK_RATE:       sysReadData <= evgClkStatus;
             REG_IDX_SECONDS:        sysReadData <= evgPosixSeconds;
             REG_IDX_SEQ_ADDR_CODE:  sysReadData <= seqAddrCodeRbk;
             REG_IDX_SEQ_GAP:        sysReadData <= seqGapRbk;
+            REG_IDX_SEQ_COUNT:      sysReadData <= seqBankTrigCount;
             REG_IDX_LATENCY_CSR:    sysReadData <= latencyStatus;
-            REG_IDX_HW_TRIGGER_MAP: sysReadData <=
-                   {{32-(HW_TRIGGER_COUNT*INPUTSEL_WIDTH){1'b0}}, hwTriggerMap};
             REG_IDX_TIMER_CSR: sysReadData <=
                                       {{32-(2*TIMER_COUNT){1'b0}}, timerStatus};
-            REG_IDX_DBUS_MAP:       sysReadData <=
-                              {{32-(DBUS_WIDTH*INPUTSEL_WIDTH){1'b0}}, dbusMap};
+            REG_IDX_HW_TRIGGER_COUNT: sysReadData <= {{32-8-HWSEL_WIDTH{1'b0}}, hwSel_l, hwTrigCount_hwSel_l};
+            REG_IDX_DBUS_MAP:       sysReadData <= {
+                5'h00,
+                dbusMapReadMux,
+                {24-INPUTSEL_WIDTH{1'b0}}, dbusMap[dbusMapReadMux]
+            };
             default:                sysReadData <= 0;
             endcase
         end
@@ -378,8 +429,6 @@ ospreyEVGlatencyCheck #(
 /*
  * Synchronize and map hardware inputs
  */
-(*ASYNC_REG="true"*) reg hwTriggerMapUpdateToggle_m = 0;
-reg hwTriggerMapUpdateToggle = 0, hwTriggerMapUpdateToggle_d;
 (*ASYNC_REG="true"*) reg dbusMapUpdateToggle_m = 0;
 reg dbusMapUpdateToggle = 0, dbusMapUpdateToggle_d;
 (*ASYNC_REG="true"*) reg [INPUT_COUNT-1:0] hwInputs_m = 0;
@@ -392,14 +441,9 @@ always @(posedge evgClk) begin
     dbusMapUpdateToggle   <= dbusMapUpdateToggle_m;
     dbusMapUpdateToggle_d <= dbusMapUpdateToggle;
     if (dbusMapUpdateToggle != dbusMapUpdateToggle_d) begin
-        dbusMap <= s_axi_wdata[(DBUS_WIDTH*INPUTSEL_WIDTH)-1:0];
-    end
-
-    hwTriggerMapUpdateToggle_m <= sysHwTriggerMapUpdateToggle;
-    hwTriggerMapUpdateToggle   <= hwTriggerMapUpdateToggle_m;
-    hwTriggerMapUpdateToggle_d <= hwTriggerMapUpdateToggle;
-    if (hwTriggerMapUpdateToggle != hwTriggerMapUpdateToggle_d) begin
-        hwTriggerMap <= s_axi_wdata[(HW_TRIGGER_COUNT*INPUTSEL_WIDTH)-1:0];
+        dbusMapReadMux <= s_axi_wdata[24+:DBUS_WIDTH];
+        if(s_axi_wdata[31])
+            dbusMap[s_axi_wdata[24+:DBUS_WIDTH]] <= s_axi_wdata[0+:INPUTSEL_WIDTH];
     end
 end
 wire [INPUT_COUNT:0] evgHwIn = {hwInputs, 1'b0};
@@ -515,10 +559,11 @@ end
  */
 wire                        sequencerEventStrobe;
 wire                  [7:0] sequencerEventCode;
-wire [HW_TRIGGER_COUNT-1:0] evgHwTriggerRising, evgHwTriggerFalling;
+wire [INPUT_COUNT-1:0] evgHwTriggerRising, evgHwTriggerFalling;
 ospreyEVGsequencer #(
-    .HW_TRIGGER_COUNT(HW_TRIGGER_COUNT),
-    .SEQUENCE_CAPACITY(1<<SEQRAM_ADDR_WIDTH),
+    .HW_TRIGGER_COUNT(INPUT_COUNT),
+    .TIMER_COUNT(TIMER_COUNT),
+    .SEQ_ADDR_WIDTH(SEQRAM_ADDR_WIDTH),
     .BANK_COUNT(SEQRAM_BANK_COUNT),
     .DPRAM_TYPE("auto"),
     .GAP_WIDTH(32),
@@ -534,7 +579,9 @@ ospreyEVGsequencer #(
     .sysStatus(seqStatus),
     .sysAddressCodeRbk(seqAddrCodeRbk),
     .sysGapRbk(seqGapRbk),
+    .sysBankCount(seqBankTrigCount),
     .evgClk(evgClk),
+    .evgTimerTrigger(timerTriggerStrobes),
     .evgHwTriggerRising(evgHwTriggerRising),
     .evgHwTriggerFalling(evgHwTriggerFalling),
     .evgCodeTDATA(sequencerEventCode),
@@ -554,9 +601,8 @@ always @(posedge evgClk) begin
     timerControlToggle   <= timerControlToggle_m;
     timerControlToggle_d <= timerControlToggle;
 end
-(*MARK_DEBUG=DEBUG*) reg  [TIMER_COUNT-1:0] timerTriggerEnables = 0;
-(*MARK_DEBUG=DEBUG*) wire [TIMER_COUNT-1:0] timerTriggerStrobes;
-(*MARK_DEBUG=DEBUG*) reg  [(TIMER_COUNT*8)-1:0] timerEventCodes = 0;
+wire  [TIMER_COUNT-1:0] timerTriggerEnables;
+wire [TIMER_COUNT-1:0] timerTriggerStrobes;
 generate
 for (i = 0 ; i < TIMER_COUNT ; i = i + 1) begin : timerRequester
     (*MARK_DEBUG=DEBUG*) wire[1:0] timerCmd = s_axi_wdata[i*2+:2];
@@ -565,6 +611,8 @@ for (i = 0 ; i < TIMER_COUNT ; i = i + 1) begin : timerRequester
     (*ASYNC_REG="true"*) reg timerInitValToggle_m = 0;
     (*MARK_DEBUG=DEBUG*) reg timerInitValToggle = 0, timerInitValToggle_d;
     reg [31:0] timerInitVal = ~0;
+    assign timerInitial[i]= timerInitVal;
+    reg running = 0;
     (*MARK_DEBUG=DEBUG*) reg [32:0] timer = 0;
     wire timerDone = timer[32];
     always @(posedge evgClk) begin
@@ -579,7 +627,7 @@ for (i = 0 ; i < TIMER_COUNT ; i = i + 1) begin : timerRequester
         timerInitValToggle_d <= timerInitValToggle;
         if (timerInitValToggle != timerInitValToggle_d) begin
             timerInitVal <= s_axi_wdata;
-            if (!timerTriggerEnables[i]) begin
+            if (!running) begin
                 // Set timer so an initial 'resume' behaves expectedly.
                 timer <= {1'b0, s_axi_wdata};
             end
@@ -588,21 +636,21 @@ for (i = 0 ; i < TIMER_COUNT ; i = i + 1) begin : timerRequester
          && (timerCmd != TIMER_CMD_NOP)) begin
             case (timerCmd)
             TIMER_CMD_STOP: begin
-                timerTriggerEnables[i] <= 0;
+                running <= 0;
                 if (timerDone) begin
                     timer <= {1'b0, timerInitVal};
                 end
             end
             TIMER_CMD_RESUME: begin
-                timerTriggerEnables[i] <= 1;
+                running <= 1;
             end
             TIMER_CMD_START: begin
-                timerTriggerEnables[i] <= 1;
+                running <= 1;
                 timer <= {1'b0, timerInitVal};
             end
             endcase
         end
-        else if (timerTriggerEnables[i]) begin
+        else if (running) begin
             if (timerDone) begin
                 timer <= {1'b0, timerInitVal};
             end
@@ -612,28 +660,32 @@ for (i = 0 ; i < TIMER_COUNT ; i = i + 1) begin : timerRequester
         end
     end
     assign timerTriggerStrobes[i] = timerDone;
-    assign timerStatus[i*2+:2] = {timerTriggerEnables[i], 1'b0};
+    assign timerTriggerEnables[i] = running && timerEventCodes[i*8+:8]!=0;
+    assign timerStatus[i*2+:2] = {timerTriggerEnables[i], running};
 end
 endgenerate
 
 /*
  * Hardware-initated events
  */
-(*MARK_DEBUG=DEBUG*) reg [(2*HW_TRIGGER_COUNT)-1:0] hwTriggerEnables = 0;
-(*MARK_DEBUG=DEBUG*) reg [(2*HW_TRIGGER_COUNT)-1:0] hwTriggerStrobes = 0;
-(*MARK_DEBUG=DEBUG*) reg [(2*HW_TRIGGER_COUNT*8)-1:0] hwEventCodes = 0;
+(*MARK_DEBUG=DEBUG*) reg [(2*INPUT_COUNT)-1:0] hwTriggerEnables = 0;
+(*MARK_DEBUG=DEBUG*) reg [(2*INPUT_COUNT)-1:0] hwTriggerStrobes = 0;
+(*MARK_DEBUG=DEBUG*) reg [(2*INPUT_COUNT*8)-1:0] hwEventCodes = 0;
 generate
-for (i = 0 ; i < HW_TRIGGER_COUNT ; i = i + 1) begin : hwRequester
-    (*ASYNC_REG="true"*) reg hwTrigger_m = 0;
-    reg hwTrigger = 0, hwTrigger_d = 0;
+for (i = 0 ; i < INPUT_COUNT ; i = i + 1) begin : hwRequester
+    wire hwTrigger = hwInputs[i];
+    reg hwTrigger_d = 0;
     always @(posedge evgClk) begin
-        hwTrigger   <= evgHwIn[hwTriggerMap[i*INPUTSEL_WIDTH+:INPUTSEL_WIDTH]];
         hwTrigger_d <= hwTrigger;
-        hwTriggerStrobes[(i*2)+0] <= hwTrigger && !hwTrigger_d;
-        hwTriggerStrobes[(i*2)+1] <= !hwTrigger && hwTrigger_d;
+        hwTriggerStrobes[(i*2)+0] <= hwTrigger && !hwTrigger_d; // rising
+        hwTriggerStrobes[(i*2)+1] <= !hwTrigger && hwTrigger_d; // falling
     end
     assign evgHwTriggerRising[i] = hwTriggerStrobes[(i*2)+0];
     assign evgHwTriggerFalling[i] = hwTriggerStrobes[(i*2)+1];
+    always @(posedge evgClk) begin
+        if(evgHwTriggerRising[i])
+            hwTrigCount_g[i] <= B2G(G2B(hwTrigCount_g[i]) + 1);
+    end
     for (j = 0 ; j < 2 ; j = j + 1) begin : hwEdge
         (*ASYNC_REG="true"*) reg hwUpdateToggle_m = 0;
         reg hwUpdateToggle = 0, hwUpdateToggle_d;
@@ -661,12 +713,10 @@ always @(posedge evgClk) begin
     swTriggerToggle_m <= sysSwTriggerToggle;
     swTriggerToggle   <= swTriggerToggle_m;
     swTriggerToggle_d <= swTriggerToggle;
-    if (swTriggerToggle != swTriggerToggle_d) begin
+    swTriggerStrobe <= 0;
+    if ((swTriggerToggle != swTriggerToggle_d) && (s_axi_wdata[7:0] != 0)) begin
         swEventCode <= s_axi_wdata[7:0];
         swTriggerStrobe <= 1;
-    end
-    else begin
-        swTriggerStrobe <= 0;
     end
 end
 
@@ -719,13 +769,12 @@ endgenerate
 
 /*
  * Distributed bus
- * FIXME: Should the map update have proper clock-crossing?
  */
 generate
-reg [7:0] evgDistributedBus;
-for (i = 0 ; i < DBUS_WIDTH ; i = i + 1) begin : dBus
+reg [7:0] evgDistributedBus = 0;
+for (i = 0 ; i < DBUS_BITS ; i = i + 1) begin : dBus
   always @(posedge evgClk) begin
-    evgDistributedBus[i] <= evgHwIn[dbusMap[i*INPUTSEL_WIDTH+:INPUTSEL_WIDTH]];
+    evgDistributedBus[i] <= evgHwIn[dbusMap[i]];
   end
 end
 endgenerate
@@ -763,11 +812,14 @@ endmodule
  */
 module ospreyEVGeventSource (
     input  wire          clk,
+    // inputs from this stage
     input  wire          enable,
     input  wire          triggerStrobe,
     input  wire    [7:0] code,
+    // inputs from previous stage
     input  wire          evPendingIn,
     input  wire    [7:0] evCodeIn,
+    // outputs to next stage
     output wire          evPendingOut,
     output wire    [7:0] evCodeOut);
 
@@ -782,6 +834,12 @@ always @(posedge clk) begin
         if (triggerStrobe) begin
             myRequest <= 1;
             myEvent <= code;
+`ifdef __ICARUS__
+            if(!(code>0)) begin
+                $display("Fatal: queued event 0x%02x", code);
+                $stop;
+            end
+`endif
         end
         else if (!evPendingIn) begin
             myRequest <= 0;

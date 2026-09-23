@@ -27,9 +27,10 @@
  */
 `default_nettype none
 module ospreyEVGsequencer #(
-    parameter SEQUENCE_CAPACITY = 2048,
+    parameter SEQ_ADDR_WIDTH = 11,
     parameter BANK_COUNT        = 2,
     parameter HW_TRIGGER_COUNT  = 4,
+    parameter TIMER_COUNT       = 8,
     parameter GAP_WIDTH         = 32,
     parameter DB_WIDTH          = 32,
     parameter EVCODE_WIDTH      = 8,
@@ -41,21 +42,21 @@ module ospreyEVGsequencer #(
     input  wire                sysAddressCodeStrobe,
     input  wire                sysGapStrobe,
     input  wire [DB_WIDTH-1:0] sysGPIO_OUT,
-    output wire [DB_WIDTH-1:0] sysStatus,
+    output wire         [27:0] sysStatus,
     output wire [DB_WIDTH-1:0] sysAddressCodeRbk,
     output wire [DB_WIDTH-1:0] sysGapRbk,
+    output wire [DB_WIDTH-1:0] sysBankCount,
 
     input  wire                        evgClk,
+    input  wire      [TIMER_COUNT-1:0] evgTimerTrigger,
     input  wire [HW_TRIGGER_COUNT-1:0] evgHwTriggerRising,
     input  wire [HW_TRIGGER_COUNT-1:0] evgHwTriggerFalling,
-    output reg      [EVCODE_WIDTH-1:0] evgCodeTDATA,
+    output reg      [EVCODE_WIDTH-1:0] evgCodeTDATA = 0,
     output reg                         evgCodeTVALID = 0);
 
 localparam EVCODE_END    = {EVCODE_WIDTH{1'b1}};
-localparam EVCODE_REPEAT = {{EVCODE_WIDTH-1{1'b1}}, 1'b0};
 
 localparam GAP_COUNTER_WIDTH = GAP_WIDTH + 1;
-localparam SEQ_ADDR_WIDTH      = $clog2(SEQUENCE_CAPACITY);
 localparam ADDR_COUNTER_WIDTH  = SEQ_ADDR_WIDTH + 1;
 localparam BANKSEL_WIDTH       = $clog2(BANK_COUNT);
 localparam DPRAM_ADDR_WIDTH    = BANKSEL_WIDTH + SEQ_ADDR_WIDTH;
@@ -87,27 +88,39 @@ reg [DB_WIDTH-1:0] sysCSR;
 reg sysArmInfoToggle = 0;
 reg sysSoftTriggerToggle = 0;
 reg sysSeqCancelToggle = 0;
+reg sysTimerInfoToggle = 0;
 reg sysHwTrigInfoToggle = 0;
+reg sysTrigNormalToggle = 0;
 reg   [DPRAM_ADDR_WIDTH-1:0] sysAddrLatch = 0;
 wire  [DPRAM_ADDR_WIDTH-1:0] sysAddr = sysGPIO_OUT[8+:DPRAM_ADDR_WIDTH];
 wire [GAP_COUNTER_WIDTH-1:0] sysGapVal = {1'b0, sysGPIO_OUT[GAP_WIDTH-1:0]} +
                                                       {GAP_COUNTER_WIDTH{1'b1}};
 
+localparam [3:0] CSR_ARM   = 4'h1,
+                 CSR_TIMER = 4'h2,
+                 CSR_HWTRG = 4'h3,
+                 CSR_SWTRG = 4'h4,
+                 CSR_CANCL = 4'h5,
+                 CSR_NORML = 4'h6;
+
 always @(posedge sysClk) begin
     if (sysCsrStrobe) begin
         sysCSR <= sysGPIO_OUT;
-        if (sysGPIO_OUT[31]) begin
+        case(sysGPIO_OUT[31:28])
+        CSR_CANCL:
             sysSeqCancelToggle <= !sysSeqCancelToggle;
-        end
-        if (sysGPIO_OUT[30]) begin
+        CSR_SWTRG:
             sysSoftTriggerToggle <= !sysSoftTriggerToggle;
-        end
-        else if (sysGPIO_OUT[29]) begin
+        CSR_HWTRG:
             sysHwTrigInfoToggle  <= !sysHwTrigInfoToggle;
-        end
-        else begin
+        CSR_TIMER:
+            sysTimerInfoToggle  <= !sysTimerInfoToggle;
+        CSR_ARM:
             sysArmInfoToggle <= !sysArmInfoToggle;
-        end
+        CSR_NORML:
+            sysTrigNormalToggle <= !sysTrigNormalToggle;
+        default: begin end
+        endcase
     end
     if (sysAddressCodeStrobe) begin
         if (sysGPIO_OUT[31]) begin
@@ -122,8 +135,11 @@ always @(posedge sysClk) begin
     sysDpramQgaps  <= dpramGaps[sysAddrLatch];
 end
 
-assign sysStatus = { {32-1-BANKSEL_WIDTH-16{1'b0}},
-                     evgActive, evgActiveBankIndex,
+reg [BANK_COUNT-1:0] evgTrigNormal = 0;
+
+wire [3:0] evgActiveBankRb = evgActive ? evgActiveBankIndex+1 : 4'h0;
+assign sysStatus = { {8-BANK_COUNT{1'b0}}, evgTrigNormal,
+                     evgActiveBankRb,
                      {8-BANK_COUNT{1'b0}}, evgTriggered,
                      {8-BANK_COUNT{1'b0}}, evgArmed };
 assign sysAddressCodeRbk = { {DB_WIDTH-DPRAM_ADDR_WIDTH-EVCODE_WIDTH{1'b0}},
@@ -147,7 +163,7 @@ wire evgDpramNoGap = evgDpramQgap[GAP_COUNTER_WIDTH-1];
 (*ASYNC_REG="true"*) reg evgArmInfoToggle_m = 0;
 reg evgArmInfoToggle = 0, evgArmInfoToggle_d = 0;
 reg [BANK_COUNT-1:0] evgArm = 0, evgDisarm = 0;
-reg [BANK_COUNT-1:0] evgStartedBitmap = 0;
+reg [BANK_COUNT-1:0] evgRunningBitmap = 0;
 always @(posedge evgClk) begin
     evgArmInfoToggle_m <= sysArmInfoToggle;
     evgArmInfoToggle   <= evgArmInfoToggle_m;
@@ -160,7 +176,21 @@ always @(posedge evgClk) begin
         evgArm <= 0;
         evgDisarm <= 0;
     end
-    evgArmed <= (evgArmed | evgArm) & ~evgDisarm & ~evgStartedBitmap;
+    // disarm on request, or when single triggered
+    evgArmed <= (evgArmed | evgArm) & ~evgDisarm & (~evgRunningBitmap | evgTrigNormal);
+end
+
+// Normal/Single
+// sysTrigNormalToggle
+(*ASYNC_REG="true"*) reg evgTrigNormToggle_m = 0;
+reg evgTrigNormToggle = 0, evgTrigNormToggle_d = 0;
+always @(posedge evgClk) begin
+    evgTrigNormToggle_m <= sysTrigNormalToggle;
+    evgTrigNormToggle <= evgTrigNormToggle_m;
+    evgTrigNormToggle_d <= evgTrigNormToggle;
+    if (evgTrigNormToggle != evgTrigNormToggle_d) begin
+        evgTrigNormal <= (evgTrigNormal | sysCSR[0+:BANK_COUNT]) & ~sysCSR[8+:BANK_COUNT];
+    end
 end
 
 /*
@@ -171,13 +201,40 @@ wire                      sysHwTrigInfoEdge = sysCSR[20];
 wire[HW_TRIGGER_COUNT-1:0]sysHwTrigInfoEnables=sysCSR[0+:HW_TRIGGER_COUNT];
 (*ASYNC_REG="true"*) reg evgHwTrigInfoToggle_m = 0;
 reg evgHwTrigInfoToggle = 0, evgHwTrigInfoToggle_d = 0;
+reg [TIMER_COUNT-1:0] evgTimerTriggerEnables [0:BANK_COUNT-1];
 reg [HW_TRIGGER_COUNT-1:0] evgHwTrigRiseEnables [0:BANK_COUNT-1];
 reg [HW_TRIGGER_COUNT-1:0] evgHwTrigFallEnables [0:BANK_COUNT-1];
 reg [BANK_COUNT-1:0] evgHwTriggers = 0;
 
+(*ASYNC_REG="true"*) reg evgTimerTriggerToggle_m = 0;
+reg evgTimerTriggerToggle = 0, evgTimerTriggerToggle_d = 0;
+
 (*ASYNC_REG="true"*) reg evgSoftTriggerToggle_m = 0;
 reg evgSoftTriggerToggle = 0, evgSoftTriggerToggle_d = 0;
 reg [BANK_COUNT-1:0] evgSoftTriggers = 0;
+
+function [3:0] B2G(input [3:0] bin);
+    B2G = bin ^ {1'b0, bin[3:1]};
+endfunction
+function [3:0] G2B(input [3:0] gray);
+    G2B = gray ^ {1'b0, gray[3:1]} ^ {2'b0, gray[3:2]} ^ {3'b0, gray[3]};
+endfunction
+
+reg [4*BANK_COUNT-1:0] trigCountE = 0;
+(* ASYNC_REG="true" *) // cross from evgClk to sysCLk
+reg [4*BANK_COUNT-1:0] trigCountS = 0;
+wire [4*BANK_COUNT-1:0] trigCount;
+assign sysBankCount = {{32-4*BANK_COUNT{1'b0}}, trigCount};
+
+always @(posedge sysClk)
+    trigCountS <= trigCountE;
+
+genvar j;
+generate
+for (j=0 ; j < BANK_COUNT ; j = j + 1) begin  : trigCountN
+    assign trigCount[4*j+:4] = G2B(trigCountS[4*j+:4]);
+end
+endgenerate
 
 /*
  * Emergency stop
@@ -201,6 +258,13 @@ always @(posedge evgClk) begin
             evgHwTrigRiseEnables[sysHwTrigInfoBank] <= sysHwTrigInfoEnables;
         end
     end
+
+    evgTimerTriggerToggle_m <= sysTimerInfoToggle;
+    evgTimerTriggerToggle <= evgTimerTriggerToggle_m;
+    evgTimerTriggerToggle_d <= evgTimerTriggerToggle;
+    if (evgTimerTriggerToggle != evgTimerTriggerToggle_d) begin
+        evgTimerTriggerEnables[sysHwTrigInfoBank] <= sysCSR[0+:TIMER_COUNT];
+    end
     
     /*
      * Get software trigger requests from system
@@ -216,12 +280,6 @@ always @(posedge evgClk) begin
     end
 
     /*
-     * Generate trigger requests
-     */
-    evgTriggered <= (evgTriggered | evgHwTriggers | evgSoftTriggers) &
-                                                                 evgArmed;
-
-    /*
      * Cancel sequencer on request
      */
     evgSeqCancelToggle_m <= sysSeqCancelToggle;
@@ -232,12 +290,13 @@ end
 
 genvar b;
 generate
-for (b = 0 ; b < BANK_COUNT ; b = b + 1) begin
-always @(posedge evgClk) begin
-    evgHwTriggers[b] <= |(((evgHwTriggerRising  & evgHwTrigRiseEnables[b]) |
-                           (evgHwTriggerFalling & evgHwTrigFallEnables[b]))) &
-                                                              evgArmed[b];
-end
+for (b = 0 ; b < BANK_COUNT ; b = b + 1) begin : evgHwTrigger
+    wire trigRising = |(evgHwTriggerRising  & evgHwTrigRiseEnables[b]);
+    wire trigFalling = |(evgHwTriggerFalling & evgHwTrigFallEnables[b]);
+    wire trigTimer = |(evgTimerTrigger & evgTimerTriggerEnables[b]);
+    always @(posedge evgClk) begin
+        evgHwTriggers[b] <= (trigRising | trigFalling | trigTimer) & evgArmed[b];
+    end
 end
 endgenerate
 
@@ -267,20 +326,28 @@ always @(posedge evgClk) begin
     end
 
     /*
+     * Generate trigger requests.
+     * Mask trigger for running bank.
+     */
+    evgTriggered <= (evgTriggered | evgHwTriggers | evgSoftTriggers)
+                  & evgArmed & ~evgRunningBitmap;
+
+    /*
      * Act on trigger requests
      */
     if (evgStart || evgActive) begin
         evgStart <= 0;
-        evgStartedBitmap <= 0;
     end
     else begin
         brk = 0;
         for (i = BANK_COUNT - 1 ; i >= 0 ; i = i - 1) begin
             if (evgTriggered[i] && !brk) begin
                 evgActiveBankIndex <= i;
-                evgStartedBitmap <= 1 << i;
+                evgRunningBitmap <= 1 << i;
+                evgTriggered[i] <= 0;
                 evgStart <= 1;
                 brk = 1;
+                trigCountE[4*i+:4] <= B2G(G2B(trigCountE[4*i+:4]) + 1);
             end
         end
     end
@@ -299,6 +366,7 @@ always @(posedge evgClk) begin
             evgAddrCounter <= 0;
             evgCodeTVALID <= 0;
             evgActive <= 0;
+            evgRunningBitmap <= 0;
         end
         else if (evgInGap) begin
             evgGapCounter <= evgGapCounter - 1;
@@ -312,6 +380,7 @@ always @(posedge evgClk) begin
             evgAddrCounter <= 0;
             evgCodeTVALID <= 0;
             evgActive <= 0;
+            evgRunningBitmap <= 0;
         end
         else begin
             evgAddrCounter <= evgAddrCounter + 1;
