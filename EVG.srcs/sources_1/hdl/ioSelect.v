@@ -27,7 +27,7 @@
  */
 `default_nettype none
 module ioSelect #(
-    parameter EVG_HW_INPUT_COUNT  = 15,
+    parameter EVG_HW_INPUT_COUNT  = 16,
     parameter FMC1_INPUT_COUNT    = 16,
     parameter PMOD_INPUT_COUNT    = 8,
     parameter DEBUG               = "false"

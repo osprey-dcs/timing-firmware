@@ -311,7 +311,7 @@ sysClkCounters #(.CLK_RATE(CFG_SYSCLK_RATE), .DEBUG("false"))
 // PMOD1, if present, is a PMOD-IO (for production) or a PMOD-GPS (for testing).
 // PMOD2, if present, is a PMOD-IO.
 
-wire [14:0] evgHwInputs;
+wire [15:0] evgHwInputs;
 wire isEVG = GPIO_IN[GPIO_IDX_IO_SELECT][0];
 
 wire [15:0] fmcOutputs;
