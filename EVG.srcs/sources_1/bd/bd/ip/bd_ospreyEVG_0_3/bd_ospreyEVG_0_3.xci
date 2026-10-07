@@ -32,8 +32,8 @@
         "SEQRAM_BANK_COUNT": [ { "value": "8", "resolve_type": "generated", "format": "long", "usage": "all" } ],
         "RX_COUNT": [ { "value": "8", "resolve_type": "generated", "format": "long", "usage": "all" } ],
         "INPUT_COUNT": [ { "value": "16", "resolve_type": "generated", "format": "long", "usage": "all" } ],
-        "HW_TRIGGER_COUNT": [ { "value": "8", "resolve_type": "generated", "format": "long", "usage": "all" } ],
-        "C_S_AXI_FREQ_HZ": [ { "value": "100000000", "resolve_type": "generated", "format": "long", "usage": "all" } ]
+        "C_S_AXI_FREQ_HZ": [ { "value": "100000000", "resolve_type": "generated", "format": "long", "usage": "all" } ],
+        "HW_TRIGGER_COUNT": [ { "value": "8", "resolve_type": "generated", "format": "long", "usage": "all" } ]
       },
       "project_parameters": {
         "ARCHITECTURE": [ { "value": "kintex7" } ],
