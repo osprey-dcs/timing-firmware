@@ -270,7 +270,7 @@
         <spirit:parameters>
           <spirit:parameter>
             <spirit:name>viewChecksum</spirit:name>
-            <spirit:value>face72f5</spirit:value>
+            <spirit:value>a35bc290</spirit:value>
           </spirit:parameter>
         </spirit:parameters>
       </spirit:view>
@@ -286,7 +286,7 @@
         <spirit:parameters>
           <spirit:parameter>
             <spirit:name>viewChecksum</spirit:name>
-            <spirit:value>c6a18d2c</spirit:value>
+            <spirit:value>e9cfad91</spirit:value>
           </spirit:parameter>
         </spirit:parameters>
       </spirit:view>
@@ -300,7 +300,7 @@
         <spirit:parameters>
           <spirit:parameter>
             <spirit:name>viewChecksum</spirit:name>
-            <spirit:value>245dd0cc</spirit:value>
+            <spirit:value>fabae690</spirit:value>
           </spirit:parameter>
         </spirit:parameters>
       </spirit:view>
@@ -314,7 +314,7 @@
         <spirit:parameters>
           <spirit:parameter>
             <spirit:name>viewChecksum</spirit:name>
-            <spirit:value>2b3552f1</spirit:value>
+            <spirit:value>0f30c281</spirit:value>
           </spirit:parameter>
         </spirit:parameters>
       </spirit:view>
@@ -365,7 +365,7 @@
         <spirit:wire>
           <spirit:direction>in</spirit:direction>
           <spirit:vector>
-            <spirit:left spirit:format="long" spirit:resolve="dependent" spirit:dependency="(spirit:decode(id(&apos;MODELPARAM_VALUE.INPUT_COUNT&apos;)) - 1)">14</spirit:left>
+            <spirit:left spirit:format="long" spirit:resolve="dependent" spirit:dependency="(spirit:decode(id(&apos;MODELPARAM_VALUE.INPUT_COUNT&apos;)) - 1)">7</spirit:left>
             <spirit:right spirit:format="long">0</spirit:right>
           </spirit:vector>
           <spirit:wireTypeDefs>
@@ -855,13 +855,8 @@
       </spirit:modelParameter>
       <spirit:modelParameter spirit:dataType="integer">
         <spirit:name>INPUT_COUNT</spirit:name>
-        <spirit:displayName>Input Count</spirit:displayName>
-        <spirit:value spirit:format="long" spirit:resolve="generated" spirit:id="MODELPARAM_VALUE.INPUT_COUNT">15</spirit:value>
-      </spirit:modelParameter>
-      <spirit:modelParameter spirit:dataType="integer">
-        <spirit:name>HW_TRIGGER_COUNT</spirit:name>
-        <spirit:displayName>Hw Trigger Count</spirit:displayName>
-        <spirit:value spirit:format="long" spirit:resolve="generated" spirit:id="MODELPARAM_VALUE.HW_TRIGGER_COUNT">8</spirit:value>
+        <spirit:displayName>Trigger Input Count</spirit:displayName>
+        <spirit:value spirit:format="long" spirit:resolve="generated" spirit:id="MODELPARAM_VALUE.INPUT_COUNT">8</spirit:value>
       </spirit:modelParameter>
       <spirit:modelParameter spirit:dataType="integer">
         <spirit:name>C_S_AXI_FREQ_HZ</spirit:name>
@@ -907,7 +902,7 @@
       <spirit:file>
         <spirit:name>hdl/ospreyEVG.v</spirit:name>
         <spirit:fileType>verilogSource</spirit:fileType>
-        <spirit:userFileType>CHECKSUM_4815b71a</spirit:userFileType>
+        <spirit:userFileType>CHECKSUM_c5e3af57</spirit:userFileType>
       </spirit:file>
     </spirit:fileSet>
     <spirit:fileSet>
@@ -966,7 +961,7 @@
       <spirit:file>
         <spirit:name>xgui/ospreyEVG_v1_0.tcl</spirit:name>
         <spirit:fileType>tclSource</spirit:fileType>
-        <spirit:userFileType>CHECKSUM_2b3552f1</spirit:userFileType>
+        <spirit:userFileType>CHECKSUM_0f30c281</spirit:userFileType>
         <spirit:userFileType>XGUI_VERSION_2</spirit:userFileType>
       </spirit:file>
     </spirit:fileSet>
@@ -1066,13 +1061,8 @@
     </spirit:parameter>
     <spirit:parameter>
       <spirit:name>INPUT_COUNT</spirit:name>
-      <spirit:displayName>Input Count</spirit:displayName>
-      <spirit:value spirit:format="long" spirit:resolve="user" spirit:id="PARAM_VALUE.INPUT_COUNT">15</spirit:value>
-    </spirit:parameter>
-    <spirit:parameter>
-      <spirit:name>HW_TRIGGER_COUNT</spirit:name>
-      <spirit:displayName>Hardware Trigger Count</spirit:displayName>
-      <spirit:value spirit:format="long" spirit:resolve="user" spirit:id="PARAM_VALUE.HW_TRIGGER_COUNT" spirit:minimum="2" spirit:maximum="8" spirit:rangeType="long">8</spirit:value>
+      <spirit:displayName>Trigger Input Count</spirit:displayName>
+      <spirit:value spirit:format="long" spirit:resolve="user" spirit:id="PARAM_VALUE.INPUT_COUNT" spirit:minimum="2" spirit:maximum="16" spirit:rangeType="long">8</spirit:value>
     </spirit:parameter>
     <spirit:parameter>
       <spirit:name>C_S_AXI_FREQ_HZ</spirit:name>
@@ -1105,20 +1095,20 @@
       </xilinx:taxonomies>
       <xilinx:displayName>ospreyEVG</xilinx:displayName>
       <xilinx:vendorDisplayName>Osprey DCS</xilinx:vendorDisplayName>
-      <xilinx:coreRevision>26</xilinx:coreRevision>
+      <xilinx:coreRevision>29</xilinx:coreRevision>
       <xilinx:upgrades>
         <xilinx:canUpgradeFrom>user.org:user:ospreyEVG:1.0</xilinx:canUpgradeFrom>
       </xilinx:upgrades>
-      <xilinx:coreCreationDateTime>2026-04-14T18:06:54Z</xilinx:coreCreationDateTime>
+      <xilinx:coreCreationDateTime>2026-10-07T22:12:33Z</xilinx:coreCreationDateTime>
     </xilinx:coreExtensions>
     <xilinx:packagingInfo>
       <xilinx:xilinxVersion>2023.1</xilinx:xilinxVersion>
       <xilinx:checksum xilinx:scope="busInterfaces" xilinx:value="f2bad0c9"/>
       <xilinx:checksum xilinx:scope="memoryMaps" xilinx:value="c30980da"/>
-      <xilinx:checksum xilinx:scope="fileGroups" xilinx:value="ba83e2c9"/>
-      <xilinx:checksum xilinx:scope="ports" xilinx:value="b8550923"/>
-      <xilinx:checksum xilinx:scope="hdlParameters" xilinx:value="96d1fea0"/>
-      <xilinx:checksum xilinx:scope="parameters" xilinx:value="ec31a08c"/>
+      <xilinx:checksum xilinx:scope="fileGroups" xilinx:value="80084d3d"/>
+      <xilinx:checksum xilinx:scope="ports" xilinx:value="f03b197d"/>
+      <xilinx:checksum xilinx:scope="hdlParameters" xilinx:value="92d8257e"/>
+      <xilinx:checksum xilinx:scope="parameters" xilinx:value="09288a0e"/>
       <xilinx:targetDRCs>
         <xilinx:targetDRC xilinx:tool="ipi">
           <xilinx:targetDRCOption xilinx:name="ignore_freq_hz" xilinx:value="true"/>

@@ -93,6 +93,12 @@ mgtClkSwitchInit(void)
         outputEnable(outputIndex, 0);
     }
     setMgtClkSwitch0(MGT_CLK_SWITCH_INPUT_FPGA_REF_CLK0);
+    mgtClkSwitchConnectOutputToInput(MGT_CLK_SWITCH_OUTPUT_MGTCLK1,
+                                     MGT_CLK_SWITCH_INPUT_SI570_CLK);
+    mgtClkSwitchConnectOutputToInput(MGT_CLK_SWITCH_OUTPUT_MGTCLK2,
+                                     MGT_CLK_SWITCH_INPUT_FMC2_GBTCLK0);
+    mgtClkSwitchConnectOutputToInput(MGT_CLK_SWITCH_OUTPUT_MGTCLK3,
+                                     MGT_CLK_SWITCH_INPUT_FMC2_GBTCLK1);
 }
 
 void

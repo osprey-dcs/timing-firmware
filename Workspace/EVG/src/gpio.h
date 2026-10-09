@@ -50,6 +50,8 @@
 #define GPIO_IDX_MPS_LOCAL_CSR             14 // Local MPS configuration
 #define GPIO_IDX_MPS_LOCAL_DATA            15 // Local MPS configuration
 #define GPIO_IDX_MPS_MERGE_CSR             16 // Merge MPS from other nodes
+#define GPIO_IDX_TRGOUT_JTR1_SPI           17 /* jitter cleaner 1 control/status I/O */
+#define GPIO_IDX_TRGOUT_JTR2_SPI           18 /* jitter cleaner 2 ... */
 
 #define GPIO_IDX_COUNT                     32 // Number of GPIO registers
 

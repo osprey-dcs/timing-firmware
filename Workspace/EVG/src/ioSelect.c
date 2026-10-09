@@ -34,41 +34,51 @@
 #include "systemParameters.h"
 #include "util.h"
 
-#define FMC_NAME "RF-IN"
+#define FMC1_NAME "RF-IN"
+#define FMC2_NAME "TRG-OUT"
 
-#define CSR_W_SET_FMC_IS_PRESENT    0x200
+// partial duplicated in ioSelect.h
+#define CSR_W_SET_FMC2_IS_PRESENT   0x400
+#define CSR_W_SET_FMC1_IS_PRESENT   0x200
 #define CSR_W_SET_SET_IS_EVG        0x100
-#define CSR_RW_FMC_IS_PRESENT       0x2
+#define CSR_RW_FMC2_IS_PRESENT      0x4
+#define CSR_RW_FMC1_IS_PRESENT      0x2
 #define CSR_RW_IS_EVG               0x1
 
 static void
 ioSelectShow(void)
 {
     int status = ioSelectStatus();
-    if (status & CSR_RW_IS_EVG) {
-        printf("Operating as Event Generator.\n");
-        printf("Obtaining PPS and hardware inputs from %s.\n",
-                    (status & CSR_RW_FMC_IS_PRESENT) ? "FMC RF-IN" : "PMOD-IO");
-    }
+    printf("Mode: %s\n"
+           "FMC1: %s\n"
+           "FMC2: %s\n",
+           (status & CSR_RW_IS_EVG) ? "Generator" : "Receiver",
+           (status & CSR_RW_FMC1_IS_PRESENT) ? "CLK-INPUT-FMC" : "Empty",
+           (status & CSR_RW_FMC2_IS_PRESENT) ? "TRG-OUTPUT-FMC" : "Empty"
+    );
 }
 
 void
 ioSelectInit(void)
 {
-    const char *fmcName = iicFPGAgetNameString(0);
+    const char *fmc1Name = iicFPGAgetNameString(0);
+    const char *fmc2Name = iicFPGAgetNameString(1);
+    unsigned fmc1Present = strcmp(fmc1Name, FMC1_NAME)==0;
+    unsigned fmc2Present = strcmp(fmc2Name, FMC2_NAME)==0;
+
+    printf("FMC1 Name: %s\n"
+           "FMC2 Name: %s\n",
+           fmc1Name,
+           fmc2Name);
+
     GPIO_WRITE(GPIO_IDX_IO_SELECT, CSR_W_SET_SET_IS_EVG |
                               (systemParameters.ntpServer ? CSR_RW_IS_EVG: 0));
-    if (strcmp(fmcName, FMC_NAME) == 0) {
-        GPIO_WRITE(GPIO_IDX_IO_SELECT, CSR_W_SET_FMC_IS_PRESENT |
-                                                         CSR_RW_FMC_IS_PRESENT);
-    }
-    else {
-        GPIO_WRITE(GPIO_IDX_IO_SELECT, CSR_W_SET_FMC_IS_PRESENT | 0);
-        if (*fmcName != '\0') {
-            printf("Warning -- FMC slot 1 module (%s) is not \""FMC_NAME"\".\n",
-                                                                       fmcName);
-        }
-    }
+
+    GPIO_WRITE(GPIO_IDX_IO_SELECT,
+          CSR_W_SET_FMC1_IS_PRESENT | (fmc1Present ? CSR_RW_FMC1_IS_PRESENT : 0)
+        | CSR_W_SET_FMC2_IS_PRESENT | (fmc2Present ? CSR_RW_FMC2_IS_PRESENT : 0)
+    );
+
     ioSelectShow();
 }
 

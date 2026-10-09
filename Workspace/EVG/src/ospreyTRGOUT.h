@@ -1,7 +1,7 @@
 /*
  * MIT License
  *
- * Copyright (c) 2025 Osprey DCS
+ * Copyright (c) 2026 Osprey DCS
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,19 +21,18 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+#ifndef OSPREYTRGOUT_H
+#define OSPREYTRGOUT_H
 
-/*
- * Route EVG/EVG I/O
- */
-#ifndef _IOSELECT_H_
-#define _IOSELECT_H_
+#include <stdint.h>
 
-// partial duplication of register list in ioSelect.c
-#define IOSELECT_STATUS_FMC2_IS_PRESENT  0x4
-#define IOSELECT_STATUS_FMC1_IS_PRESENT  0x2
-#define IOSELECT_STATUS_IS_EVG           0x1
+void ospreyTRGOUTinit(void);
 
-void ioSelectInit(void);
-int ioSelectStatus(void);
+void si539xWrite(unsigned ch, uint8_t addr, uint8_t val);
+uint8_t si539xRead(unsigned ch, uint8_t addr);
 
-#endif /* _IOSELECT_H_ */
+#define TRGOUT_SIZE 0
+uint32_t osreyTRGOUTRead(uint32_t addr);
+void osreyTRGOUTWrite(uint32_t addr);
+
+#endif // OSPREYTRGOUT_H

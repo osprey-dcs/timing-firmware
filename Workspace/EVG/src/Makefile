@@ -41,6 +41,8 @@ softwareBuildDate.h: clockAdjust.c \
                      mps.h \
                      ospreyRFIN.c \
                      ospreyRFIN.h \
+                     ospreyTRGOUT.c \
+                     ospreyTRGOUT.h \
                      ntpTime.c \
                      ntpTime.h \
                      platform.c \

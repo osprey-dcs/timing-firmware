@@ -9,6 +9,8 @@ end
 reg sysClk = 0;
 always #5 sysClk <= ~sysClk; // 100MHz
 
+reg sysFMCisPresent = 0;
+
 reg csrStrobe = 0; // active high
 reg [31:0] GPIO_OUT;
 wire lCLK;
@@ -43,6 +45,7 @@ ospreyRFIN #(
     .csrStrobe(csrStrobe),
     .GPIO_OUT(GPIO_OUT),
     .readback(readback),
+    .sysFMCisPresent(sysFMCisPresent),
     .RFIN_LMK01801_CLK(lCLK),
     .RFIN_LMK01801_LE(lLE),
     .RFIN_LMK01801_DATA(lDATA),
@@ -76,6 +79,10 @@ initial begin
         @(posedge sysClk);
     @(posedge sysClk);
 
+    `assert_eq(bits, 6'bzzzzzz); // sCS active low
+
+    sysFMCisPresent <= 1;
+    @(posedge sysClk);
     `assert_eq(bits, 6'b000010); // sCS active low
 
     #10

@@ -38,6 +38,7 @@
 #include "mgtClkSwitch.h"
 #include "mmcMailbox.h"
 #include "ospreyRFIN.h"
+#include "ospreyTRGOUT.h"
 #include "ntpTime.h"
 #include "platform.h"
 #include "softwareBuildDate.h"
@@ -100,6 +101,7 @@ main(void)
     si570Init();
     ioSelectInit();
     ospreyRFINinit();
+    ospreyTRGOUTinit();
     mgtClkSwitchInit();
     xadcInit();
     mgtInit();

@@ -27,8 +27,8 @@
  */
 `default_nettype none
 module ioSelect #(
-    parameter EVG_HW_INPUT_COUNT  = 15,
-    parameter FMC_INPUT_COUNT     = 16,
+    parameter EVG_HW_INPUT_COUNT  = 16,
+    parameter FMC1_INPUT_COUNT    = 16,
     parameter PMOD_INPUT_COUNT    = 8,
     parameter DEBUG               = "false"
     ) (
@@ -37,34 +37,45 @@ module ioSelect #(
     input  wire [31:0] sysGPIO_OUT,
     output wire [31:0] sysStatus,
 
+    input  wire [7:0]  evrHwOutputs, // TODO: expose 8-16!
+    output wire [7:0]  pmodOutputs,
+    output wire [15:0] fmcOutputs,
+    output reg         sysFMC1isPresent = 0,
+    output reg         sysFMC2isPresent = 0,
+
     output wire  [EVG_HW_INPUT_COUNT-1:0] evgHwInputs,
 
-    input  wire   [FMC_INPUT_COUNT-1:0] fmcInputs,
+    input  wire  [FMC1_INPUT_COUNT-1:0] fmcInputs,
     input  wire  [PMOD_INPUT_COUNT-1:0] pmodInputs);
 
 ///////////////////////////////////////////////////////////////////////////////
 // System clock domain
 reg sysIsEVG = 0;
-reg sysFMCisPresent = 0;
 
 always @(posedge sysClk) begin
     if (sysCsrStrobe) begin
         if (sysGPIO_OUT[8])  sysIsEVG        <= sysGPIO_OUT[0];
-        if (sysGPIO_OUT[9])  sysFMCisPresent <= sysGPIO_OUT[1];
+        if (sysGPIO_OUT[9])  sysFMC1isPresent <= sysGPIO_OUT[1];
+        if (sysGPIO_OUT[10]) sysFMC2isPresent <= sysGPIO_OUT[2];
     end
 end
 
-assign sysStatus = { {32-2{1'b0}}, sysFMCisPresent, sysIsEVG };
+assign sysStatus = { {32-3{1'b0}}, sysFMC2isPresent, sysFMC1isPresent, sysIsEVG };
 
 genvar i;
 generate
 
 for (i = 0 ; i < EVG_HW_INPUT_COUNT ; i = i + 1) begin : evgHwIn
-    assign evgHwInputs[i] = sysFMCisPresent ? fmcInputs[i] :
+    assign evgHwInputs[i] = sysFMC1isPresent ? fmcInputs[i] :
                             (i < PMOD_INPUT_COUNT) ? pmodInputs[i] :
                             1'b0;
 end
 
 endgenerate
+
+assign fmcOutputs[7:0]  =  sysFMC2isPresent ? evrHwOutputs      : 0;
+assign fmcOutputs[15:8] =  sysFMC2isPresent ? evrHwOutputs      : 0; // TODO: unmirror
+assign pmodOutputs      = !sysFMC2isPresent ? evrHwOutputs      : 0;
+
 endmodule
 `default_nettype wire

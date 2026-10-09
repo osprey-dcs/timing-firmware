@@ -1,4 +1,5 @@
 # Don't check timing across clock boundaries
+# See: ./CreateFalseClockPaths.awk
 
 set_false_path -from [get_clocks -of_objects [get_pins bd_i/clk_wiz_1/inst/mmcm_adv_inst/CLKOUT0]] -to [get_clocks -of_objects [get_pins bd_i/clk_wiz_1/inst/mmcm_adv_inst/CLKOUT1]]
 set_false_path -from [get_clocks -of_objects [get_pins bd_i/clk_wiz_1/inst/mmcm_adv_inst/CLKOUT0]] -to [get_clocks -of_objects [get_pins bd_i/clk_wiz_1/inst/mmcm_adv_inst/CLKOUT3]]
@@ -49,3 +50,5 @@ set_false_path -from [get_clocks fiberLinks/mgtWrapper_i/mgt_i/inst/mgt_i/gt6_mg
 set_false_path -from [get_clocks fiberLinks/mgtWrapper_i/mgt_i/inst/mgt_i/gt7_mgt_i/gtxe2_i/RXOUTCLK] -to [get_clocks clk_out1_bd_clk_wiz_1_0]
 set_false_path -from [get_clocks fiberLinks/mgtWrapper_i/mgt_i/inst/mgt_i/gt7_mgt_i/gtxe2_i/RXOUTCLK] -to [get_clocks clk_out2_bd_clk_wiz_2_0]
 set_false_path -from [get_clocks rx_clk] -to [get_clocks -of_objects [get_pins bd_i/clk_wiz_1/inst/mmcm_adv_inst/CLKOUT1]]
+set_false_path -from [get_clocks FMC2_Cleaned_CLK0] -to [get_clocks clk_out1_bd_clk_wiz_1_0]
+set_false_path -from [get_clocks FMC2_Cleaned_CLK1] -to [get_clocks clk_out1_bd_clk_wiz_1_0]

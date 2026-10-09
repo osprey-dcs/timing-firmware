@@ -39,8 +39,8 @@ module EVG #(
     input  wire CLK20_VCXO,
     output wire VCXO_EN,
     // From U2 cross-point switch
-    input  wire MGTREFCLK0_116_P,
-    input  wire MGTREFCLK0_116_N,
+    input  wire [3:0] MGTREFCLK_P,
+    input  wire [3:0] MGTREFCLK_N,
     // Direct from FMC1
     input  wire FMC1_CLK0_M2C_P,
     input  wire FMC1_CLK0_M2C_N,
@@ -115,19 +115,44 @@ module EVG #(
     output wire        FMC1_ADS7253_CSB,
     output wire        FMC1_ADS7253_DIN,
     input  wire        FMC1_ADS7253_DOUTA,
-    input  wire        FMC1_ADS7253_DOUTB
+    input  wire        FMC1_ADS7253_DOUTB,
+
+    // FMC2 populated by trigger-output-fmc
+    input wire   [1:0] FMC2_Cleaned_CLK_P,
+    input wire   [1:0] FMC2_Cleaned_CLK_N,
+    output wire  [1:0] FMC2_Recovered_CLK_P,
+    output wire  [1:0] FMC2_Recovered_CLK_N,
+    output wire        FMC2_Heartbeat_LED,
+    output wire  [1:0] FMC2_Cleaner_LevelShift_OEn,
+    output wire  [1:0] FMC2_Cleaner_ClkBuffer_OEn,
+    output wire  [1:0] FMC2_Cleaner_RSTn,
+    output wire  [1:0] FMC2_Cleaner_SPI_CLK,
+    output wire  [1:0] FMC2_Cleaner_SPI_SDI, // MOSI
+    output wire  [1:0] FMC2_Cleaner_SPI_CSn,
+    input wire   [1:0] FMC2_Cleaner_SPI_SDO, // MISO
+    input wire   [1:0] FMC2_Cleaner_Fault_INTR,
+    input wire   [1:0] FMC2_Cleaner_Fault_LOS_XO,
+    input wire   [1:0] FMC2_Cleaner_Fault_LOL,
+    output wire        FMC2_OE_Digital_Outputs,
+    output wire [15:0] FMC2_D_Output_P,
+    output wire [15:0] FMC2_D_Output_N
     );
 
 localparam MGT_DATA_WIDTH       = 16;
 localparam TIMESTAMP_WIDTH      = 64;
 genvar i;
 
+// FMC presense detection
+// FMC[1] - RF-IN
+// FMC[2] - TRG-OUT
+wire [2:1] sysFMCisPresent; // 1 indexed
+
 ///////////////////////////////////////////////////////////////////////////////
 // Static outputs
 assign VCXO_EN = 1'b1;
 assign LD16 = 1'b0;
 assign LD17 = 1'b0;
-assign FMC1_DI_ENb = 1'b0;
+assign FMC1_DI_ENb = sysFMCisPresent[1] ? 1'b0 : 1'bz;
 
 ///////////////////////////////////////////////////////////////////////////////
 // PMOD I/O routing
@@ -154,6 +179,8 @@ assign FMC1_DI_ENb = 1'b0;
  * FMC P2 - N/C
  */
 
+parameter TRIG_OUTPUT_COUNT = 8;
+wire [TRIG_OUTPUT_COUNT-1:0] trigOut;
 wire [7:0] pmodOut;
 
 assign PMOD2_7 = pmodOut[7]; // J13 OUT4
@@ -190,6 +217,22 @@ wire sysClk, clk20, clk125, clk200, clk500, evgClk;
 wire clkFMC1_M2C0, clkFMC1_M2C1;
 IBUFGDS FMC1_M2C0_IB(.I(FMC1_CLK0_M2C_P),.IB(FMC1_CLK0_M2C_N),.O(clkFMC1_M2C0));
 IBUFGDS FMC1_M2C1_IB(.I(FMC1_CLK1_M2C_P),.IB(FMC1_CLK1_M2C_N),.O(clkFMC1_M2C1));
+wire [1:0] clkFMC2Cleaned;
+IBUFDS clkFMC2Clean0(.I(FMC2_Cleaned_CLK_P[0]),.IB(FMC2_Cleaned_CLK_N[0]),.O(clkFMC2Cleaned[0]));
+IBUFDS clkFMC2Clean1(.I(FMC2_Cleaned_CLK_P[1]),.IB(FMC2_Cleaned_CLK_N[1]),.O(clkFMC2Cleaned[1]));
+
+assign FMC2_OE_Digital_Outputs = sysFMCisPresent[2] ? 1'b1 : 1'bz;
+wire [1:0] clkFMC2Recovered;
+// reverse polarity
+generate
+for(i=0; i<2; i=i+1) begin :FMC2GTXn
+    OBUFTDS FMC2_Recv0(
+        .I(clkFMC2Recovered[i]),
+        .T(!sysFMCisPresent[2]),
+        .O(FMC2_Recovered_CLK_N[i]),
+        .OB(FMC2_Recovered_CLK_P[i]));
+end
+endgenerate
 
 ///////////////////////////////////////////////////////////////////////////////
 // General-purpose I/O register glue
@@ -199,10 +242,36 @@ wire [31:0] GPIO_IN [0:GPIO_IDX_COUNT-1];
 wire [(GPIO_IDX_COUNT*32)-1:0] GPIO_IN_FLATTENED;
 
 generate
-for (i = 0 ; i < GPIO_IDX_COUNT ; i = i + 1) begin
+for (i = 0 ; i < GPIO_IDX_COUNT ; i = i + 1) begin : gpioFlatten
     assign GPIO_IN_FLATTENED[i*32+:32] = GPIO_IN[i];
 end
 endgenerate
+
+// FMC2 I/O, trigger-output-fmc
+
+assign FMC2_Heartbeat_LED = sysFMCisPresent[2] ? 1'b1 : 1'bz;
+
+ospreyTRGOUT fmc2TrgOut(
+  .sysClk(sysClk),
+  .jtrStrobe({
+    GPIO_STROBES[GPIO_IDX_TRGOUT_JTR2_SPI],
+    GPIO_STROBES[GPIO_IDX_TRGOUT_JTR1_SPI]
+  }),
+  .GPIO_OUT(GPIO_OUT),
+  .jtrData1(GPIO_IN[GPIO_IDX_TRGOUT_JTR1_SPI]),
+  .jtrData2(GPIO_IN[GPIO_IDX_TRGOUT_JTR2_SPI]),
+  .sysFMCisPresent(sysFMCisPresent[2]),
+  .Cleaner_LevelShift_OEn(FMC2_Cleaner_LevelShift_OEn),
+  .Cleaner_ClkBuffer_OEn(FMC2_Cleaner_ClkBuffer_OEn),
+  .Cleaner_RSTn(FMC2_Cleaner_RSTn),
+  .Cleaner_SPI_CLK(FMC2_Cleaner_SPI_CLK),
+  .Cleaner_SPI_SDI(FMC2_Cleaner_SPI_SDI),
+  .Cleaner_SPI_CSn(FMC2_Cleaner_SPI_CSn),
+  .Cleaner_SPI_SDO(FMC2_Cleaner_SPI_SDO),
+  .Cleaner_Fault_INTR(FMC2_Cleaner_Fault_INTR),
+  .Cleaner_Fault_LOS_XO(FMC2_Cleaner_Fault_LOS_XO),
+  .Cleaner_Fault_LOL(FMC2_Cleaner_Fault_LOL)
+);
 
 `include "firmwareBuildDate.v"
 assign GPIO_IN[GPIO_IDX_FIRMWARE_DATE] = FIRMWARE_BUILD_DATE;
@@ -216,6 +285,7 @@ ospreyRFIN #(
     .csrStrobe(GPIO_STROBES[GPIO_IDX_RFIN_CONTROL]),
     .GPIO_OUT(GPIO_OUT),
     .readback(GPIO_IN[GPIO_IDX_RFIN_CONTROL]),
+    .sysFMCisPresent(sysFMCisPresent[1]),
     .RFIN_LMK01801_CLK(FMC1_LMK01801_CLK),
     .RFIN_LMK01801_LE(FMC1_LMK01801_LE),
     .RFIN_LMK01801_DATA(FMC1_LMK01801_DATA),
@@ -227,22 +297,40 @@ ospreyRFIN #(
 
 ///////////////////////////////////////////////////////////////////////////////
 // Keep track of elapsed time
-wire microsecondStrobe;
 sysClkCounters #(.CLK_RATE(CFG_SYSCLK_RATE), .DEBUG("false"))
  sysClkCounters (
     .clk(sysClk),
-    .usecStrobe(microsecondStrobe),
+    .usecStrobe(),
     .microsecondsSinceBoot(GPIO_IN[GPIO_IDX_MICROSECONDS_SINCE_BOOT]),
     .secondsSinceBoot(GPIO_IN[GPIO_IDX_SECONDS_SINCE_BOOT]));
 
 ///////////////////////////////////////////////////////////////////////////////
 // I/O marshalling
-// FMC1, if present, is an RF-input.
+// FMC1, if present, is an CLK-input.
+// FMC2, if present, is an TRIG-output
 // PMOD1, if present, is a PMOD-IO (for production) or a PMOD-GPS (for testing).
 // PMOD2, if present, is a PMOD-IO.
 
-wire [14:0] evgHwInputs;
+wire [15:0] evgHwInputs;
 wire isEVG = GPIO_IN[GPIO_IDX_IO_SELECT][0];
+
+wire [15:0] fmcOutputs;
+generate
+    for(i=0; i<16; i=i+1) begin : fmcOutN
+        OBUFTDS outN (
+            /* HACK
+             * This inverts an invert in ospreyEVRoutputDriver.v as ACTIVE_LOW_OUTPUTS=1
+             * due to issues with using OSERDES with the PMOD outputs.
+             * TODO: sort out FMC vs. PMOD.  And limited number of outputs from ospreyEVR.
+             * Want to instanciate both types in parallel...
+             */
+            .I(~fmcOutputs[i]),
+            .T(!sysFMCisPresent[2]), // 1 - tri-state
+            .O(FMC2_D_Output_P[i]),
+            .OB(FMC2_D_Output_N[i])
+        );
+    end
+endgenerate
 
 ioSelect #(.DEBUG("false"))
   ioSelect (
@@ -250,6 +338,11 @@ ioSelect #(.DEBUG("false"))
     .sysCsrStrobe(GPIO_STROBES[GPIO_IDX_IO_SELECT]),
     .sysGPIO_OUT(GPIO_OUT),
     .sysStatus(GPIO_IN[GPIO_IDX_IO_SELECT]),
+    .evrHwOutputs(trigOut),
+    .pmodOutputs(pmodOut),
+    .sysFMC1isPresent(sysFMCisPresent[1]),
+    .sysFMC2isPresent(sysFMCisPresent[2]),
+    .fmcOutputs(fmcOutputs),
     .evgHwInputs(evgHwInputs),
     .fmcInputs(fmcIn),
     .pmodInputs(pmodIn));
@@ -277,7 +370,7 @@ localPPS #(
 // Lock clock to PPS marker
 // DAC1 adjusts the 125 MHz MGT reference, DDR reference, and system clocks.
 // DAC2 adjusts the 20 MHz system clock.
-wire ppsValid, evgPPSmarker, hwPPSmarker_a, evrPPSmarker;
+wire evgPPSmarker, hwPPSmarker_a, evrPPSmarker;
 marbleClockSync #(
     .DEBUG("false"))
   marbleClockSync (
@@ -295,7 +388,7 @@ marbleClockSync #(
     .hwPPSmarker_a(hwPPSmarker_a),
     .ppsPrimary_out(ppsPrimary_out),
     .ppsSecondary_out(ppsSecondary_out),
-    .hwPPSvalid(ppsValid),
+    .hwPPSvalid(),
     .ppsMarker(evgPPSmarker),
     .ppsToggle(),
     .SPI_CLK(WR_DAC_SCLK_T),
@@ -358,12 +451,19 @@ wire  [(CFG_MGT_COUNT*MGT_DATA_WIDTH)-1:0] mgtRxChars;
 wire [(CFG_MGT_COUNT*MGT_CTYPE_WIDTH)-1:0] mgtRxCharIsK;
 wire            [CFG_MPS_OUTPUT_COUNT-1:0] mgtTxMPStripped;
 
-wire gtRefClk;
-IBUFDS_GTE2 gtRefClkBuf (.O(gtRefClk),
-                         .ODIV2(),
-                         .CEB(1'b0),
-                         .I(MGTREFCLK0_116_P),
-                         .IB(MGTREFCLK0_116_N));
+assign clkFMC2Recovered[0] = mgtRxClks[0];
+assign clkFMC2Recovered[1] = mgtRxClks[0];
+
+wire [3:0] gtRefClk;
+generate
+for (i=0; i<4; i=i+1) begin : mgtRef
+  IBUFDS_GTE2 gtRefClkBuf (.O(gtRefClk[i]),
+                           .ODIV2(),
+                           .CEB(1'b0),
+                           .I(MGTREFCLK_P[i]),
+                           .IB(MGTREFCLK_N[i]));
+end
+endgenerate
 
 fiberLinks #(
     .MGT_COUNT(CFG_MGT_COUNT),
@@ -391,7 +491,7 @@ fiberLinks #(
     .mgtTxMPStripped(mgtTxMPStripped),
     .evgTxChars(evgTxChars),
     .evgTxCharIsK(evgTxCharIsK),
-    .gtRefClk(gtRefClk),
+    .gtRefClk(gtRefClk[0]),
     .rxP(QSFP_RX_P),
     .rxN(QSFP_RX_N),
     .txP(QSFP_TX_P),
@@ -432,7 +532,7 @@ mps #(
 
 ///////////////////////////////////////////////////////////////////////////////
 // Measure clocks
-localparam FREQ_MON_CHANNEL_COUNT = 15;
+localparam FREQ_MON_CHANNEL_COUNT = 20;
 wire [29:0] measuredFrequency;
 wire measuredUsingInteralAcqMarker;
 reg [$clog2(FREQ_MON_CHANNEL_COUNT)-1:0] frequencyChannelSelect = 0;
@@ -450,11 +550,13 @@ frequencyCounters #(
                       mgtRxClks[1],
                       mgtRxClks[0],
                       evgClk,
+                      clkFMC2Cleaned[1],
+                      clkFMC2Cleaned[0],
                       clkFMC1_M2C1,
                       clkFMC1_M2C0,
                       clk20,
                       clk200,
-                      gtRefClk,
+                      gtRefClk, // 4x
                       sysClk }),
     .acqMarker_a(hwPPSmarker_a),
     .useInternalAcqMarker(measuredUsingInteralAcqMarker),
@@ -536,7 +638,7 @@ bd bd_i (
     .evrPPSmarker(evrPPSmarker),
     .evrLinkUp(mgtRxLinkUp[0]),
     .evrHwDriverIn({{8-CFG_MPS_OUTPUT_COUNT{1'b0}}, ~mgtTxMPSmitigate}),
-    .evrHardwareOutputs(pmodOut),
+    .evrHardwareOutputs(trigOut),
     .evrTimestamp(evrTimestamp),
 
     .console_rxd(FPGA_TxD),

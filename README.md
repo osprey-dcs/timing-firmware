@@ -13,5 +13,5 @@ cd timing-firmware
 
 . /path/to/Vivado/2023.1/Vivado/settings64.sh
 
-make everything
+make
 ```

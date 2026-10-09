@@ -1,5 +1,5 @@
-commit 753f354460b292f6776ce421722785e107eddfd1
+commit 595c0d9de7a8e87124c962f5536839a371c2a78c
 Author: Michael Davidsaver <mdavidsaver@gmail.com>
-Date:   Fri Apr 17 17:52:39 2026 -0700
+Date:   Mon Sep 21 16:11:31 2026 -0700
 
-    add exportTo.sh
+    increment coreRevision

@@ -19,9 +19,17 @@ proc init_gui { IPINST } {
   ipgui::add_param $IPINST -name "SEQRAM_BANK_COUNT"
   set RX_COUNT [ipgui::add_param $IPINST -name "RX_COUNT"]
   set_property tooltip {Number of event link fiber receivers} ${RX_COUNT}
-  set HW_TRIGGER_COUNT [ipgui::add_param $IPINST -name "HW_TRIGGER_COUNT"]
-  set_property tooltip {Number of hardware trigger sources} ${HW_TRIGGER_COUNT}
+  ipgui::add_param $IPINST -name "INPUT_COUNT"
 
+}
+
+proc update_PARAM_VALUE.C_S_AXI_FREQ_HZ { PARAM_VALUE.C_S_AXI_FREQ_HZ } {
+	# Procedure called to update C_S_AXI_FREQ_HZ when any of the dependent parameters in the arguments change
+}
+
+proc validate_PARAM_VALUE.C_S_AXI_FREQ_HZ { PARAM_VALUE.C_S_AXI_FREQ_HZ } {
+	# Procedure called to validate C_S_AXI_FREQ_HZ
+	return true
 }
 
 proc update_PARAM_VALUE.DEBUG { PARAM_VALUE.DEBUG } {
@@ -39,15 +47,6 @@ proc update_PARAM_VALUE.EVGCLK_FREQUENCY { PARAM_VALUE.EVGCLK_FREQUENCY } {
 
 proc validate_PARAM_VALUE.EVGCLK_FREQUENCY { PARAM_VALUE.EVGCLK_FREQUENCY } {
 	# Procedure called to validate EVGCLK_FREQUENCY
-	return true
-}
-
-proc update_PARAM_VALUE.HW_TRIGGER_COUNT { PARAM_VALUE.HW_TRIGGER_COUNT } {
-	# Procedure called to update HW_TRIGGER_COUNT when any of the dependent parameters in the arguments change
-}
-
-proc validate_PARAM_VALUE.HW_TRIGGER_COUNT { PARAM_VALUE.HW_TRIGGER_COUNT } {
-	# Procedure called to validate HW_TRIGGER_COUNT
 	return true
 }
 
@@ -178,8 +177,8 @@ proc update_MODELPARAM_VALUE.INPUT_COUNT { MODELPARAM_VALUE.INPUT_COUNT PARAM_VA
 	set_property value [get_property value ${PARAM_VALUE.INPUT_COUNT}] ${MODELPARAM_VALUE.INPUT_COUNT}
 }
 
-proc update_MODELPARAM_VALUE.HW_TRIGGER_COUNT { MODELPARAM_VALUE.HW_TRIGGER_COUNT PARAM_VALUE.HW_TRIGGER_COUNT } {
+proc update_MODELPARAM_VALUE.C_S_AXI_FREQ_HZ { MODELPARAM_VALUE.C_S_AXI_FREQ_HZ PARAM_VALUE.C_S_AXI_FREQ_HZ } {
 	# Procedure called to set VHDL generic/Verilog parameter value(s) based on TCL parameter value
-	set_property value [get_property value ${PARAM_VALUE.HW_TRIGGER_COUNT}] ${MODELPARAM_VALUE.HW_TRIGGER_COUNT}
+	set_property value [get_property value ${PARAM_VALUE.C_S_AXI_FREQ_HZ}] ${MODELPARAM_VALUE.C_S_AXI_FREQ_HZ}
 }
 
