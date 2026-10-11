@@ -46,8 +46,8 @@ def base_build():
           "data_width": 32,
           "sign": "unsigned"
         },
-        "FPGA:activateEVG": {
-          "access": "w",
+        "FPGA:MODE:EVG": {
+          "access": "rw",
           "addr_width": 0,
           "base_addr": 60,
           "data_width": 1,

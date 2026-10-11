@@ -78,7 +78,7 @@ struct LEEPpacket {
 #define REG_FMC1_PART_NUMBER                54
 #define REG_FMC2_PART_NUMBER                55
 #define REG_MGT_RESET                       56
-#define REG_FPGA_ACTIVATE_EVG               60
+#define REG_FPGA_MODE_EVG                   60
 #define REG_MARBLE_RFIN_INPUTS              70
 #define REG_MARBLE_RFIN_ADC_A               71
 #define REG_MARBLE_RFIN_ADC_B               72
@@ -174,7 +174,7 @@ writeReg(int address, uint32_t value)
     switch(address) {
     case REG_POWERUP_STATE:     if (value == 0)   powerUpFlag = 0;       return;
     case REG_FPGA_REBOOT:       if (value == 100) resetFPGA(0);          return;
-    case REG_FPGA_ACTIVATE_EVG:         ioSelectActivateEVG(value != 0); return;
+    case REG_FPGA_MODE_EVG:             ioSelectActivateEVG(value != 0); return;
     case REG_MARBLE_MGT_REFCLK_SOURCE:  setMgtClkSwitch0(value);         return;
     case REG_MARBLE_PLL_SET_Y1:         clockAdjustSetDAC(0, value);     return;
     case REG_MARBLE_PLL_SET_Y3:         clockAdjustSetDAC(1, value);     return;
@@ -229,6 +229,7 @@ readReg(int address)
     case REG_FMC1_PART_NUMBER:    return iicFPGAgetPartNumber(0);
     case REG_FMC2_PART_NUMBER:    return iicFPGAgetPartNumber(1);
     case REG_MGT_RESET:           return 0;
+    case REG_FPGA_MODE_EVG:       return (ioSelectStatus()&IOSELECT_STATUS_IS_EVG)!=0;
     case REG_MARBLE_RFIN_ADC_A:   return ospreyRFINreadADS7253(0);
     case REG_MARBLE_RFIN_ADC_B:   return ospreyRFINreadADS7253(1);
     case REG_MARBLE_RFIN_INPUTS:  return GPIO_READ(GPIO_IDX_PMOD_FMC_MONITOR)
