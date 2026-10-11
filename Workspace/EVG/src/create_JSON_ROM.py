@@ -320,6 +320,13 @@ def base_build():
           "data_width": 16,
           "sign": "unsigned"
         },
+        "MARBLE:EVG:status": {
+          "access": "r",
+          "addr_width": 0,
+          "base_addr": 260,
+          "data_width": 32,
+          "sign": "unsigned"
+        },
         "MARBLE:VCXO:SR": {
           "access": "r",
           "addr_width": 0,
