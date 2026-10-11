@@ -32,6 +32,7 @@
 #include "clockAdjust.h"
 #include "config.h"
 #include "epics.h"
+#include "evg.h"
 #include "gpio.h"
 #include "iicFPGA.h"
 #include "ioSelect.h"
@@ -77,6 +78,7 @@ struct LEEPpacket {
 #define REG_FMC1_PART_NUMBER                54
 #define REG_FMC2_PART_NUMBER                55
 #define REG_MGT_RESET                       56
+#define REG_FPGA_ACTIVATE_EVG               60
 #define REG_MARBLE_RFIN_INPUTS              70
 #define REG_MARBLE_RFIN_ADC_A               71
 #define REG_MARBLE_RFIN_ADC_B               72
@@ -156,9 +158,7 @@ writeReg(int address, uint32_t value)
 {
     if ((address >= REG_EVG_START)
      && (address < (REG_EVG_START + REG_EVG_COUNT))) {
-        if (systemParameters.ntpServer) {
-            ospreyEVG_FEEDwrite(address - REG_EVG_START, value);
-        }
+        ospreyEVG_FEEDwrite(address - REG_EVG_START, value);
         return;
     }
     if ((address >= REG_EVR_START)
@@ -174,6 +174,7 @@ writeReg(int address, uint32_t value)
     switch(address) {
     case REG_POWERUP_STATE:     if (value == 0)   powerUpFlag = 0;       return;
     case REG_FPGA_REBOOT:       if (value == 100) resetFPGA(0);          return;
+    case REG_FPGA_ACTIVATE_EVG:         ioSelectActivateEVG(value != 0); return;
     case REG_MARBLE_MGT_REFCLK_SOURCE:  setMgtClkSwitch0(value);         return;
     case REG_MARBLE_PLL_SET_Y1:         clockAdjustSetDAC(0, value);     return;
     case REG_MARBLE_PLL_SET_Y3:         clockAdjustSetDAC(1, value);     return;
@@ -208,12 +209,7 @@ readReg(int address)
      */
     if ((address >= REG_EVG_START)
      && (address < (REG_EVG_START + REG_EVG_COUNT))) {
-        if (systemParameters.ntpServer) {
-            return ospreyEVG_FEEDread(address - REG_EVG_START);
-        }
-        else {
-            return (~(uint32_t)0);
-        }
+        return ospreyEVG_FEEDread(address - REG_EVG_START);
     }
     if ((address >= REG_EVR_START)
      && (address < (REG_EVR_START + REG_EVR_COUNT))) {
@@ -251,6 +247,7 @@ readReg(int address)
         case 0x00:  return xadcFetchSysmon(index);
         case 0x20:  return mmcMailboxFetchSysmon(index);
         case 0x40:  return iicFPGAfetchSysmon(index);
+        case 0xA0:  return evgFetchSysmon(index);
         case 0xC0:  return clockAdjustFetchSysmon(index);
         case 0xE0:  return mgtFetchSysmon(index);
         }

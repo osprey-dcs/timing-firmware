@@ -46,6 +46,13 @@ def base_build():
           "data_width": 32,
           "sign": "unsigned"
         },
+        "FPGA:activateEVG": {
+          "access": "w",
+          "addr_width": 0,
+          "base_addr": 60,
+          "data_width": 1,
+          "sign": "unsigned"
+        },
         "FMC:1:serialNumber": {
           "access": "r",
           "addr_width": 0,

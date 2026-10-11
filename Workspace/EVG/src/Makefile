@@ -43,8 +43,6 @@ softwareBuildDate.h: clockAdjust.c \
                      ospreyRFIN.h \
                      ospreyTRGOUT.c \
                      ospreyTRGOUT.h \
-                     ntpTime.c \
-                     ntpTime.h \
                      platform.c \
                      platform.h \
                      si570.c \

@@ -39,7 +39,6 @@ struct systemParameters {
     int          unused1; // formerly mgtClkSwitch0
     uint32_t     netmask;
     uint32_t     gateway;
-    uint32_t     ntpServer;
     unsigned int checksum;
 };
 extern struct systemParameters systemParameters;

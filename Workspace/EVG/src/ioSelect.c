@@ -71,15 +71,21 @@ ioSelectInit(void)
            fmc1Name,
            fmc2Name);
 
-    GPIO_WRITE(GPIO_IDX_IO_SELECT, CSR_W_SET_SET_IS_EVG |
-                              (systemParameters.ntpServer ? CSR_RW_IS_EVG: 0));
 
     GPIO_WRITE(GPIO_IDX_IO_SELECT,
           CSR_W_SET_FMC1_IS_PRESENT | (fmc1Present ? CSR_RW_FMC1_IS_PRESENT : 0)
         | CSR_W_SET_FMC2_IS_PRESENT | (fmc2Present ? CSR_RW_FMC2_IS_PRESENT : 0)
     );
 
-    ioSelectShow();
+}
+
+void
+ioSelectActivateEVG(int isEVG)
+{
+    GPIO_WRITE(GPIO_IDX_IO_SELECT,CSR_W_SET_SET_IS_EVG|(isEVG?CSR_RW_IS_EVG:0));
+    if (debugFlags & DEBUGFLAG_EVG) {
+        ioSelectShow();
+    }
 }
 
 int

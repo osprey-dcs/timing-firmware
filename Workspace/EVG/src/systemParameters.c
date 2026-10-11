@@ -98,16 +98,9 @@ systemParametersInit(void)
         systemParameters.netmask = 0xFFFFFF00;
         systemParameters.gateway = (networkConfig.ipv4address &
                                                   systemParameters.netmask) | 1;
-        systemParameters.ntpServer = 0;
     }
     showIPv4address("netmask", systemParameters.netmask);
     showIPv4address("gateway", systemParameters.gateway);
-    if (systemParameters.ntpServer) {
-        showIPv4address("NTP server", systemParameters.ntpServer);
-    }
-    else {
-        printf(" NTP server not specified -- operating as Event Receiver.\n");
-    }
     debugFlags = systemParameters.startupDebugFlags;
     tftpSetVerbose((debugFlags & DEBUGFLAG_TFTP) != 0);
 }

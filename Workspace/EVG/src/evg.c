@@ -29,24 +29,14 @@
 #include <ospreyEVG.h>
 #include "gpio.h"
 #include "ospreyEVG.h"
-#include "ntpTime.h"
 #include "systemParameters.h"
 #include "util.h"
 
-void
-evgCrank(void)
+int
+evgFetchSysmon(int index)
 {
-    uint32_t status = ospreyEVGStatus();
-    if ((status & (OSPREY_EVG_STATUS_PPS_VALID | OSPREY_EVG_STATUS_TIME_VALID))
-                                               == OSPREY_EVG_STATUS_PPS_VALID) {
-        uint32_t seconds = ntpNewTime();
-        if (seconds != 0) {
-            ospreyEVGSetSeconds(seconds);
-            if (debugFlags & DEBUGFLAG_EVG) {
-                printf("EVG NEW TIME -- %d %08X %08X\n", seconds, status,
-                                                             ospreyEVGStatus());
-            }
-        }
+    switch (index) {
+    case 0:     return ospreyEVGStatus();
+    default:    return -1;
     }
 }
-
