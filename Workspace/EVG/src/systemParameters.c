@@ -98,6 +98,8 @@ systemParametersInit(void)
         systemParameters.netmask = 0xFFFFFF00;
         systemParameters.gateway = (networkConfig.ipv4address &
                                                   systemParameters.netmask) | 1;
+        // preserve previous default for now unused ntpServer
+        systemParameters.unused2 = 0;
     }
     showIPv4address("netmask", systemParameters.netmask);
     showIPv4address("gateway", systemParameters.gateway);
