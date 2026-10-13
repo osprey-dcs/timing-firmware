@@ -518,7 +518,7 @@ def evt_merge():
         timerCount=8,
         hwTriggerCount=16,
         seqBankCount=8,
-        seqAddrWidth=12,
+        seqAddrWidth=11,
     ))
     R.update(ospreyEVR.ospreyEVR_build(
         EVR_REG_BASE=1100000,
