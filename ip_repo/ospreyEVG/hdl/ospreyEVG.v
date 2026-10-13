@@ -46,7 +46,7 @@ module ospreyEVG_v1_0 #(
     parameter SEQRAM_ADDR_WIDTH  = 11,
     parameter SEQRAM_BANK_COUNT  = 2,
     parameter RX_COUNT           = 1,
-    parameter INPUT_COUNT        = 15,
+    parameter INPUT_COUNT        = 16,
     parameter DEBUG              = "false",
     ////////////////////// AXI-Lite Boilerplate Parameters ///////////////////
     parameter C_S_AXI_FREQ_HZ    = 100000000,
@@ -272,7 +272,7 @@ for(i=0 ; i < INPUT_COUNT ; i = i + 1) begin : hwTrigCountInit
 end
 endgenerate
 
-wire [7:0] hwTrigCount_hwSel_l = G2B(hwTrigCount[hwSel_l]);
+wire [7:0] hwTrigCount_hwSel_l = G2B(hwTrigCount[hwSel_l[HWSEL_WIDTH-1:1]]);
 
 reg sysSwTriggerToggle = 0;
 reg sysDbusMapUpdateToggle = 0;
@@ -347,6 +347,7 @@ begin
         end
         REG_IDX_HW_TRIGGER_CONFIG: begin
             sysHwUpdateToggle[hwSel] <= !sysHwUpdateToggle[hwSel];
+            hwSel_l <= hwSel;
         end
         REG_IDX_SW_EVENT: begin
             sysSwTriggerToggle <= !sysSwTriggerToggle;
@@ -384,6 +385,11 @@ begin
             REG_IDX_SEQ_GAP:        sysReadData <= seqGapRbk;
             REG_IDX_SEQ_COUNT:      sysReadData <= seqBankTrigCount;
             REG_IDX_LATENCY_CSR:    sysReadData <= latencyStatus;
+            REG_IDX_HW_TRIGGER_CONFIG: sysReadData <= {
+                {24-HWSEL_WIDTH{1'b0}},
+                hwSel_l,
+                hwEventCodes[hwSel_l*8+:8]
+            };
             REG_IDX_TIMER_CSR: sysReadData <=
                                       {{32-(2*TIMER_COUNT){1'b0}}, timerStatus};
             REG_IDX_HW_TRIGGER_COUNT: sysReadData <= {{32-8-HWSEL_WIDTH{1'b0}}, hwSel_l, hwTrigCount_hwSel_l};

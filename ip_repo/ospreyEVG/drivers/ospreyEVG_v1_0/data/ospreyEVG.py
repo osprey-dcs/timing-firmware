@@ -195,14 +195,14 @@ def ospreyEVG_build(EVG_REG_BASE=1000000,
 
     for off, trg in enumerate(range(1, hwTriggerCount+1)):
         R[f"EVG:TRG:r{trg}:ev"] = {
-            "access": "w",
+            "access": "rw",
             "addr_width": 0,
             "base_addr": EVG_REG_BASE+140+2*off+0,
             "data_width": 8,
             "sign": "unsigned",
         }
         R[f"EVG:TRG:f{trg}:ev"] = {
-            "access": "w",
+            "access": "rw",
             "addr_width": 0,
             "base_addr": EVG_REG_BASE+140+2*off+1,
             "data_width": 8,

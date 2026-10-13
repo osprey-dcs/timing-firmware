@@ -75,6 +75,7 @@ int ospreyEVGGetTimerStatus(void);
 int ospreyEVGSetTimerEvent(int timerIndex, int evCode);
 int ospreyEVGSetTimerDivisor(int timerIndex, uint32_t divisor);
 int ospreyEVGSetHwTriggerEvent(int hwTriggerIndex, int edge, int evCode);
+int ospreyEVGGetHwTriggerEvent(int hwTriggerIndex, int edge);
 int ospreyEVGSendSoftwareEvent(int evCode);
 int ospreyEVGSetDbusInputMap(uint8_t bit, uint32_t inputSel);
 uint32_t ospreyEVGGetDbusInputMap(uint8_t bit);

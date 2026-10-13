@@ -272,6 +272,18 @@ ospreyEVGSetHwTriggerEvent(int hwTriggerIndex, int edge, int evCode)
     return 0;
 }
 
+int ospreyEVGGetHwTriggerEvent(int hwTriggerIndex, int edge)
+{
+    if (!evgInfo.baseAddr) return -1;
+    if ((hwTriggerIndex < 0) || (hwTriggerIndex >= evgInfo.conf.hwTriggerCount)
+        || (edge < 0) || (edge > 1)) return -2;
+    hwTriggerIndex = (hwTriggerIndex << 1) | edge;
+    // writing REG_HW_TRIGGER_COUNT sets hwSel_l mux used when reading REG_HW_TRIGGER_CONFIG
+    Xil_Out32(evgInfo.baseAddr + REG_HW_TRIGGER_COUNT,
+              (hwTriggerIndex << 8));
+    return Xil_In32(evgInfo.baseAddr + REG_HW_TRIGGER_CONFIG) & 0xff;
+}
+
 int
 ospreyEVGSendSoftwareEvent(int evCode)
 {
@@ -467,9 +479,9 @@ uint32_t ospreyEVGGetDbusInputMap(uint8_t bit)
 #define F_REG_TIMER_DIVISOR_BASE          120
 #  define TIMER_DIVISOR_SIZE              TIMER_CAPACITY
 #define F_REG_HWTRIGGER_EVENT_BASE        140
-#  define HWTRIGGER_EVENT_SIZE            INPUTS_CAPACITY
+#  define HWTRIGGER_EVENT_SIZE            2*INPUTS_CAPACITY
 #define F_REG_SEQ_HWTRIGGER_CONFIG_BASE   180
-#  define SEQ_HWTRIGGER_CONFIG_SIZE       INPUTS_CAPACITY
+#  define SEQ_HWTRIGGER_CONFIG_SIZE       2*SEQ_MAX_BANKS
 #define F_REG_LATENCY_READBACK_BASE       200
 #  define LATENCY_READBACK_SIZE           8
 #define F_REG_SEQ_TIMERTRIGGER_CONFIG_BASE 220
@@ -567,8 +579,13 @@ ospreyEVG_FEEDread(int offset)
         ospreyEVGGetTimerDivisor(idx, &value);
         return value;
     }
+    case RRANGE(HWTRIGGER_EVENT) {
+        int hwTriggerIndex = idx >> 1;
+        int edge = idx & 0x1;
+        return ospreyEVGGetHwTriggerEvent(hwTriggerIndex, edge);
+    }
     case RRANGE(HW_TRIGGER_COUNT) {
-        Xil_Out32(evgInfo.baseAddr + REG_HW_TRIGGER_COUNT, idx<<8u);
+        Xil_Out32(evgInfo.baseAddr + REG_HW_TRIGGER_COUNT, idx<<9u);
         return Xil_In32(evgInfo.baseAddr + REG_HW_TRIGGER_COUNT) & 0xff;
     }
     case RRANGE(SEQ_BANK_TRIG_COUNT) {

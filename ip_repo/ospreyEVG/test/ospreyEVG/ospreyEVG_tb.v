@@ -155,10 +155,14 @@ endtask
 
 task test_hwInput;
 begin
-    axi.write(evg.REG_IDX_HW_TRIGGER_COUNT*4, {16'h0, 8'd1, 8'h0});
-    axi.read (evg.REG_IDX_HW_TRIGGER_COUNT*4, {16'h0, 8'd1, 8'h0});
+    axi.write(evg.REG_IDX_HW_TRIGGER_COUNT*4, {16'h0, 7'd1, 1'b0, 8'h0});
+    axi.read (evg.REG_IDX_HW_TRIGGER_COUNT*4, {16'h0, 7'd1, 1'b0, 8'h0});
     axi.write(evg.REG_IDX_HW_TRIGGER_CONFIG*4, {16'h0000, 7'd1, 1'b0, 8'd100}); // 2nd input, rising, event 100
+    `assert_eq(evg.hwSel_l, {7'd1, 1'b0});
+    axi.read (evg.REG_IDX_HW_TRIGGER_CONFIG*4, {16'h0000, 7'd1, 1'b0, 8'd100}); // 2nd input, rising, event 100
     axi.write(evg.REG_IDX_HW_TRIGGER_CONFIG*4, {16'h0000, 7'd1, 1'b1, 8'd101}); // 2nd input, falling, event 101
+    axi.read (evg.REG_IDX_HW_TRIGGER_CONFIG*4, {16'h0000, 7'd1, 1'b1, 8'd101}); // 2nd input, falling, event 101
+    `assert_eq(evg.hwSel_l, {7'd1, 1'b1});
     `assert_eq(evg.hwTriggerEnables, 16'h000c); // ??
 
     hwInputs_a[1] <= 1'b1;
@@ -166,7 +170,8 @@ begin
     hwInputs_a[1] <= 1'b0;
     waitForEvent(8'd101);
 
-    axi.read (evg.REG_IDX_HW_TRIGGER_COUNT*4, {16'h0, 8'd1, 8'h1});
+    `assert_eq(evg.hwSel_l, {7'd1, 1'b1});
+    axi.read (evg.REG_IDX_HW_TRIGGER_COUNT*4, {16'h0, 7'd1, 1'b1, 8'h1});
 
     axi.write(evg.REG_IDX_HW_TRIGGER_CONFIG*4, {16'h0000, 7'd1, 1'b0, 8'd0}); // 2nd input, rising, disable
     hwInputs_a[1] <= 1'b1;
@@ -174,9 +179,21 @@ begin
     hwInputs_a[1] <= 1'b0;
     waitForEvent(8'd101);
 
-    axi.read (evg.REG_IDX_HW_TRIGGER_COUNT*4, {16'h0, 8'd1, 8'h2});
+    axi.read (evg.REG_IDX_HW_TRIGGER_COUNT*4, {16'h0, 7'd1, 1'b0, 8'h2});
 
     axi.write(evg.REG_IDX_HW_TRIGGER_CONFIG*4, {16'h0000, 7'd1, 1'b1, 8'd0}); // 2nd input, falling, disable
+
+    axi.write(evg.REG_IDX_HW_TRIGGER_CONFIG*4, {16'h0000, 7'd15, 1'b0, 8'd42});
+    axi.read (evg.REG_IDX_HW_TRIGGER_CONFIG*4, {16'h0000, 7'd15, 1'b0, 8'd42});
+    axi.read (evg.REG_IDX_HW_TRIGGER_COUNT*4, {16'h0, 7'd15, 1'b0, 8'h0});
+
+    hwInputs_a[15] <= 1'b1;
+    @(posedge evgClk);
+    hwInputs_a[15] <= 1'b0;
+    waitForEvent(8'd42);
+
+    axi.write(evg.REG_IDX_HW_TRIGGER_CONFIG*4, {16'h0000, 7'd15, 1'b0, 8'd0});
+    axi.read (evg.REG_IDX_HW_TRIGGER_COUNT*4, {16'h0, 7'd15, 1'b0, 8'h1});
 end
 endtask
 
