@@ -93,7 +93,13 @@ def ospreyEVG_build(EVG_REG_BASE=1000000,
             "data_width": 16,
             "sign": "unsigned",
         },
-        # former "EVG:MAP:dbus" = 9
+        "EVG:PPS:mon": {
+            "access": "r",
+            "addr_width": 0,
+            "base_addr": EVG_REG_BASE + 9,
+            "data_width": 32,
+            "sign": "unsigned",
+        },
         "EVG:TMR:control": {
             "access": "w",
             "addr_width": 0,

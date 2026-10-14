@@ -1,7 +1,5 @@
-commit 6b5de533dbaafc0774f240a31dd6298f60360900
+commit b711e0cb9a3ed79855e48fd14c5e78ebc9de3d27
 Author: Michael Davidsaver <mdavidsaver@gmail.com>
-Date:   Tue Oct 13 15:17:47 2026 -0700
+Date:   Sat Oct 17 15:14:54 2026 -0700
 
-    fix reg range capacities
-    
-    HW trigger ranges 2x for rising and falling edges
+    minor

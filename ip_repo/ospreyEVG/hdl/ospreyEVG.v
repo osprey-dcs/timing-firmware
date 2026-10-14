@@ -177,6 +177,8 @@ localparam DBUS_BITS     = 8;
 localparam DBUS_WIDTH = $clog2(DBUS_BITS);
 localparam INPUTSEL_WIDTH = $clog2(INPUT_COUNT+1);
 
+localparam EVGCLK_FREQUENCY_MAX = 150000000;
+
 /*
  * Sanity checks
  */
@@ -191,6 +193,9 @@ if ((SEQRAM_BANK_COUNT < 2) || (SEQRAM_BANK_COUNT > 8)) begin
 end
 if ((SEQRAM_ADDR_WIDTH < 8) || (SEQRAM_ADDR_WIDTH > 12)) begin
     error_SEQRAM_ADDR_WIDTH_OUT_OF_RANGE();
+end
+if (EVGCLK_FREQUENCY > EVGCLK_FREQUENCY_MAX) begin
+    error_EVGCLK_FREQUENCY_OUT_OF_RANGE();
 end
 
 /*
@@ -211,7 +216,7 @@ wire [REGSEL_WIDTH-1:0] s_wRegIndex = s_axi_awaddr[2+:REGSEL_WIDTH];
 wire [REGSEL_WIDTH-1:0] s_rRegIndex = s_axi_araddr[2+:REGSEL_WIDTH];
 localparam REG_IDX_CSR               = 5'd0;
 localparam REG_IDX_CONFIG            = 5'd1;
-localparam REG_IDX_CLK_RATE          = 5'd2;
+// former REG_IDX_CLK_RATE
 localparam REG_IDX_SECONDS           = 5'd3;
 localparam REG_IDX_HEARTBEAT_DIVISOR = 5'd4;
 localparam REG_IDX_HW_TRIGGER_CONFIG = 5'd5;
@@ -223,6 +228,7 @@ localparam REG_IDX_DBUS_MAP          = 5'd10;
 localparam REG_IDX_TIMER_CSR         = 5'd11;
 localparam REG_IDX_LATENCY_CSR       = 5'd12;
 localparam REG_IDX_HW_TRIGGER_COUNT  = 5'd13;
+localparam REG_IDX_PPS_MONITOR       = 5'd14;
 // 1 bit for timerInitValSel
 // up to 3 bits for timerSel
 localparam REG_IDX_TIMER_CONFIG_BASE = 5'd16;
@@ -251,28 +257,7 @@ localparam HWSEL_WIDTH = $clog2(2*INPUT_COUNT);
 wire [HWSEL_WIDTH-1:0] hwSel = s_axi_wdata[8+:HWSEL_WIDTH];
 reg  [HWSEL_WIDTH-1:0] hwSel_l = 0;
 (*ASYNC_REG="true"*) // crosses from evgClk to s_axi_aclk
-reg  [7:0] hwTrigCount [0:INPUT_COUNT-1];
-reg  [7:0] hwTrigCount_g [0:INPUT_COUNT-1];
-
-function [7:0] B2G(input [7:0] bin);
-    B2G = bin ^ {1'b0, bin[7:1]};
-endfunction
-function [7:0] G2B(input [7:0] gray);
-    G2B = gray ^ {1'b0, gray[7:1]} ^ {2'b0, gray[7:2]} ^ {3'b0, gray[7:3]}
-    ^ {4'b0, gray[7:4]} ^ {5'b0, gray[7:5]} ^ {6'b0, gray[7:6]} ^ {7'b0, gray[7:7]};
-endfunction
-
-generate
-for(i=0 ; i < INPUT_COUNT ; i = i + 1) begin : hwTrigCountInit
-    initial
-        hwTrigCount_g[i] = 0;
-
-    always @(posedge s_axi_aclk)
-        hwTrigCount[i] <= hwTrigCount_g[i];
-end
-endgenerate
-
-wire [7:0] hwTrigCount_hwSel_l = G2B(hwTrigCount[hwSel_l[HWSEL_WIDTH-1:1]]);
+wire [7:0] hwTrigCount [0:INPUT_COUNT-1];
 
 reg sysSwTriggerToggle = 0;
 reg sysDbusMapUpdateToggle = 0;
@@ -292,11 +277,9 @@ assign s_axi_rdata = sysReadData;
  * No need for fancy clock-crossing logic since the
  * processor knows that races are possible.
  */
-(*MARK_DEBUG=DEBUG*) reg evgPPSvalid = 0;
 (*MARK_DEBUG=DEBUG*) reg evgSecondsValid = 0;
 (*MARK_DEBUG=DEBUG*) reg evgPPStoggle = 0;
 (*MARK_DEBUG=DEBUG*) reg [31:0] evgPosixSeconds = 0;
-(*MARK_DEBUG=DEBUG*) reg [31:0] evgClkStatus;
 wire [27:0] seqStatus;
 wire [31:0] seqAddrCodeRbk, seqGapRbk, latencyStatus;
 wire [31:0] seqBankTrigCount;
@@ -317,7 +300,11 @@ wire [31:0] sysConfig = {4'ha,
                           triggerCount };
 // Status
 wire [31:0] sysStatus = { seqStatus,
-                          1'b0, evgPPStoggle, evgSecondsValid, evgPPSvalid };
+                          1'b0, evgPPStoggle, evgSecondsValid, 1'b1 };
+
+// monitor PPS
+localparam PPS_MON_WIDTH = $clog2(EVGCLK_FREQUENCY_MAX);
+wire [PPS_MON_WIDTH-1:0] evgCountAtPPS;
 
 always @(posedge s_axi_aclk)
 begin
@@ -379,7 +366,6 @@ begin
             end
             REG_IDX_CSR:            sysReadData <= sysStatus;
             REG_IDX_CONFIG:         sysReadData <= sysConfig;
-            REG_IDX_CLK_RATE:       sysReadData <= evgClkStatus;
             REG_IDX_SECONDS:        sysReadData <= evgPosixSeconds;
             REG_IDX_SEQ_ADDR_CODE:  sysReadData <= seqAddrCodeRbk;
             REG_IDX_SEQ_GAP:        sysReadData <= seqGapRbk;
@@ -392,11 +378,19 @@ begin
             };
             REG_IDX_TIMER_CSR: sysReadData <=
                                       {{32-(2*TIMER_COUNT){1'b0}}, timerStatus};
-            REG_IDX_HW_TRIGGER_COUNT: sysReadData <= {{32-8-HWSEL_WIDTH{1'b0}}, hwSel_l, hwTrigCount_hwSel_l};
+            REG_IDX_HW_TRIGGER_COUNT: sysReadData <= {
+                {32-8-HWSEL_WIDTH{1'b0}},
+                hwSel_l,
+                hwTrigCount[hwSel_l[HWSEL_WIDTH-1:1]]
+            };
             REG_IDX_DBUS_MAP:       sysReadData <= {
                 5'h00,
                 dbusMapReadMux,
                 {24-INPUTSEL_WIDTH{1'b0}}, dbusMap[dbusMapReadMux]
+            };
+            REG_IDX_PPS_MONITOR: sysReadData <= {
+                {32-PPS_MON_WIDTH{1'b0}},
+                evgCountAtPPS
             };
             default:                sysReadData <= 0;
             endcase
@@ -435,10 +429,9 @@ ospreyEVGlatencyCheck #(
 /*
  * Synchronize and map hardware inputs
  */
-(*ASYNC_REG="true"*) reg dbusMapUpdateToggle_m = 0;
-reg dbusMapUpdateToggle = 0, dbusMapUpdateToggle_d;
-(*ASYNC_REG="true"*) reg [INPUT_COUNT-1:0] hwInputs_m = 0;
-reg [INPUT_COUNT-1:0] hwInputs = 0;
+(*ASYNC_REG="true"*) reg dbusMapUpdateToggle_m = 0, dbusMapUpdateToggle = 0;
+reg dbusMapUpdateToggle_d;
+(*ASYNC_REG="true"*) reg [INPUT_COUNT-1:0] hwInputs_m = 0, hwInputs = 0;
 always @(posedge evgClk) begin
     hwInputs_m <= hwInputs_a;
     hwInputs   <= hwInputs_m;
@@ -457,79 +450,49 @@ wire [INPUT_COUNT:0] evgHwIn = {hwInputs, 1'b0};
 /*
  * PPS handling
  */
-(*ASYNC_REG="true"*) reg evgPPSmarker_m = 0;
-(*MARK_DEBUG=DEBUG*) reg evgPPSmarker = 0, evgPPSmarker_d = 0;
+(*ASYNC_REG="true"*) reg evgPPSmarker_m = 0, evgPPSmarker = 0;
+(*MARK_DEBUG=DEBUG*) reg evgPPSmarker_d = 0;
 wire evgPPSrising = (evgPPSmarker && !evgPPSmarker_d);
-
-// Validate PPS
-localparam PPS_TOO_FAST_RELOAD = ((EVGCLK_FREQUENCY / 100) * 99) - 1;
-localparam PPS_TOO_SLOW_RELOAD = ((EVGCLK_FREQUENCY / 100) * 101) - 1;
-localparam PPS_TOO_FAST_WIDTH = $clog2(PPS_TOO_FAST_RELOAD+1) + 1;
-localparam PPS_TOO_SLOW_WIDTH = $clog2(PPS_TOO_FAST_RELOAD+1) + 1;
-(*MARK_DEBUG=DEBUG*) reg [PPS_TOO_FAST_WIDTH-1:0] evgPPStooFastCounter =
-                                                            PPS_TOO_FAST_RELOAD;
-wire evgPPStooFast = !evgPPStooFastCounter[PPS_TOO_FAST_WIDTH-1];
-(*MARK_DEBUG=DEBUG*) reg [PPS_TOO_SLOW_WIDTH-1:0] evgPPStooSlowCounter =
-                                                            PPS_TOO_SLOW_RELOAD;
-wire evgPPStooSlow = evgPPStooSlowCounter[PPS_TOO_SLOW_WIDTH-1];
-reg [PPS_TOO_SLOW_WIDTH-1:0] evgClkRateCounter = 0;
 
 always @(posedge evgClk) begin
     evgPPSmarker_m <= ppsMarker_a;
     evgPPSmarker   <= evgPPSmarker_m;
     evgPPSmarker_d <= evgPPSmarker;
     if (evgPPSrising) begin
-        evgPPStooFastCounter <= PPS_TOO_FAST_RELOAD;
-        evgPPStooSlowCounter <= PPS_TOO_SLOW_RELOAD;
-        evgClkRateCounter <= 1;
-        if (evgPPStooFast || evgPPStooSlow) begin
-            evgPPSvalid <= 0;
-        end
-        else begin
-            evgPPSvalid <= 1;
-            evgPPStoggle <= !evgPPStoggle;
-            evgClkStatus <= {{32-PPS_TOO_SLOW_WIDTH{1'b0}},
-                             evgClkRateCounter};
-        end
-    end
-    else begin
-        evgClkRateCounter <= evgClkRateCounter + 1;
-        if (evgPPStooFast) begin
-            evgPPStooFastCounter <= evgPPStooFastCounter - 1;
-        end
-        if (evgPPStooSlow) begin
-            evgPPSvalid <= 0;
-        end
-        else begin
-            evgPPStooSlowCounter <= evgPPStooSlowCounter - 1;
-        end
+        evgPPStoggle <= !evgPPStoggle;
     end
 end
+
+asyncounter #(
+    .N(PPS_MON_WIDTH)
+) asyncounter_pps (
+    .tick_clk(evgClk),
+    .tick(1'b1),
+    .reset(evgPPSrising),
+    .latch(evgPPSrising),
+    .samp_clk(s_axi_aclk),
+    .count(evgCountAtPPS)
+);
 
 /*
  * Time-of-day updates in evgClk domain
  */
-(*ASYNC_REG="true"*) reg evgSetSecondsToggle_m = 0;
-(*MARK_DEBUG=DEBUG*) reg evgSetSecondsToggle = 0, evgSetSecondsToggle_d = 0;
+(*ASYNC_REG="true"*) reg evgSetSecondsToggle_m = 0, evgSetSecondsToggle = 0;
+(*MARK_DEBUG=DEBUG*) reg evgSetSecondsToggle_d = 0;
 always @(posedge evgClk) begin
     evgSetSecondsToggle_m <= sysSetSecondsToggle;
     evgSetSecondsToggle   <= evgSetSecondsToggle_m;
     evgSetSecondsToggle_d <= evgSetSecondsToggle;
-    if (evgPPSvalid) begin
-        if (evgSetSecondsToggle != evgSetSecondsToggle_d) begin
-            evgSecondsValid <= 1;
-        end
-    end
-    else begin
-        evgSecondsValid <= 0;
+    if (evgSetSecondsToggle != evgSetSecondsToggle_d) begin
+        evgSecondsValid <= 1;
     end
 end
 
 /*
  * Heartbeat generation
  */
-(*ASYNC_REG="true"*) reg evgSetHeartbeatDivisorToggle_m = 0;
-reg evgSetHeartbeatDivisorToggle = 0, evgSetHeartbeatDivisorToggle_d = 0;
+(*ASYNC_REG="true"*) reg evgSetHeartbeatDivisorToggle_m = 0, evgSetHeartbeatDivisorToggle = 0;
+reg evgSetHeartbeatDivisorToggle_d = 0;
 reg evgHeartbeatEnable;
 reg [31:0] evgHeartbeatLoad = 0;
 reg [32:0] evgHeartbeatCounter = 0;
@@ -571,7 +534,7 @@ ospreyEVGsequencer #(
     .TIMER_COUNT(TIMER_COUNT),
     .SEQ_ADDR_WIDTH(SEQRAM_ADDR_WIDTH),
     .BANK_COUNT(SEQRAM_BANK_COUNT),
-    .DPRAM_TYPE("auto"),
+    .DPRAM_TYPE("block"),
     .GAP_WIDTH(32),
     .DB_WIDTH(32),
     .EVCODE_WIDTH(8),
@@ -600,8 +563,8 @@ localparam TIMER_CMD_NOP    = 2'b00;
 localparam TIMER_CMD_STOP   = 2'b01;
 localparam TIMER_CMD_RESUME = 2'b10;
 localparam TIMER_CMD_START  = 2'b11;
-(*ASYNC_REG="true"*) reg timerControlToggle_m = 0;
-(*MARK_DEBUG=DEBUG*) reg timerControlToggle = 0, timerControlToggle_d = 0;
+(*ASYNC_REG="true"*) reg timerControlToggle_m = 0, timerControlToggle = 0;
+(*MARK_DEBUG=DEBUG*) reg timerControlToggle_d = 0;
 always @(posedge evgClk) begin
     timerControlToggle_m <= sysTimerControlToggle;
     timerControlToggle   <= timerControlToggle_m;
@@ -612,10 +575,10 @@ wire [TIMER_COUNT-1:0] timerTriggerStrobes;
 generate
 for (i = 0 ; i < TIMER_COUNT ; i = i + 1) begin : timerRequester
     (*MARK_DEBUG=DEBUG*) wire[1:0] timerCmd = s_axi_wdata[i*2+:2];
-    (*ASYNC_REG="true"*) reg timerCodeToggle_m = 0;
-    (*MARK_DEBUG=DEBUG*) reg timerCodeToggle = 0, timerCodeToggle_d;
-    (*ASYNC_REG="true"*) reg timerInitValToggle_m = 0;
-    (*MARK_DEBUG=DEBUG*) reg timerInitValToggle = 0, timerInitValToggle_d;
+    (*ASYNC_REG="true"*) reg timerCodeToggle_m = 0, timerCodeToggle = 0;
+    (*MARK_DEBUG=DEBUG*) reg timerCodeToggle_d;
+    (*ASYNC_REG="true"*) reg timerInitValToggle_m = 0, timerInitValToggle = 0;
+    (*MARK_DEBUG=DEBUG*) reg timerInitValToggle_d;
     reg [31:0] timerInitVal = ~0;
     assign timerInitial[i]= timerInitVal;
     reg running = 0;
@@ -688,13 +651,19 @@ for (i = 0 ; i < INPUT_COUNT ; i = i + 1) begin : hwRequester
     end
     assign evgHwTriggerRising[i] = hwTriggerStrobes[(i*2)+0];
     assign evgHwTriggerFalling[i] = hwTriggerStrobes[(i*2)+1];
-    always @(posedge evgClk) begin
-        if(evgHwTriggerRising[i])
-            hwTrigCount_g[i] <= B2G(G2B(hwTrigCount_g[i]) + 1);
-    end
+    asyncounter #(
+        .N(8)
+    ) hwTrigCountN (
+        .tick_clk(evgClk),
+        .tick(evgHwTriggerRising[i]),
+        .latch(1'b1),
+        .reset(1'b0),
+        .samp_clk(s_axi_aclk),
+        .count(hwTrigCount[i])
+    );
     for (j = 0 ; j < 2 ; j = j + 1) begin : hwEdge
-        (*ASYNC_REG="true"*) reg hwUpdateToggle_m = 0;
-        reg hwUpdateToggle = 0, hwUpdateToggle_d;
+        (*ASYNC_REG="true"*) reg hwUpdateToggle_m = 0, hwUpdateToggle = 0;
+        reg hwUpdateToggle_d;
         always @(posedge evgClk) begin
             hwUpdateToggle_m <= sysHwUpdateToggle[(i*2)+j];
             hwUpdateToggle   <= hwUpdateToggle_m;
@@ -711,8 +680,8 @@ endgenerate
 /*
  * Software-initiated events
  */
-(*ASYNC_REG="true"*) reg swTriggerToggle_m = 0;
-reg swTriggerToggle = 0, swTriggerToggle_d = 0;
+(*ASYNC_REG="true"*) reg swTriggerToggle_m = 0, swTriggerToggle = 0;
+reg swTriggerToggle_d = 0;
 reg swTriggerStrobe = 0;
 reg [7:0] swEventCode = 8'b0;
 always @(posedge evgClk) begin
@@ -856,4 +825,5 @@ always @(posedge clk) begin
     end
 end
 endmodule
+
 `default_nettype wire

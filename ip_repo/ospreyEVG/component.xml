@@ -904,6 +904,10 @@
         <spirit:fileType>verilogSource</spirit:fileType>
         <spirit:userFileType>CHECKSUM_c5e3af57</spirit:userFileType>
       </spirit:file>
+      <spirit:file>
+        <spirit:name>hdl/asyncounter.v</spirit:name>
+        <spirit:fileType>verilogSource</spirit:fileType>
+      </spirit:file>
     </spirit:fileSet>
     <spirit:fileSet>
       <spirit:name>xilinx_verilogbehavioralsimulation_view_fileset</spirit:name>
@@ -917,6 +921,10 @@
       </spirit:file>
       <spirit:file>
         <spirit:name>hdl/ospreyEVG.v</spirit:name>
+        <spirit:fileType>verilogSource</spirit:fileType>
+      </spirit:file>
+      <spirit:file>
+        <spirit:name>hdl/asyncounter.v</spirit:name>
         <spirit:fileType>verilogSource</spirit:fileType>
       </spirit:file>
     </spirit:fileSet>
@@ -1095,7 +1103,7 @@
       </xilinx:taxonomies>
       <xilinx:displayName>ospreyEVG</xilinx:displayName>
       <xilinx:vendorDisplayName>Osprey DCS</xilinx:vendorDisplayName>
-      <xilinx:coreRevision>29</xilinx:coreRevision>
+      <xilinx:coreRevision>30</xilinx:coreRevision>
       <xilinx:upgrades>
         <xilinx:canUpgradeFrom>user.org:user:ospreyEVG:1.0</xilinx:canUpgradeFrom>
       </xilinx:upgrades>

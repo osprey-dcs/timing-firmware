@@ -4,7 +4,7 @@
     "xci_name": "bd_ospreyEVG_0_3",
     "cell_name": "ospreyEVG",
     "component_reference": "ospreydcs.com:user:ospreyEVG:1.0",
-    "ip_revision": "29",
+    "ip_revision": "30",
     "gen_directory": "../../../../../../EVG.gen/sources_1/bd/bd/ip/bd_ospreyEVG_0_3",
     "parameters": {
       "component_parameters": {
@@ -32,8 +32,7 @@
         "SEQRAM_BANK_COUNT": [ { "value": "8", "resolve_type": "generated", "format": "long", "usage": "all" } ],
         "RX_COUNT": [ { "value": "8", "resolve_type": "generated", "format": "long", "usage": "all" } ],
         "INPUT_COUNT": [ { "value": "16", "resolve_type": "generated", "format": "long", "usage": "all" } ],
-        "C_S_AXI_FREQ_HZ": [ { "value": "100000000", "resolve_type": "generated", "format": "long", "usage": "all" } ],
-        "HW_TRIGGER_COUNT": [ { "value": "8", "resolve_type": "generated", "format": "long", "usage": "all" } ]
+        "C_S_AXI_FREQ_HZ": [ { "value": "100000000", "resolve_type": "generated", "format": "long", "usage": "all" } ]
       },
       "project_parameters": {
         "ARCHITECTURE": [ { "value": "kintex7" } ],
@@ -50,7 +49,7 @@
       },
       "runtime_parameters": {
         "IPCONTEXT": [ { "value": "IP_Integrator" } ],
-        "IPREVISION": [ { "value": "29" } ],
+        "IPREVISION": [ { "value": "30" } ],
         "MANAGED": [ { "value": "TRUE" } ],
         "OUTPUTDIR": [ { "value": "../../../../../../EVG.gen/sources_1/bd/bd/ip/bd_ospreyEVG_0_3" } ],
         "SELECTEDSIMMODEL": [ { "value": "" } ],

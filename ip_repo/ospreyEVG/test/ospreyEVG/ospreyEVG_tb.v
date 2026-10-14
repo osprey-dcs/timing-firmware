@@ -117,7 +117,7 @@ endtask
 task test_config;
 begin
     axi.read(evg.REG_IDX_CONFIG*4, 32'ha01B2210);
-    axi.read(evg.REG_IDX_CSR*4, 32'h00000000);
+    axi.read(evg.REG_IDX_CSR*4, 32'h00000001);
 end
 endtask
 
@@ -250,7 +250,7 @@ endtask
 
 task test_seq;
 begin
-    evg.ospreyEVGsequencer_i.trigCountE <= 0; // zero trigger counters
+    evg.ospreyEVGsequencer_i.trigCountN[0].trigCount_B2G.count_t <= 0; // zero trigger counter
 
     // BANK.OFFSET
     axi.write(evg.REG_IDX_SEQ_ADDR_CODE*4, 32'h80000010); // offset 0.0, code 16
@@ -271,7 +271,7 @@ begin
     while(~evg.ospreyEVGsequencer_i.evgArmed[0])
         @(posedge evgClk);
 
-    axi.read(evg.REG_IDX_CSR*4, 32'h00000010); // seq 0 armed
+    axi.read(evg.REG_IDX_CSR*4, 32'h00000011); // seq 0 armed
     axi.read(evg.REG_IDX_SEQ_COUNT*4, 32'h00000000); // trig. count 0
 
     $display("# Trigger");
@@ -279,13 +279,13 @@ begin
 
     while(~evg.ospreyEVGsequencer_i.evgActive)
         @(posedge evgClk);
-    axi.read(evg.REG_IDX_CSR*4, 32'h00100000); // seq 0 active
+    axi.read(evg.REG_IDX_CSR*4, 32'h00100001); // seq 0 active
 
     waitForEvent(8'h10);
     waitForEvent(8'h11);
     while(evg.ospreyEVGsequencer_i.evgActive)
         @(posedge evgClk);
-    axi.read(evg.REG_IDX_CSR*4, 32'h00000000); // seq 0 idle
+    axi.read(evg.REG_IDX_CSR*4, 32'h00000001); // seq 0 idle
 
     axi.read(evg.REG_IDX_SEQ_COUNT*4, 32'h00000001); // trig. count 1
 end
@@ -293,7 +293,7 @@ endtask
 
 task test_seq_timer;
 begin
-    evg.ospreyEVGsequencer_i.trigCountE <= 0; // zero trigger counters
+    evg.ospreyEVGsequencer_i.trigCountN[0].trigCount_B2G.count_t <= 0; // zero trigger counters
 
     // BANK.OFFSET
     axi.write(evg.REG_IDX_SEQ_ADDR_CODE*4, 32'h80000020); // offset 0.0, code 32
@@ -318,7 +318,7 @@ begin
     axi.write(evg.REG_IDX_CSR*4, 32'h10000001); // arm bank 0
     while(~evg.ospreyEVGsequencer_i.evgArmed[0])
         @(posedge evgClk);
-    axi.read(evg.REG_IDX_CSR*4, 32'h00000010); // seq 0 armed
+    axi.read(evg.REG_IDX_CSR*4, 32'h00000011); // seq 0 armed
 
     axi.read(evg.REG_IDX_SEQ_COUNT*4, 32'h00000000); // trig. count 0
 
@@ -326,13 +326,13 @@ begin
 
     while(~evg.ospreyEVGsequencer_i.evgActive)
         @(posedge evgClk);
-    axi.read(evg.REG_IDX_CSR*4, 32'h00100000); // seq 0 active
+    axi.read(evg.REG_IDX_CSR*4, 32'h00100001); // seq 0 active
 
     waitForEvent(8'h20);
     waitForEvent(8'h21);
     while(evg.ospreyEVGsequencer_i.evgActive)
         @(posedge evgClk);
-    axi.read(evg.REG_IDX_CSR*4, 32'h00000000); // seq 0 idle
+    axi.read(evg.REG_IDX_CSR*4, 32'h00000001); // seq 0 idle
 
     axi.write(evg.REG_IDX_TIMER_CSR*4, 32'h00000001); // stop timer 0
 
@@ -345,7 +345,7 @@ begin
 
     while(~evg.ospreyEVGsequencer_i.evgActive)
         @(posedge evgClk);
-    axi.read(evg.REG_IDX_CSR*4, 32'h01100010); // seq 0 normal, active, and armed
+    axi.read(evg.REG_IDX_CSR*4, 32'h01100011); // seq 0 normal, active, and armed
 
     $display("rep. 1");
     waitForEvent(8'h20);
@@ -354,15 +354,15 @@ begin
     waitForEvent(8'h20);
     $display("switch to single trigger while running");
     axi.write(evg.REG_IDX_CSR*4, 32'h60000100); // bank 0 single trigger
-    axi.read (evg.REG_IDX_CSR*4, 32'h00100000); // seq 0 active
+    axi.read (evg.REG_IDX_CSR*4, 32'h00100001); // seq 0 active
     waitForEvent(8'h21);
 
-    axi.read(evg.REG_IDX_CSR*4, 32'h00000000); // seq 0 idle
+    axi.read(evg.REG_IDX_CSR*4, 32'h00000001); // seq 0 idle
 
     while(evg.ospreyEVGsequencer_i.evgActive)
         @(posedge evgClk);
 
-    axi.read (evg.REG_IDX_CSR*4, 32'h00000000); // seq 0 idle
+    axi.read (evg.REG_IDX_CSR*4, 32'h00000001); // seq 0 idle
 
     axi.read(evg.REG_IDX_SEQ_COUNT*4, 32'h00000003); // trig. count 1
 end

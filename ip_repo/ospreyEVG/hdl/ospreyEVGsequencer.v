@@ -25,6 +25,7 @@
 /*
  * Generate table-based event sequence
  */
+`timescale  1 ns / 1 ns
 `default_nettype none
 module ospreyEVGsequencer #(
     parameter SEQ_ADDR_WIDTH = 11,
@@ -69,9 +70,11 @@ localparam DPRAM_ADDR_WIDTH    = BANKSEL_WIDTH + SEQ_ADDR_WIDTH;
  */
 (* RAM_STYLE = DPRAM_TYPE *)
 reg      [EVCODE_WIDTH-1:0] dpramCodes[0:(BANK_COUNT*(1<<SEQ_ADDR_WIDTH))-1];
-reg      [EVCODE_WIDTH-1:0] sysDpramQcodes;
+reg      [EVCODE_WIDTH-1:0] sysDpramQcodes, sysDpramQcodeNext;
+(* RAM_STYLE = DPRAM_TYPE *)
 reg [GAP_COUNTER_WIDTH-1:0] dpramGaps [0:(BANK_COUNT*(1<<SEQ_ADDR_WIDTH))-1];
 reg [GAP_COUNTER_WIDTH-1:0] sysDpramQgaps;
+reg sysAddressCodeStrobeNext = 0;
 
 /*
  * Other forward references
@@ -92,7 +95,7 @@ reg sysTimerInfoToggle = 0;
 reg sysHwTrigInfoToggle = 0;
 reg sysTrigNormalToggle = 0;
 reg   [DPRAM_ADDR_WIDTH-1:0] sysAddrLatch = 0;
-wire  [DPRAM_ADDR_WIDTH-1:0] sysAddr = sysGPIO_OUT[8+:DPRAM_ADDR_WIDTH];
+wire  [DPRAM_ADDR_WIDTH-1:0] sysAddr = sysGPIO_OUT[EVCODE_WIDTH+:DPRAM_ADDR_WIDTH];
 wire [GAP_COUNTER_WIDTH-1:0] sysGapVal = {1'b0, sysGPIO_OUT[GAP_WIDTH-1:0]} +
                                                       {GAP_COUNTER_WIDTH{1'b1}};
 
@@ -122,11 +125,16 @@ always @(posedge sysClk) begin
         default: begin end
         endcase
     end
+    sysAddressCodeStrobeNext <= 0;
     if (sysAddressCodeStrobe) begin
         if (sysGPIO_OUT[31]) begin
-            dpramCodes[sysAddr] <= sysGPIO_OUT[0+:EVCODE_WIDTH];
+            sysAddressCodeStrobeNext <= 1;
+            sysDpramQcodeNext <= sysGPIO_OUT[0+:EVCODE_WIDTH];
         end
-        sysAddrLatch <= sysGPIO_OUT[EVCODE_WIDTH+:DPRAM_ADDR_WIDTH];
+        sysAddrLatch <= sysAddr;
+    end
+    if (sysAddressCodeStrobeNext) begin
+        dpramCodes[sysAddrLatch] <= sysDpramQcodeNext;
     end
     if (sysGapStrobe) begin
         dpramGaps[sysAddrLatch] <= sysGapVal;
@@ -160,10 +168,10 @@ wire evgDpramNoGap = evgDpramQgap[GAP_COUNTER_WIDTH-1];
 /*
  * Arm/Disarm
  */
-(*ASYNC_REG="true"*) reg evgArmInfoToggle_m = 0;
-reg evgArmInfoToggle = 0, evgArmInfoToggle_d = 0;
+(*ASYNC_REG="true"*) reg evgArmInfoToggle_m = 0, evgArmInfoToggle = 0;
+reg evgArmInfoToggle_d = 0;
 reg [BANK_COUNT-1:0] evgArm = 0, evgDisarm = 0;
-reg [BANK_COUNT-1:0] evgRunningBitmap = 0;
+reg [BANK_COUNT-1:0] evgRunningBitmap = 0; // at most one bit set
 always @(posedge evgClk) begin
     evgArmInfoToggle_m <= sysArmInfoToggle;
     evgArmInfoToggle   <= evgArmInfoToggle_m;
@@ -182,8 +190,8 @@ end
 
 // Normal/Single
 // sysTrigNormalToggle
-(*ASYNC_REG="true"*) reg evgTrigNormToggle_m = 0;
-reg evgTrigNormToggle = 0, evgTrigNormToggle_d = 0;
+(*ASYNC_REG="true"*) reg evgTrigNormToggle_m = 0, evgTrigNormToggle = 0;
+reg evgTrigNormToggle_d = 0;
 always @(posedge evgClk) begin
     evgTrigNormToggle_m <= sysTrigNormalToggle;
     evgTrigNormToggle <= evgTrigNormToggle_m;
@@ -199,48 +207,44 @@ end
 wire  [BANKSEL_WIDTH-1:0] sysHwTrigInfoBank = sysCSR[21+:BANKSEL_WIDTH];
 wire                      sysHwTrigInfoEdge = sysCSR[20];
 wire[HW_TRIGGER_COUNT-1:0]sysHwTrigInfoEnables=sysCSR[0+:HW_TRIGGER_COUNT];
-(*ASYNC_REG="true"*) reg evgHwTrigInfoToggle_m = 0;
-reg evgHwTrigInfoToggle = 0, evgHwTrigInfoToggle_d = 0;
+(*ASYNC_REG="true"*) reg evgHwTrigInfoToggle_m = 0, evgHwTrigInfoToggle = 0;
+reg evgHwTrigInfoToggle_d = 0;
 reg [TIMER_COUNT-1:0] evgTimerTriggerEnables [0:BANK_COUNT-1];
 reg [HW_TRIGGER_COUNT-1:0] evgHwTrigRiseEnables [0:BANK_COUNT-1];
 reg [HW_TRIGGER_COUNT-1:0] evgHwTrigFallEnables [0:BANK_COUNT-1];
 reg [BANK_COUNT-1:0] evgHwTriggers = 0;
 
-(*ASYNC_REG="true"*) reg evgTimerTriggerToggle_m = 0;
-reg evgTimerTriggerToggle = 0, evgTimerTriggerToggle_d = 0;
+(*ASYNC_REG="true"*) reg evgTimerTriggerToggle_m = 0, evgTimerTriggerToggle = 0;
+reg evgTimerTriggerToggle_d = 0;
 
-(*ASYNC_REG="true"*) reg evgSoftTriggerToggle_m = 0;
-reg evgSoftTriggerToggle = 0, evgSoftTriggerToggle_d = 0;
+(*ASYNC_REG="true"*) reg evgSoftTriggerToggle_m = 0, evgSoftTriggerToggle = 0;
+reg evgSoftTriggerToggle_d = 0;
 reg [BANK_COUNT-1:0] evgSoftTriggers = 0;
 
-function [3:0] B2G(input [3:0] bin);
-    B2G = bin ^ {1'b0, bin[3:1]};
-endfunction
-function [3:0] G2B(input [3:0] gray);
-    G2B = gray ^ {1'b0, gray[3:1]} ^ {2'b0, gray[3:2]} ^ {3'b0, gray[3]};
-endfunction
-
-reg [4*BANK_COUNT-1:0] trigCountE = 0;
-(* ASYNC_REG="true" *) // cross from evgClk to sysCLk
-reg [4*BANK_COUNT-1:0] trigCountS = 0;
 wire [4*BANK_COUNT-1:0] trigCount;
 assign sysBankCount = {{32-4*BANK_COUNT{1'b0}}, trigCount};
 
-always @(posedge sysClk)
-    trigCountS <= trigCountE;
-
 genvar j;
 generate
-for (j=0 ; j < BANK_COUNT ; j = j + 1) begin  : trigCountN
-    assign trigCount[4*j+:4] = G2B(trigCountS[4*j+:4]);
-end
+    for (j=0 ; j < BANK_COUNT ; j = j + 1) begin  : trigCountN
+        asyncounter #(
+            .N(4)
+        ) trigCount_B2G (
+            .tick_clk(evgClk),
+            .tick(evgStart && evgRunningBitmap[j]),
+            .latch(1'b1),
+            .reset(1'b0),
+            .samp_clk(sysClk),
+            .count(trigCount[4*j+:4])
+        );
+    end
 endgenerate
 
 /*
  * Emergency stop
  */
-(*ASYNC_REG="true"*) reg evgSeqCancelToggle_m = 0;
-reg evgSeqCancelToggle = 0, evgSeqCancelToggle_d = 0;
+(*ASYNC_REG="true"*) reg evgSeqCancelToggle_m = 0, evgSeqCancelToggle = 0;
+reg evgSeqCancelToggle_d = 0;
 (*MARK_DEBUG=DEBUG*) reg evgSeqCancel = 0;
 
 always @(posedge evgClk) begin
@@ -347,7 +351,6 @@ always @(posedge evgClk) begin
                 evgTriggered[i] <= 0;
                 evgStart <= 1;
                 brk = 1;
-                trigCountE[4*i+:4] <= B2G(G2B(trigCountE[4*i+:4]) + 1);
             end
         end
     end

@@ -121,7 +121,7 @@ ospreyEVGlatencyFindRising #(.SERDES_FACTOR(SERDES_FACTOR))
 // Receiver and sampling clock domains
 genvar i;
 generate
-for (i = 0 ; i < RX_COUNT ; i = i + 1) begin
+for (i = 0 ; i < RX_COUNT ; i = i + 1) begin :perRX
     /*
      * Detect end of measurement cycle
      */

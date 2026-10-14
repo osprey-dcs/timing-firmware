@@ -26,7 +26,10 @@
  * Basic MRF-compatible event generator
  * Assume only one per processor
  */
+#include <stdbool.h>
+
 #include <xil_io.h>
+#include <xparameters.h>
 #include "xil_printf.h"
 
 #include "ospreyEVG.h"
@@ -35,7 +38,7 @@
 
 #define REG_CSR                (0*4)
 #define REG_CONFIG             (1*4)
-#define REG_CLK_RATE           (2*4)
+// former REG_CLK_RATE
 #define REG_SECONDS            (3*4)
 #define REG_HEARTBEAT_DIVISOR  (4*4)
 #define REG_HW_TRIGGER_CONFIG  (5*4)
@@ -47,6 +50,7 @@
 #define REG_TIMER_CSR          (11*4)
 #define REG_LATENCY_STATUS     (12*4)
 #define REG_HW_TRIGGER_COUNT   (13*4)
+#define REG_PPS_MONITOR        (14*4)
 #define REG_TIMER_CONFIG_BASE  (16*4)
 
 // REG_CSR
@@ -85,10 +89,7 @@
 #define CSR_CMD_NORML 0x60000000
 
 // REG_TIMER_CSR
-#define TIMER_CMD_NOP    0
-#define TIMER_CMD_STOP   1
-#define TIMER_CMD_RESUME 2
-#define TIMER_CMD_START  3
+//  array of TIMER_CMD_*
 
 // REG_SEQ_ADDR_CODE
 #define SEQ_ADDR_CODE_W_WRITE_ENABLE        0x80000000
@@ -110,7 +111,21 @@ int
 ospreyEVGInit(uint32_t baseAddress)
 {
     int a, memCapacity;
-    if (!baseAddress) return -1;
+    switch(baseAddress) {
+#if XPAR_OSPREYEVG_NUM_INSTANCES >= 1
+    case XPAR_OSPREYEVG_0_S_AXI_BASEADDR:
+#endif
+#if XPAR_OSPREYEVG_NUM_INSTANCES >= 2
+    case XPAR_OSPREYEVG_1_S_AXI_BASEADDR:
+#endif
+#if XPAR_OSPREYEVG_NUM_INSTANCES > 2
+#  error too many ospreyEVG cores
+#endif
+        break;
+    default:
+        printf("ERROR %s(%08x) invalid addr\n", __func__, (unsigned)baseAddress);
+        return -1;
+    }
     evgInfo.baseAddr = baseAddress;
     uint32_t config = Xil_In32(evgInfo.baseAddr + REG_CONFIG);
     if((config&0xf0000000) != 0xa0000000) {
@@ -131,8 +146,7 @@ ospreyEVGInit(uint32_t baseAddress)
     if (conf->timerCount > TIMER_CAPACITY) {
         conf->timerCount = TIMER_CAPACITY;
     }
-    /*
-     * Fill with 'end-of-sequence' codes for the benefit
+    /* Fill with 'end-of-sequence' codes for the benefit
      * of clients that write unterminated sequences.
      */
     memCapacity = (1 << conf->seqAddrWidth) * conf->bankCount;
@@ -460,7 +474,7 @@ uint32_t ospreyEVGGetDbusInputMap(uint8_t bit)
 #define F_REG_SEQ_TRIGGER                 6
 #define F_REG_SEQ_CANCEL                  7
 #define F_REG_SEQ_TRIG_MODE               8
-// former F_REG_DBUS_INPUT_MAP
+#define F_REG_PPS_MONITOR                 9
 #define F_REG_TIMER_CSR                   10
 #define F_REG_SET_SECONDS                 11
 #define F_REG_INPUT_COUNT                 12
@@ -565,6 +579,7 @@ ospreyEVG_FEEDread(int offset)
     case F_REG_SEQ_ADDR_WIDTH:       return ospreyEVGGetConf()->seqAddrWidth;
     case F_REG_RX_COUNT:             return ospreyEVGGetConf()->rxCount;
     case F_REG_SEQ_TRIG_MODE:        return ospreyEVGStatus()>>24u;
+    case F_REG_PPS_MONITOR:          return Xil_In32(evgInfo.baseAddr + REG_PPS_MONITOR);
     case RRANGE(DBUS_TO_INPUT_SELECT) {
         return ospreyEVGGetDbusInputMap(idx);
     }
