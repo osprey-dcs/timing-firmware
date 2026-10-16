@@ -229,14 +229,7 @@ set_property -dict {PACKAGE_PIN J4} [get_ports {QSFP_RX_P[7]}]
 set_property -dict {PACKAGE_PIN J3} [get_ports {QSFP_RX_N[7]}]
 set_property -dict {PACKAGE_PIN H2} [get_ports {QSFP_TX_P[7]}]
 set_property -dict {PACKAGE_PIN H1} [get_ports {QSFP_TX_N[7]}]
-# Bank 115, reference clock 0
-#set_property -dict {PACKAGE_PIN H6} [get_ports MGTREFCLK0_115_P]
-#set_property -dict {PACKAGE_PIN H5} [get_ports MGTREFCLK0_115_N]
-#create_clock -period 8.000 -name MGT_REFCLK2 [get_ports MGTREFCLK0_115_P]
-# Bank 115, reference clock 1
-#set_property -dict {PACKAGE_PIN K6} [get_ports MGTREFCLK1_115_P]
-#set_property -dict {PACKAGE_PIN K5} [get_ports MGTREFCLK1_115_N]
-#create_clock -period 8.000 -name MGT_REFCLK3 [get_ports MGTREFCLK1_115_P]
+
 # QSFP1-2 (Fibers 3/10), Bank 116 MGT 0, X0Y4
 set_property -dict {PACKAGE_PIN G4} [get_ports {QSFP_RX_P[2]}]
 set_property -dict {PACKAGE_PIN G3} [get_ports {QSFP_RX_N[2]}]
