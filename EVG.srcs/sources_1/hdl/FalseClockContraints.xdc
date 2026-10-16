@@ -52,3 +52,7 @@ set_false_path -from [get_clocks fiberLinks/mgtWrapper_i/mgt_i/inst/mgt_i/gt7_mg
 set_false_path -from [get_clocks rx_clk] -to [get_clocks -of_objects [get_pins bd_i/clk_wiz_1/inst/mmcm_adv_inst/CLKOUT1]]
 set_false_path -from [get_clocks FMC2_Cleaned_CLK0] -to [get_clocks clk_out1_bd_clk_wiz_1_0]
 set_false_path -from [get_clocks FMC2_Cleaned_CLK1] -to [get_clocks clk_out1_bd_clk_wiz_1_0]
+# only used by frequencyCounters
+set_false_path -from [get_clocks MGT_REFCLK1] -to [get_clocks clk_out1_bd_clk_wiz_1_0]
+set_false_path -from [get_clocks MGT_REFCLK2] -to [get_clocks clk_out1_bd_clk_wiz_1_0]
+set_false_path -from [get_clocks MGT_REFCLK3] -to [get_clocks clk_out1_bd_clk_wiz_1_0]
