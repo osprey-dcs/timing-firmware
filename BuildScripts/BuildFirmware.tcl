@@ -10,4 +10,7 @@ reset_run impl_1
 launch_runs -jobs 2 impl_1 -to_step write_bitstream
 wait_on_run impl_1
 
+open_run impl_1
+write_verilog -force {EVG.v}
+
 write_hw_platform -fixed -force EVG.xsa
