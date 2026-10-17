@@ -11,6 +11,9 @@ launch_runs -jobs 2 impl_1 -to_step write_bitstream
 wait_on_run impl_1
 
 open_run impl_1
-write_verilog -force {EVG.v}
+
+write_verilog -force {EVG.runs/impl_1/EVG.v}
+report_clock_interaction -file {EVG.runs/impl_1/rci.rpt}
+report_cdc -details -severity Critical -file {EVG.runs/impl_1/cdc.rpt}
 
 write_hw_platform -fixed -force EVG.xsa
