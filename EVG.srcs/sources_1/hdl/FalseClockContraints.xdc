@@ -1,5 +1,6 @@
 # Don't check timing across clock boundaries
-# See: ./CreateFalseClockPaths.awk
+# In vivado run: report_clock_interaction -file {ci.rpt}
+# In shell run: awk -f CreateFalseClockPaths.awk ci.rpt
 
 set_false_path -from [get_clocks -of_objects [get_pins bd_i/clk_wiz_1/inst/mmcm_adv_inst/CLKOUT0]] -to [get_clocks -of_objects [get_pins bd_i/clk_wiz_1/inst/mmcm_adv_inst/CLKOUT1]]
 set_false_path -from [get_clocks -of_objects [get_pins bd_i/clk_wiz_1/inst/mmcm_adv_inst/CLKOUT0]] -to [get_clocks -of_objects [get_pins bd_i/clk_wiz_1/inst/mmcm_adv_inst/CLKOUT3]]
@@ -49,6 +50,14 @@ set_false_path -from [get_clocks fiberLinks/mgtWrapper_i/mgt_i/inst/mgt_i/gt6_mg
 set_false_path -from [get_clocks fiberLinks/mgtWrapper_i/mgt_i/inst/mgt_i/gt6_mgt_i/gtxe2_i/RXOUTCLK] -to [get_clocks clk_out2_bd_clk_wiz_2_0]
 set_false_path -from [get_clocks fiberLinks/mgtWrapper_i/mgt_i/inst/mgt_i/gt7_mgt_i/gtxe2_i/RXOUTCLK] -to [get_clocks clk_out1_bd_clk_wiz_1_0]
 set_false_path -from [get_clocks fiberLinks/mgtWrapper_i/mgt_i/inst/mgt_i/gt7_mgt_i/gtxe2_i/RXOUTCLK] -to [get_clocks clk_out2_bd_clk_wiz_2_0]
+set_false_path -from [get_clocks fiberLinks/mgtWrapper_i/mgt_i/inst/mgt_i/gt0_mgt_i/gtxe2_i/RXOUTCLK] -to [get_clocks fiberLinks/mgtWrapper_i/mgt_i/inst/mgt_i/gt0_mgt_i/gtxe2_i/TXOUTCLK]
+set_false_path -from [get_clocks fiberLinks/mgtWrapper_i/mgt_i/inst/mgt_i/gt0_mgt_i/gtxe2_i/TXOUTCLK] -to [get_clocks fiberLinks/mgtWrapper_i/mgt_i/inst/mgt_i/gt5_mgt_i/gtxe2_i/RXOUTCLK]
+set_false_path -from [get_clocks fiberLinks/mgtWrapper_i/mgt_i/inst/mgt_i/gt1_mgt_i/gtxe2_i/RXOUTCLK] -to [get_clocks fiberLinks/mgtWrapper_i/mgt_i/inst/mgt_i/gt0_mgt_i/gtxe2_i/TXOUTCLK]
+set_false_path -from [get_clocks fiberLinks/mgtWrapper_i/mgt_i/inst/mgt_i/gt2_mgt_i/gtxe2_i/RXOUTCLK] -to [get_clocks fiberLinks/mgtWrapper_i/mgt_i/inst/mgt_i/gt0_mgt_i/gtxe2_i/TXOUTCLK]
+set_false_path -from [get_clocks fiberLinks/mgtWrapper_i/mgt_i/inst/mgt_i/gt3_mgt_i/gtxe2_i/RXOUTCLK] -to [get_clocks fiberLinks/mgtWrapper_i/mgt_i/inst/mgt_i/gt0_mgt_i/gtxe2_i/TXOUTCLK]
+set_false_path -from [get_clocks fiberLinks/mgtWrapper_i/mgt_i/inst/mgt_i/gt4_mgt_i/gtxe2_i/RXOUTCLK] -to [get_clocks fiberLinks/mgtWrapper_i/mgt_i/inst/mgt_i/gt0_mgt_i/gtxe2_i/TXOUTCLK]
+set_false_path -from [get_clocks fiberLinks/mgtWrapper_i/mgt_i/inst/mgt_i/gt6_mgt_i/gtxe2_i/RXOUTCLK] -to [get_clocks fiberLinks/mgtWrapper_i/mgt_i/inst/mgt_i/gt0_mgt_i/gtxe2_i/TXOUTCLK]
+set_false_path -from [get_clocks fiberLinks/mgtWrapper_i/mgt_i/inst/mgt_i/gt7_mgt_i/gtxe2_i/RXOUTCLK] -to [get_clocks fiberLinks/mgtWrapper_i/mgt_i/inst/mgt_i/gt0_mgt_i/gtxe2_i/TXOUTCLK]
 set_false_path -from [get_clocks rx_clk] -to [get_clocks -of_objects [get_pins bd_i/clk_wiz_1/inst/mmcm_adv_inst/CLKOUT1]]
 set_false_path -from [get_clocks FMC2_Cleaned_CLK0] -to [get_clocks clk_out1_bd_clk_wiz_1_0]
 set_false_path -from [get_clocks FMC2_Cleaned_CLK1] -to [get_clocks clk_out1_bd_clk_wiz_1_0]
