@@ -44,20 +44,22 @@ localparam ADDR_HI_WIDTH = 7;
 localparam ADDR_WIDTH = ADDR_HI_WIDTH + ADDR_LO_WIDTH;
 localparam DATA_WIDTH    = 8;
 
-localparam OPCODE_NETWORK_CONFIG = 1,
+localparam [OPCODE_WIDTH-1:0]
+           OPCODE_NETWORK_CONFIG = 1,
            OPCODE_CONTROL        = 2,
            OPCODE_UDP_CONFIG     = 3,
            OPCODE_MAILBOX_READ   = 4,
            OPCODE_MAILBOX_WRITE  = 5;
 (*mark_debug=DEBUG*) reg  [OPCODE_WIDTH-1:0] opcode;
 
-localparam CONTROL_ADDRLO_ENABLE_ETHERNET = 0,
+localparam [ADDR_LO_WIDTH-1:0]
+           CONTROL_ADDRLO_ENABLE_ETHERNET = 0,
            CONTROL_ADDRLO_SET_ADDRHI      = 2;
 
-localparam S_FETCH_OPCODE =  0,
-           S_FETCH_ADDRESS = 1,
-           S_TRANSFER_DATA = 2,
-           S_DONE          = 3;
+localparam [1:0] S_FETCH_OPCODE =  0,
+                 S_FETCH_ADDRESS = 1,
+                 S_TRANSFER_DATA = 2,
+                 S_DONE          = 3;
 (*mark_debug=DEBUG*) reg [1:0] state;
 
 (*mark_debug=DEBUG*) reg [3:0] bitCounter;
