@@ -225,6 +225,11 @@ mmcMailboxInit(void)
         }
     }
     printf("Microcontroller:\n");
+    printf("  mbox %02x%02x %u.%u\n",
+           mmcMailboxRead(0),  // Magic 0xa1
+           mmcMailboxRead(1),  // Magic 0x5b
+           mmcMailboxRead(2),  // major
+           mmcMailboxRead(3)); // minor
     showLM75temperature(28, MADDR_U28_TEMP);
     showLM75temperature(29, MADDR_U29_TEMP);
     showMMCfirmware();
