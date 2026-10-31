@@ -2,6 +2,7 @@ IVERILOG=iverilog
 VVP=vvp
 
 TBs += ospreyRFIN_tb.v
+TBs += mmcIO_tb.v
 
 IFLAGS =-g2012 -Wall
 
