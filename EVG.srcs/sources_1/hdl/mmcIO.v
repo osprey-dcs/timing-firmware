@@ -78,10 +78,8 @@ wire bitCounterDone = bitCounter[3];
 (*mark_debug=DEBUG*) reg [ADDR_HI_WIDTH-1:0] addrHi;
 
 // Stabilize incoming lines
-(*ASYNC_REG="true"*) reg MMC_CSB_m;
-(*mark_debug=DEBUG*) reg MMC_CSB_s;
-(*ASYNC_REG="true"*) reg MMC_SCLK_m;
-(*mark_debug=DEBUG*) reg MMC_SCLK_s;
+(*ASYNC_REG="true"*) reg MMC_CSB_m, MMC_CSB_s;
+(*ASYNC_REG="true"*) reg MMC_SCLK_m, MMC_SCLK_s;
                      reg MMC_SCLK_d;
 
 // I/O shift registers
