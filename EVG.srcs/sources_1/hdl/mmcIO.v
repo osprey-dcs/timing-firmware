@@ -38,6 +38,16 @@ module mmcIO #(
     input  MMC_MOSI,
     output MMC_MISO);
 
+// https://github.com/BerkeleyLab/Bedrock/blob/4a46e438c2cc130c6b1fcca92c0a1a31c985910b/projects/test_marble_family/mmc_mailbox.v#L36-L43
+// Mailbox pseudo-SPI protocol
+// 16-bit SPI word semantics:
+//   0 0 0 1 a a a a d d d d d d d d  ->  set MAC/IP config[a] = D
+//   0 0 1 0 0 0 0 0 x x x x x x x V  ->  set enable_rx to V
+//   0 0 1 0 0 0 1 0 x d d d d d d d  ->  set 7-bit mailbox page selector
+//   0 0 1 1 a a a a d d d d d d d d  ->  set UDP port config[a] = D
+//   0 1 0 0 a a a a d d d d d d d d  ->  mailbox read (D -> MISO)
+//   0 1 0 1 a a a a d d d d d d d d  ->  mailbox write
+
 localparam OPCODE_WIDTH  = 4;
 localparam ADDR_LO_WIDTH = 4;
 localparam ADDR_HI_WIDTH = 7;
