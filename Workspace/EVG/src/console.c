@@ -551,6 +551,16 @@ cmdJTR(int argc, char **argv)
         ospreyTRGOUTshowPoll(ch);
         return;
     }
+    if ((strcmp(cmd, "config") == 0) && (argc == 2)) {     // jtr# config
+        ospreyTRGOUTconfigure(ch);
+        return;
+    }
+    if ((strcmp(cmd, "clear") == 0) && (argc == 2)) {      // jtr# clear
+        ospreyTRGOUTclearSticky(ch);
+        microsecondSpin(5000);                  // let a poll pass pick it up
+        ospreyTRGOUTshowPoll(ch);
+        return;
+    }
     if ((strcmp(cmd, "oe") == 0) && (argc == 3)) {         // jtr# oe on|off
         if (strcmp(argv[2], "on") == 0)       ospreyTRGOUTclockOutputs(ch, 1);
         else if (strcmp(argv[2], "off") == 0) ospreyTRGOUTclockOutputs(ch, 0);
@@ -563,7 +573,9 @@ cmdJTR(int argc, char **argv)
            "       jtr<1|2> r <addr>             read register (0xPPRR)\n"
            "       jtr<1|2> w <addr> <value>     write register\n"
            "       jtr<1|2> poll [on|off]        status poll, show results\n"
-           "       jtr<1|2> oe on|off            clock buffer outputs\n");
+           "       jtr<1|2> oe on|off            clock buffer outputs\n"
+           "       jtr<1|2> config               load and verify the configuration\n"
+           "       jtr<1|2> clear                clear the sticky status flags\n");
 }
 
 /*

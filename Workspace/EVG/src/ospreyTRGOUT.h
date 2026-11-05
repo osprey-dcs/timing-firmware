@@ -28,6 +28,12 @@
 
 void ospreyTRGOUTinit(void);
 
+// A single Si5394 (address, value) pair, as in si5394Registers.h
+typedef struct {
+    uint16_t addr;
+    uint8_t  val;
+} si5394Reg_t;
+
 void si539xWrite(unsigned ch, uint8_t addr, uint8_t val);
 uint8_t si539xRead(unsigned ch, uint8_t addr);
 
@@ -35,6 +41,8 @@ void ospreyTRGOUTclockOutputs(unsigned ch, int enable);
 void ospreyTRGOUTpoll(unsigned ch, int enable);
 void ospreyTRGOUTshowPoll(unsigned ch);
 void ospreyTRGOUTshowStatus(unsigned ch);
+int  ospreyTRGOUTconfigure(unsigned ch);
+void ospreyTRGOUTclearSticky(unsigned ch);
 
 #define TRGOUT_SIZE 0
 uint32_t osreyTRGOUTRead(uint32_t addr);

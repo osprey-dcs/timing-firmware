@@ -28,6 +28,7 @@
 #include "gpio.h"
 #include "ospreySi539xSeq.h"
 #include "ospreyTRGOUT.h"
+#include "si5394Registers.h"
 #include "util.h"
 
 /*
@@ -227,6 +228,140 @@ void ospreyTRGOUTshowStatus(unsigned ch)
 {
     if (ch >= SI539XSEQ_COUNT) return;
     si539xSeqShowStatus(ch);
+}
+
+/*
+ * Full configuration from the ClockBuilder Pro register list in
+ * si5394Registers.h (Pedro Rodriguez): preamble, the post-preamble wait,
+ * then the register map (which ends with the postamble), as one sequence.
+ * Then a verify pass reads the registers back.
+ */
+#define N_ELEMENTS(a) (sizeof (a) / sizeof (a)[0])
+#define CONFIG_TIMEOUT_US 2000000
+
+static uint32_t cmdBuf[SI539XSEQ_SEQ_DEPTH];   // too big for the stack
+
+static int
+inList(uint16_t addr, const si5394Reg_t *list, unsigned count)
+{
+    unsigned i;
+    for (i = 0 ; i < count ; i++) if (list[i].addr == addr) return 1;
+    return 0;
+}
+
+/*
+ * Registers whose read-back need not match what was written: the pre- and
+ * postamble mode/trigger registers, and the divider update strobes.
+ */
+static const uint16_t updateStrobes[] = { 0x0230, 0x023F, 0x030C, 0x0338, 0x0520 };
+
+static int
+skipVerify(uint16_t addr)
+{
+    unsigned i;
+    if (inList(addr, si5394PreConfig, N_ELEMENTS(si5394PreConfig))) return 1;
+    if (inList(addr, si5394PostConfig, N_ELEMENTS(si5394PostConfig))) return 1;
+    for (i = 0 ; i < N_ELEMENTS(updateStrobes) ; i++) {
+        if (updateStrobes[i] == addr) return 1;
+    }
+    return 0;
+}
+
+/*
+ * Append WRITE (or, for verify, READ) entries for a register list, with a
+ * page write wherever the page changes. Returns the new length, or
+ * SI539XSEQ_SEQ_DEPTH if the list would not fit.
+ */
+static unsigned
+appendRegs(unsigned n, const si5394Reg_t *list, unsigned count, int *page, int verify)
+{
+    unsigned i;
+    for (i = 0 ; i < count ; i++) {
+        uint16_t addr = list[i].addr;
+        if (verify && skipVerify(addr)) continue;
+        if (n + 2 >= SI539XSEQ_SEQ_DEPTH) return SI539XSEQ_SEQ_DEPTH;
+        if ((addr >> 8) != *page) {
+            *page = addr >> 8;
+            cmdBuf[n++] = si539xSeqPage(*page);
+        }
+        cmdBuf[n++] = verify ? si539xSeqRead(addr, list[i].val)
+                             : si539xSeqWrite(addr, list[i].val);
+    }
+    return n;
+}
+
+int ospreyTRGOUTconfigure(unsigned ch)
+{
+    unsigned n, i, checked = 0, mismatches = 0;
+    int page = -1, err;
+    uint8_t grade;
+    uint32_t waitUs, start, elapsed;
+
+    if (!checkChannel(ch)) return -1;
+
+    // Grades E and P need 625 ms after the preamble, the others 300 ms
+    si539xWrite(ch, 0x01, 0x00);
+    grade = si539xRead(ch, 0x04);
+    waitUs = ((grade == 4) || (grade == 15)) ? 625000 : 300000;
+
+    n = appendRegs(0, si5394PreConfig, N_ELEMENTS(si5394PreConfig), &page, 0);
+    cmdBuf[n++] = si539xSeqDelay(waitUs * si539xSeqClocksPerUs());
+    n = appendRegs(n, si5394CLKConfig, N_ELEMENTS(si5394CLKConfig), &page, 0);
+    if (n >= SI539XSEQ_SEQ_DEPTH) {
+        printf("jtr%u: configuration does not fit the sequence memory\n", ch + 1);
+        return -1;
+    }
+    start = microsecondsSinceBoot();
+    err = si539xSeqRun(ch, cmdBuf, n, CONFIG_TIMEOUT_US);
+    elapsed = microsecondsSinceBoot() - start;
+    if (err) {
+        reportError(ch, "configuration", err);
+        return err;
+    }
+    printf("jtr%u: configured (grade %u, %u ms wait), %u commands in %u ms\n",
+           ch + 1, grade, (unsigned)(waitUs / 1000), n, (unsigned)(elapsed / 1000));
+
+    page = -1;
+    n = appendRegs(0, si5394CLKConfig, N_ELEMENTS(si5394CLKConfig), &page, 1);
+    err = si539xSeqRun(ch, cmdBuf, n, SEQ_TIMEOUT_US);
+    if (err) {
+        reportError(ch, "verify", err);
+        return err;
+    }
+    for (i = 0 ; i < n ; i++) {
+        uint32_t w = si539xSeqWord(ch, i);
+        if ((w >> 28) != SI539XSEQ_OP_READ) continue;
+        checked++;
+        if (SI539XSEQ_WORD_RESULT(w) != SI539XSEQ_WORD_EXPECTED(w)) {
+            if (++mismatches <= 10) {
+                printf("  0x%02X%02X read 0x%02X, wrote 0x%02X\n",
+                       (unsigned)SI539XSEQ_WORD_PAGE(w), (unsigned)SI539XSEQ_WORD_REG(w),
+                       (unsigned)SI539XSEQ_WORD_RESULT(w),
+                       (unsigned)SI539XSEQ_WORD_EXPECTED(w));
+            }
+        }
+    }
+    printf("jtr%u: verified %u registers, %u mismatch%s\n", ch + 1, checked,
+           mismatches, (mismatches == 1) ? "" : "es");
+    if (mismatches == 0) printf("jtr%u: clock buffer outputs are still off: jtr%u oe on\n",
+                                ch + 1, ch + 1);
+    return mismatches ? -1 : 0;
+}
+
+/*
+ * Clear the sticky status flags (0x0011-0x0014).
+ */
+void ospreyTRGOUTclearSticky(unsigned ch)
+{
+    uint32_t cmds[5];
+    unsigned n = 0, i;
+    int err;
+
+    if (!checkChannel(ch)) return;
+    cmds[n++] = si539xSeqPage(0x00);
+    for (i = 0x11 ; i <= 0x14 ; i++) cmds[n++] = si539xSeqWrite(i, 0x00);
+    err = si539xSeqRun(ch, cmds, n, SEQ_TIMEOUT_US);
+    if (err) reportError(ch, "clear", err);
 }
 
 uint32_t osreyTRGOUTRead(uint32_t addr) { return 0; }
