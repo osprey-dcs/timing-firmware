@@ -3,10 +3,11 @@ VVP=vvp
 
 TBs += ospreyRFIN_tb.v
 TBs += mmcIO_tb.v
+TBs += ospreySi539xSeq_tb.v
 
 IFLAGS =-g2012 -Wall
 
-IFLAGS+=-y../EVG.srcs/sources_1/hdl
+IFLAGS+=-y../EVG.srcs/sources_1/hdl -y.
 
 all: $(TBs:%_tb.v=%_tb)
 

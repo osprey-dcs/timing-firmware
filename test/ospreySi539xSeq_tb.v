@@ -112,10 +112,14 @@ integer i, n, mismatches, t_delay_start, t_delay_end;
 realtime t0, t1;
 
 initial begin
-    if ($test$plusargs("vcd")) begin
-        $dumpfile("ospreySi539xSeq_tb.vcd");
-        $dumpvars(0, ospreySi539xSeq_tb);
+`ifdef __ICARUS__
+    string vcd;
+    if($value$plusargs("vcd=%s", vcd)) begin
+        $display("Dump to %s", vcd);
+        $dumpfile(vcd);
+        $dumpvars(0,ospreySi539xSeq_tb);
     end
+`endif
 
     // Status registers the model will report
     chip.regs[12'h00C] = 8'h00;  chip.regs[12'h00D] = 8'h0E;  chip.regs[12'h00E] = 8'h22;
@@ -298,13 +302,18 @@ initial begin
     axi_write(CS_GAP, 12);
 
     $display("\n%0d checks, %0d failed", checks, errors);
-    if (errors == 0) $display("PASS"); else $display("FAIL");
-    $finish;
+    if (errors == 0) begin
+        $display("PASS");
+        $finish();
+    end else begin
+        $display("FAIL");
+        $stop();
+    end
 end
 
 initial begin
     #20_000_000;
     $display("TIMEOUT");
-    $finish;
+    $stop;
 end
 endmodule
