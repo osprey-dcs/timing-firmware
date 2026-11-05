@@ -519,32 +519,51 @@ cmdMGT(int argc, char **argv)
 static void
 cmdJTR(int argc, char **argv)
 {
-    unsigned ch = argc>=1 && strcmp(argv[0], "jtr2")==0;
-    const char* cmd = argc>=2 ? argv[1] : "";
-    unsigned addr=0, set=0;
-    if(argc>=3 && !getUInt(argv[2], 0, &addr))
-        cmd = argv[1];
-    if(argc>=4 && getUInt(argv[3], 0, &set))
-        cmd = ""; // error
+    unsigned ch = (strcmp(argv[0], "jtr2") == 0);
+    const char *cmd = (argc >= 2) ? argv[1] : "";
+    unsigned addr, value;
 
-    if(strcmp(cmd, "r")==0 && argc>=3) { // jtr# r <addr>
-        si539xWrite(ch, 0x01, addr>>8); // page select
-        unsigned got = si539xRead(ch, addr);
-        printf("  %u 0x%02x -> 0x%02x\n", ch, addr, got);
-        return;
-
-    } else if(strcmp(cmd, "w")==0 && argc>=4) { // jtr# w <addr> <value>
-        si539xWrite(ch, 0x01, addr>>8); // page select
-        si539xWrite(ch, addr, set);
-        printf("  %u 0x%02x <- 0x%02x\n", ch, addr, set);
-        return;
-
-    } else if(strcmp(cmd, "s")==0) { // jtr# s
-        printf("  %u s 0x%08x\n", ch, GPIO_READ(GPIO_IDX_TRGOUT_JTR2_SPI+ch));
+    if ((strcmp(cmd, "r") == 0) && (argc == 3) && getUInt(argv[2], 0, &addr)
+     && (addr <= 0xFFFF)) {                     // jtr# r <addr>
+        si539xWrite(ch, 0x01, addr >> 8);       // page select
+        value = si539xRead(ch, addr & 0xFF);
+        printf("  jtr%u 0x%04x -> 0x%02x\n", ch + 1, addr, value);
         return;
     }
-
-    printf("usage: jtr<1|2> <s | r <addr> | w <addr> <value>>\n");
+    if ((strcmp(cmd, "w") == 0) && (argc == 4) && getUInt(argv[2], 0, &addr)
+     && getUInt(argv[3], 0, &value) && (addr <= 0xFFFF) && (value <= 0xFF)) {
+        si539xWrite(ch, 0x01, addr >> 8);       // page select
+        si539xWrite(ch, addr & 0xFF, value);    // jtr# w <addr> <value>
+        printf("  jtr%u 0x%04x <- 0x%02x\n", ch + 1, addr, value);
+        return;
+    }
+    if ((strcmp(cmd, "s") == 0) && (argc == 2)) {          // jtr# s
+        ospreyTRGOUTshowStatus(ch);
+        return;
+    }
+    if ((strcmp(cmd, "poll") == 0) && (argc <= 3)) {       // jtr# poll [on|off]
+        if (argc == 3) {
+            if (strcmp(argv[2], "on") == 0)       ospreyTRGOUTpoll(ch, 1);
+            else if (strcmp(argv[2], "off") == 0) ospreyTRGOUTpoll(ch, 0);
+            else goto usage;
+            microsecondSpin(5000);
+        }
+        ospreyTRGOUTshowPoll(ch);
+        return;
+    }
+    if ((strcmp(cmd, "oe") == 0) && (argc == 3)) {         // jtr# oe on|off
+        if (strcmp(argv[2], "on") == 0)       ospreyTRGOUTclockOutputs(ch, 1);
+        else if (strcmp(argv[2], "off") == 0) ospreyTRGOUTclockOutputs(ch, 0);
+        else goto usage;
+        ospreyTRGOUTshowStatus(ch);
+        return;
+    }
+  usage:
+    printf("usage: jtr<1|2> s                    sequencer status\n"
+           "       jtr<1|2> r <addr>             read register (0xPPRR)\n"
+           "       jtr<1|2> w <addr> <value>     write register\n"
+           "       jtr<1|2> poll [on|off]        status poll, show results\n"
+           "       jtr<1|2> oe on|off            clock buffer outputs\n");
 }
 
 /*

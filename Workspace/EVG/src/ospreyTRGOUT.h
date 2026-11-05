@@ -31,6 +31,11 @@ void ospreyTRGOUTinit(void);
 void si539xWrite(unsigned ch, uint8_t addr, uint8_t val);
 uint8_t si539xRead(unsigned ch, uint8_t addr);
 
+void ospreyTRGOUTclockOutputs(unsigned ch, int enable);
+void ospreyTRGOUTpoll(unsigned ch, int enable);
+void ospreyTRGOUTshowPoll(unsigned ch);
+void ospreyTRGOUTshowStatus(unsigned ch);
+
 #define TRGOUT_SIZE 0
 uint32_t osreyTRGOUTRead(uint32_t addr);
 void osreyTRGOUTWrite(uint32_t addr);

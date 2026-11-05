@@ -14,10 +14,11 @@
 #define SI539XSEQ_CONTROL        0x1004
 #define SI539XSEQ_STATUS         0x1008
 #define SI539XSEQ_SCLK_DIV       0x100C  /* SCLK half-period in clk cycles;
-                                            >= 3 at 100 MHz (chip max 20 MHz) */
+                                            >= 3 at 100 MHz (chip max 20 MHz).
+                                            Not enforced: verify after changing */
 #define SI539XSEQ_CS_GAP         0x1018  /* CSb high time between frames in clk
                                             cycles, plus 3; >= 7 at 100 MHz (chip
-                                            min 95 ns) */
+                                            min 95 ns). Not enforced */
 #define SI539XSEQ_SEQ_INDEX      0x1010  /* current entry, or where it stopped */
 #define SI539XSEQ_POLL_COUNT     0x1014  /* 31 bits; 0 = no pass yet; wraps to 1 */
 #define SI539XSEQ_POLL_MEM       0x1100  /* 64 x 32 command words */
@@ -79,5 +80,29 @@ static inline uint32_t si539xSeqDelay(uint32_t clocks)
 #define SI539XSEQ_WORD_PAGE(w)      (((w) >> 24) & 0xF)   /* software's note */
 #define SI539XSEQ_WORD_RESULT(w)    (((w) >> 8) & 0xFF)
 #define SI539XSEQ_WORD_EXPECTED(w)  ((w) & 0xFF)
+
+/*
+ * Driver (ospreySi539xSeq.c). 'ch' selects the engine: 0 = jtrSeq1, 1 = jtrSeq2.
+ * Timeouts are in microseconds. Functions returning int give 0 on success or a
+ * negative SI539XSEQ_ERR_ code.
+ */
+#define SI539XSEQ_COUNT          2
+
+#define SI539XSEQ_ERR_CHANNEL   -1  /* no such engine */
+#define SI539XSEQ_ERR_BUSY      -2  /* previous sequence still running */
+#define SI539XSEQ_ERR_LENGTH    -3  /* list longer than the memory */
+#define SI539XSEQ_ERR_TIMEOUT   -4  /* sequence or poll pass did not finish */
+
+int      si539xSeqPresent(unsigned ch);
+uint32_t si539xSeqGetReg(unsigned ch, unsigned offset);
+void     si539xSeqSetReg(unsigned ch, unsigned offset, uint32_t value);
+void     si539xSeqControl(unsigned ch, uint32_t setBits, uint32_t clearBits);
+int      si539xSeqRun(unsigned ch, const uint32_t *cmds, unsigned n, uint32_t timeoutUs);
+uint32_t si539xSeqWord(unsigned ch, unsigned index);
+int      si539xSeqPollLoad(unsigned ch, const uint32_t *cmds, unsigned n, uint32_t timeoutUs);
+void     si539xSeqPollEnable(unsigned ch, int enable);
+uint32_t si539xSeqPollWord(unsigned ch, unsigned index);
+uint32_t si539xSeqClocksPerUs(void);
+void     si539xSeqShowStatus(unsigned ch);
 
 #endif /* OSPREY_SI539X_SEQ_H */
