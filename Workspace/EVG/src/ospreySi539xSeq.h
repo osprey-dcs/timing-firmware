@@ -14,8 +14,10 @@
 #define SI539XSEQ_CONTROL        0x1004
 #define SI539XSEQ_STATUS         0x1008
 #define SI539XSEQ_SCLK_DIV       0x100C  /* SCLK half-period in clk cycles;
-                                            >= 3 at 100 MHz (chip max 20 MHz).
-                                            Not enforced: verify after changing */
+                                            >= 3 at 100 MHz (chip max 20 MHz) */
+#define SI539XSEQ_CS_GAP         0x1018  /* CSb high time between frames in clk
+                                            cycles, plus 3; >= 7 at 100 MHz (chip
+                                            min 95 ns) */
 #define SI539XSEQ_SEQ_INDEX      0x1010  /* current entry, or where it stopped */
 #define SI539XSEQ_POLL_COUNT     0x1014  /* 31 bits; 0 = no pass yet; wraps to 1 */
 #define SI539XSEQ_POLL_MEM       0x1100  /* 64 x 32 command words */

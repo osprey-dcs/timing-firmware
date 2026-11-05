@@ -27,6 +27,7 @@ reg   [7:0] rdbyte = 8'h00;
 integer n_frames = 0, n_writes = 0, n_page_writes = 0, n_reads = 0;
 integer n_violations = 0;
 realtime t_cs_rise = -1000.0, t_cs_fall = 0.0, t_rise = 0.0, t_fall = 0.0;
+realtime cs_high_last = 0.0;   // most recent CSb-high time between frames
 reg      first_rise = 1'b0;
 
 // Last register write, for the testbench to watch
@@ -51,6 +52,7 @@ endtask
 
 always @(negedge csn) begin
     if ($realtime - t_cs_rise < 95.0) violation("CSb high time < 95 ns", $realtime - t_cs_rise);
+    cs_high_last = $realtime - t_cs_rise;
     t_cs_fall  = $realtime;
     nbits      = 0;
     reading    = 1'b0;

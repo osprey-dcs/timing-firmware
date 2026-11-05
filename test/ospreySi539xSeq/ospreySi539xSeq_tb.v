@@ -34,7 +34,7 @@ si5394_spi_model chip (.csn(csn), .sclk(sclk), .sdi(mosi), .sdo(miso));
 
 // Register offsets
 localparam ID = 13'h1000, CONTROL = 13'h1004, STATUS = 13'h1008, SCLK_DIV = 13'h100C,
-           SEQ_INDEX = 13'h1010, POLL_COUNT = 13'h1014, POLL_BASE = 13'h1100;
+           SEQ_INDEX = 13'h1010, POLL_COUNT = 13'h1014, CS_GAP = 13'h1018, POLL_BASE = 13'h1100;
 
 integer errors = 0, checks = 0;
 task check(input cond, input [8*72-1:0] msg);
@@ -134,6 +134,7 @@ initial begin
     axi_read(STATUS, v);    check(v[2:0] == 3'b000, "STATUS idle");
     check(v[10:8] == 3'b110, "STATUS pins [10:8] = INTR 1, LOS 1, LOL 0");
     axi_read(SCLK_DIV, v);  check(v == 5, "SCLK_DIV reset = 5");
+    axi_read(CS_GAP, v);    check(v == 12, "CS_GAP reset = 12");
     axi_write(CONTROL, 32'h0000_0200);   // release reset, enable level shifters
     axi_read(CONTROL, v);   check(v == 32'h00000200, "CONTROL = 0x200 after write");
     check(rstn == 1 && clkbuf_oen == 1 && lvlshift_oen == 0, "chip pins follow CONTROL");
@@ -278,6 +279,23 @@ initial begin
     check(v == 32'h00000001, "next pass wraps to 1, not 0");
     axi_read(CONTROL, v); axi_write(CONTROL, v & ~32'h2);
     axi_read(STATUS, v); while (v[2]) axi_read(STATUS, v);
+
+    $display("\n=== 10. CS_GAP sets the CSb high time between frames   [t = %0.1f us]", $realtime / 1000.0);
+    // two writes = four frames, so CSb goes high three times between frames
+    axi_write(0, c_page(8'h00)); axi_write(4, c_write(12'h007, 8'h5A)); axi_write(8, C_END);
+    $display("        reset value 12: CSb high %0.0f ns", chip.cs_high_last);
+    check(chip.cs_high_last >= 120.0 && chip.cs_high_last < 160.0, "CS_GAP = 12 gives about 120 ns (plus a few clocks of overhead)");
+    axi_write(CS_GAP, 50);
+    axi_read(CS_GAP, v);    check(v == 50, "CS_GAP reads back 50");
+    start_seq; wait_seq_done;
+    $display("        CS_GAP 50: CSb high %0.0f ns", chip.cs_high_last);
+    check(chip.cs_high_last >= 500.0 && chip.cs_high_last < 540.0, "CS_GAP = 50 gives about 500 ns");
+    check(chip.regs[12'h007] == 8'h5A, "writes still correct with a long gap");
+    n = chip.n_violations;
+    axi_write(CS_GAP, 3);   // 30 ns: below the chip's 95 ns on purpose
+    start_seq; wait_seq_done;
+    check(chip.n_violations > n, "model flags CS_GAP = 3 (about 60 ns) as too short");
+    axi_write(CS_GAP, 12);
 
     $display("\n%0d checks, %0d failed", checks, errors);
     if (errors == 0) $display("PASS"); else $display("FAIL");

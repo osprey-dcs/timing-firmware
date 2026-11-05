@@ -25,9 +25,8 @@
 /*
  * ospreySi539xSeq -- SPI command sequencer for one Si539x jitter cleaner.
  *
- * Runs lists of register commands out of block RAM so the MicroBlaze does not
- * bit-bang SPI or spin through the 300 ms configuration wait. Instantiate
- * one per chip (the Trigger Output card has separate SPI pins for each).
+ * Runs lists of register commands out of block RAM. Instantiate one per
+ * chip (separate SPI pins for each).
  *
  * AXI4-Lite address map (byte offsets, 8 KB window):
  *   0x0000-0x0FFF  Sequence memory, R/W, 1024 x 32 command words
@@ -45,6 +44,9 @@
  *                                  [10] INTR pin     (active low, raw synchronized)
  *   0x100C         SCLK_DIV    R/W [15:0] SCLK half-period in clk cycles (0 -> 1),
  *                                         chip max is 20 MHz (so >= 3 at 100 MHz)
+ *   0x1018         CS_GAP      R/W [15:0] CSb high time between frames in clk cycles
+ *                                         (0 -> 1, reset 12); the engine adds 3 more,
+ *                                         chip min is 95 ns (so >= 7 at 100 MHz)
  *   0x1010         SEQ_INDEX   R   [9:0]  current sequence entry (or END location)
  *   0x1014         POLL_COUNT  R   [30:0] poll passes completed (rolls over to 1)
  *   0x1100-0x11FF  Poll memory, R/W, 64 x 32 command words
@@ -82,7 +84,7 @@
 `default_nettype none
 module ospreySi539xSeq #(
     parameter integer SCLK_DIV_RESET = 5,         // 10 MHz SCLK at 100 MHz clk
-    parameter integer CS_GAP_MIN     = 12,        // min CSb-high clk cycles (>= 95 ns)
+    parameter integer CS_GAP_RESET   = 12,        // CSb-high clk cycles (120 ns at 100 MHz)
     parameter [31:0]  ID_VALUE       = 32'h53690100 // "Si", version 1.00
     ) (
     input  wire        S_AXI_ACLK,
@@ -136,6 +138,7 @@ reg         chip_reset   = 1'b1;
 reg         clkbuf_dis   = 1'b1;
 reg         lvlshift_dis = 1'b1;
 reg  [15:0] sclk_div     = SCLK_DIV_RESET;
+reg  [15:0] cs_gap       = CS_GAP_RESET;
 reg         seq_go       = 1'b0;   // one-cycle request from an AXI write
 reg         seq_busy     = 1'b0;
 reg         seq_done     = 1'b0;
@@ -222,6 +225,7 @@ always @(*) begin
         6'd3:    rd_mux = {16'd0, sclk_div};
         6'd4:    rd_mux = {22'd0, seq_index};
         6'd5:    rd_mux = {1'b0, poll_count};
+        6'd6:    rd_mux = {16'd0, cs_gap};
         default: rd_mux = 32'd0;
         endcase
     end
@@ -235,6 +239,7 @@ always @(posedge clk) begin
         seq_go <= 1'b0;
         poll_en <= 1'b0; chip_reset <= 1'b1; clkbuf_dis <= 1'b1; lvlshift_dis <= 1'b1;
         sclk_div <= SCLK_DIV_RESET;
+        cs_gap   <= CS_GAP_RESET;
     end
     else begin
         // Write address/data may arrive in either order
@@ -255,6 +260,7 @@ always @(posedge clk) begin
                     lvlshift_dis <= w_data[10];
                 end
                 6'd3: sclk_div <= w_data[15:0];
+                6'd6: cs_gap   <= w_data[15:0];
                 default: ;
                 endcase
             end
@@ -296,7 +302,7 @@ reg  [16:0] hcnt   = 17'd0;
 reg         miso_r = 1'b0;
 
 wire [15:0] half   = (sclk_div == 16'd0) ? 16'd1 : sclk_div;
-wire [16:0] gap    = ({half, 1'b0} > CS_GAP_MIN) ? {half, 1'b0} : CS_GAP_MIN;
+wire [15:0] gap    = (cs_gap == 16'd0) ? 16'd1 : cs_gap;
 
 always @(posedge clk) begin
     miso_r   <= spi_miso;
@@ -485,7 +491,7 @@ end
 endmodule
 
 /*
- * True dual-port block RAM, one clock, read-first. Zero-initialised, so an
+ * True dual-port block RAM, one clock, read-first. Zero-initialized, so an
  * unloaded memory holds END commands.
  */
 module ospreySi539xSeqRAM #(
