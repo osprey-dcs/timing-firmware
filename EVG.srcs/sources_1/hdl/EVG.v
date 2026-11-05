@@ -251,6 +251,10 @@ endgenerate
 
 assign FMC2_Heartbeat_LED = sysFMCisPresent[2] ? 1'b1 : 1'bz;
 
+// Chip interface from ospreySi539xSeq in the block design (index = chip)
+wire [1:0] jtrSeqCSn, jtrSeqSCLK, jtrSeqMOSI;
+wire [1:0] jtrSeqRSTn, jtrSeqClkBufOEn, jtrSeqLvlShiftOEn;
+
 ospreyTRGOUT fmc2TrgOut(
   .sysClk(sysClk),
   .jtrStrobe({
@@ -260,6 +264,12 @@ ospreyTRGOUT fmc2TrgOut(
   .GPIO_OUT(GPIO_OUT),
   .jtrData1(GPIO_IN[GPIO_IDX_TRGOUT_JTR1_SPI]),
   .jtrData2(GPIO_IN[GPIO_IDX_TRGOUT_JTR2_SPI]),
+  .seq_LevelShift_OEn(jtrSeqLvlShiftOEn),
+  .seq_ClkBuffer_OEn(jtrSeqClkBufOEn),
+  .seq_RSTn(jtrSeqRSTn),
+  .seq_SPI_CSn(jtrSeqCSn),
+  .seq_SPI_CLK(jtrSeqSCLK),
+  .seq_SPI_SDI(jtrSeqMOSI),
   .sysFMCisPresent(sysFMCisPresent[2]),
   .Cleaner_LevelShift_OEn(FMC2_Cleaner_LevelShift_OEn),
   .Cleaner_ClkBuffer_OEn(FMC2_Cleaner_ClkBuffer_OEn),
@@ -640,6 +650,28 @@ bd bd_i (
     .evrHwDriverIn({{8-CFG_MPS_OUTPUT_COUNT{1'b0}}, ~mgtTxMPSmitigate}),
     .evrHardwareOutputs(trigOut),
     .evrTimestamp(evrTimestamp),
+
+    // Si539x SPI sequencers (ospreySi539xSeq), one per jitter cleaner
+    .jtr1_spi_csn(jtrSeqCSn[0]),
+    .jtr1_spi_sclk(jtrSeqSCLK[0]),
+    .jtr1_spi_mosi(jtrSeqMOSI[0]),
+    .jtr1_spi_miso(FMC2_Cleaner_SPI_SDO[0]),
+    .jtr1_chip_rstn(jtrSeqRSTn[0]),
+    .jtr1_clkbuf_oen(jtrSeqClkBufOEn[0]),
+    .jtr1_lvlshift_oen(jtrSeqLvlShiftOEn[0]),
+    .jtr1_pin_lol(FMC2_Cleaner_Fault_LOL[0]),
+    .jtr1_pin_los_xaxb(FMC2_Cleaner_Fault_LOS_XO[0]),
+    .jtr1_pin_intr(FMC2_Cleaner_Fault_INTR[0]),
+    .jtr2_spi_csn(jtrSeqCSn[1]),
+    .jtr2_spi_sclk(jtrSeqSCLK[1]),
+    .jtr2_spi_mosi(jtrSeqMOSI[1]),
+    .jtr2_spi_miso(FMC2_Cleaner_SPI_SDO[1]),
+    .jtr2_chip_rstn(jtrSeqRSTn[1]),
+    .jtr2_clkbuf_oen(jtrSeqClkBufOEn[1]),
+    .jtr2_lvlshift_oen(jtrSeqLvlShiftOEn[1]),
+    .jtr2_pin_lol(FMC2_Cleaner_Fault_LOL[1]),
+    .jtr2_pin_los_xaxb(FMC2_Cleaner_Fault_LOS_XO[1]),
+    .jtr2_pin_intr(FMC2_Cleaner_Fault_INTR[1]),
 
     .console_rxd(FPGA_TxD),
     .console_txd(FPGA_RxD)

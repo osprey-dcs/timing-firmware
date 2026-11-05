@@ -385,6 +385,42 @@
                 "SV": "ospreydcs.com:user:ospreyEVG:1.0",
                 "TM": "data",
                 "TU": "register"
+            },
+            "V14": {
+                "VT": "AC",
+                "BA": "0x44A60000",
+                "HA": "0x44A61FFF",
+                "BP": "C_BASEADDR",
+                "HP": "C_HIGHADDR",
+                "MA": "Data",
+                "MX": "/microblaze_0",
+                "MI": "M_AXI_DP",
+                "MS": "SEG_jtrSeq1_reg0",
+                "MV": "xilinx.com:ip:microblaze:11.0",
+                "SX": "/jtrSeq1",
+                "SI": "S_AXI",
+                "SS": "reg0",
+                "SV": "xilinx.com:module_ref:ospreySi539xSeq:1.0",
+                "TM": "data",
+                "TU": "register"
+            },
+            "V15": {
+                "VT": "AC",
+                "BA": "0x44A70000",
+                "HA": "0x44A71FFF",
+                "BP": "C_BASEADDR",
+                "HP": "C_HIGHADDR",
+                "MA": "Data",
+                "MX": "/microblaze_0",
+                "MI": "M_AXI_DP",
+                "MS": "SEG_jtrSeq2_reg0",
+                "MV": "xilinx.com:ip:microblaze:11.0",
+                "SX": "/jtrSeq2",
+                "SI": "S_AXI",
+                "SS": "reg0",
+                "SV": "xilinx.com:module_ref:ospreySi539xSeq:1.0",
+                "TM": "data",
+                "TU": "register"
             }
         },
         "edges": [
@@ -448,6 +484,16 @@
             },
             {
                 "src": "V13",
+                "trg": "V2",
+                "EH": "2"
+            },
+            {
+                "src": "V14",
+                "trg": "V2",
+                "EH": "2"
+            },
+            {
+                "src": "V15",
                 "trg": "V2",
                 "EH": "2"
             }

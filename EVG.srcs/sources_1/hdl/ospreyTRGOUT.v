@@ -29,6 +29,15 @@ module ospreyTRGOUT(
     output wire [31:0] jtrData1,
     output wire [31:0] jtrData2,
 
+    // Chip interface from the ospreySi539xSeq engines in the block design
+    // (index = chip). The engines now own these pins; see below.
+    input  wire  [1:0] seq_LevelShift_OEn,
+    input  wire  [1:0] seq_ClkBuffer_OEn,
+    input  wire  [1:0] seq_RSTn,
+    input  wire  [1:0] seq_SPI_CSn,
+    input  wire  [1:0] seq_SPI_CLK,
+    input  wire  [1:0] seq_SPI_SDI,
+
     input wire         sysFMCisPresent,
     output wire  [1:0] Cleaner_LevelShift_OEn,
     output wire  [1:0] Cleaner_ClkBuffer_OEn,
@@ -51,12 +60,15 @@ generate
     for (i = 0 ; i < 2 ; i = i + 1) begin : perFMC2Bank
     reg [5:0] outbank_l = 6'b111000; // outputs disabled, and (invert) reset asserted
 
-    assign Cleaner_LevelShift_OEn[i] = sysFMCisPresent ? outbank_l[5] : 1'bz;
-    assign Cleaner_ClkBuffer_OEn[i] = sysFMCisPresent ? outbank_l[4] : 1'bz;
-    assign Cleaner_RSTn[i] = sysFMCisPresent ? ~outbank_l[3] : 1'bz; // invert
-    assign Cleaner_SPI_CSn[i] = sysFMCisPresent ? outbank_l[2] : 1'bz;
-    assign Cleaner_SPI_CLK[i] = sysFMCisPresent ? outbank_l[1] : 1'bz;
-    assign Cleaner_SPI_SDI[i] = sysFMCisPresent ? outbank_l[0] : 1'bz;
+    // All chip control and SPI pins come from the sequencer engines.
+    // outbank_l (the old GPIO-driven pin values) is still stored and read
+    // back below, but no longer drives anything.
+    assign Cleaner_LevelShift_OEn[i] = sysFMCisPresent ? seq_LevelShift_OEn[i] : 1'bz;
+    assign Cleaner_ClkBuffer_OEn[i] = sysFMCisPresent ? seq_ClkBuffer_OEn[i] : 1'bz;
+    assign Cleaner_RSTn[i] = sysFMCisPresent ? seq_RSTn[i] : 1'bz; // already active low
+    assign Cleaner_SPI_CSn[i] = sysFMCisPresent ? seq_SPI_CSn[i] : 1'bz;
+    assign Cleaner_SPI_CLK[i] = sysFMCisPresent ? seq_SPI_CLK[i] : 1'bz;
+    assign Cleaner_SPI_SDI[i] = sysFMCisPresent ? seq_SPI_SDI[i] : 1'bz;
 
     assign GPIO_IN[i] = {
         sysFMCisPresent,
