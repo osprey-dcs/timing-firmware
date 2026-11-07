@@ -10,11 +10,11 @@ reg clk = 0, resetn = 0;
 always #5 clk = !clk;   // 100 MHz
 
 // AXI4-Lite master signals
-reg  [12:0] awaddr = 0;  reg awvalid = 0;  wire awready;
-reg  [31:0] wdata  = 0;  reg wvalid  = 0;  wire wready;
-wire  [1:0] bresp;       wire bvalid;      reg  bready = 1;
-reg  [12:0] araddr = 0;  reg arvalid = 0;  wire arready;
-wire [31:0] rdata;       wire [1:0] rresp; wire rvalid; reg rready = 1;
+reg  [12:0] awaddr = 32'hx;  reg awvalid = 0;  wire awready;
+reg  [31:0] wdata  = 32'hx;  reg wvalid  = 0;  wire wready;
+wire  [1:0] bresp;           wire bvalid;      reg  bready = 1;
+reg  [12:0] araddr = 0;      reg arvalid = 0;  wire arready;
+wire [31:0] rdata;           wire [1:0] rresp; wire rvalid; reg rready = 1;
 
 wire csn, sclk, mosi, miso, rstn, clkbuf_oen, lvlshift_oen;
 reg  pin_lol = 1'b0, pin_los = 1'b1, pin_intr = 1'b1;
@@ -56,8 +56,14 @@ task axi_write(input [12:0] a, input [31:0] d);
             if (awvalid && awready) aw_done = 1;
             if (wvalid && wready)   w_done  = 1;
             #1;
-            if (aw_done) awvalid = 0;
-            if (w_done)  wvalid  = 0;
+            if (aw_done) begin
+                awvalid = 0;
+                awaddr <= 32'hx;
+            end
+            if (w_done) begin
+                wvalid  = 0;
+                wdata <= 32'hx;
+            end
         end
         @(posedge clk); while (!bvalid) @(posedge clk);
         #1;
@@ -70,6 +76,7 @@ task axi_read(input [12:0] a, output [31:0] d);
         araddr = a; arvalid = 1;
         @(posedge clk); while (!arready) @(posedge clk);
         #1 arvalid = 0;
+        araddr = 32'hx;
         @(posedge clk); while (!rvalid) @(posedge clk);
         d = rdata;
         #1;
