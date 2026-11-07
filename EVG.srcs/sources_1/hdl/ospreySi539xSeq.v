@@ -215,21 +215,18 @@ wire [31:0] status_rb  = {21'd0, pins_s, 5'd0, poll_busy, seq_done, seq_busy};
 
 reg [31:0] rd_mux;
 always @(*) begin
-    if (rd_addr[12] == 1'b0)          rd_mux = seq_douta;
-    else if (rd_addr[12:8] == 5'h11)  rd_mux = poll_douta;
-    else if (rd_addr[12:8] == 5'h10) begin
-        case (rd_addr[7:2])
-        6'd0:    rd_mux = ID_VALUE;
-        6'd1:    rd_mux = control_rb;
-        6'd2:    rd_mux = status_rb;
-        6'd3:    rd_mux = {16'd0, sclk_div};
-        6'd4:    rd_mux = {22'd0, seq_index};
-        6'd5:    rd_mux = {1'b0, poll_count};
-        6'd6:    rd_mux = {16'd0, cs_gap};
-        default: rd_mux = 32'd0;
-        endcase
-    end
-    else                              rd_mux = 32'd0;
+    casez(rd_addr[12:2])
+    {1'b0 , 10'hz}: rd_mux = seq_douta;
+    {5'h11, 6'hzz}: rd_mux = poll_douta;
+    {5'h10, 6'd00}: rd_mux = ID_VALUE;
+    {5'h10, 6'd01}: rd_mux = control_rb;
+    {5'h10, 6'd02}: rd_mux = status_rb;
+    {5'h10, 6'd03}: rd_mux = {16'd0, sclk_div};
+    {5'h10, 6'd04}: rd_mux = {22'd0, seq_index};
+    {5'h10, 6'd05}: rd_mux = {1'b0, poll_count};
+    {5'h10, 6'd06}: rd_mux = {16'd0, cs_gap};
+    default: rd_mux = 32'hdeadbeef;
+    endcase
 end
 
 always @(posedge clk) begin
