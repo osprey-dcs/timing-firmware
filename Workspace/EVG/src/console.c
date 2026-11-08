@@ -568,6 +568,9 @@ cmdJTR(int argc, char **argv)
         ospreyTRGOUTshowStatus(ch);
         return;
     }
+    if ((strcmp(cmd, "dump") == 0)) { // jtr# dump
+        ospreyTRGOUTdump(ch);
+    }
   usage:
     printf("usage: jtr<1|2> s                    sequencer status\n"
            "       jtr<1|2> r <addr>             read register (0xPPRR)\n"

@@ -366,3 +366,24 @@ void ospreyTRGOUTclearSticky(unsigned ch)
 
 uint32_t osreyTRGOUTRead(uint32_t addr) { return 0; }
 void osreyTRGOUTWrite(uint32_t addr) {}
+
+void ospreyTRGOUTdump(unsigned int ch)
+{
+    static uint32_t cmds[N_ELEMENTS(si5394CLKConfig)];
+    for(size_t i=0; i<N_ELEMENTS(si5394CLKConfig); i++) {
+        cmds[i] = si539xSeqRead(si5394CLKConfig[i].addr, 0);
+    }
+    int page = -1;
+    unsigned n = appendRegs(0, si5394CLKConfig, N_ELEMENTS(si5394CLKConfig), &page, 1);
+    int err = si539xSeqRun(ch, cmdBuf, n, SEQ_TIMEOUT_US);
+    if (err) {
+        reportError(ch, "ID read", err);
+        return;
+    }
+    for(size_t i=0; i<n; i++) {
+        uint32_t w = si539xSeqWord(ch, i);
+        printf("  0x%02X%02X 0x%02X\n",
+               (unsigned)SI539XSEQ_WORD_PAGE(w), (unsigned)SI539XSEQ_WORD_REG(w),
+               (unsigned)SI539XSEQ_WORD_RESULT(w));
+    }
+}

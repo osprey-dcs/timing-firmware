@@ -43,6 +43,7 @@ void ospreyTRGOUTshowPoll(unsigned ch);
 void ospreyTRGOUTshowStatus(unsigned ch);
 int  ospreyTRGOUTconfigure(unsigned ch);
 void ospreyTRGOUTclearSticky(unsigned ch);
+void ospreyTRGOUTdump(unsigned ch);
 
 #define TRGOUT_SIZE 0
 uint32_t osreyTRGOUTRead(uint32_t addr);
