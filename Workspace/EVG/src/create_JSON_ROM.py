@@ -432,6 +432,20 @@ def base_build():
             "data_width": 24,
             "sign": "unsigned"
         },
+        "TRGOUT:ident": {
+            "access": "r",
+            "addr_width": 2, # 4
+            "base_addr": 400,
+            "data_width": 24,
+            "sign": "unsigned"
+        },
+        "TRGOUT:sts": {
+            "access": "r",
+            "addr_width": 1, # 2
+            "base_addr": 404,
+            "data_width": 24,
+            "sign": "unsigned"
+        },
     }
     return R
 

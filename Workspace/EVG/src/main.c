@@ -96,6 +96,7 @@ main(void)
         mgtCrank();
         consoleCrank();
         ospreyUDPcrank();
+        ospreyTRGOUTcrank();
         //checkEVR();
     }
     cleanup_platform();

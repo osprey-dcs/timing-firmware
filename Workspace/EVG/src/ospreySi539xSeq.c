@@ -40,6 +40,8 @@
 #define ENGINE_CLOCK_HZ 100000000
 #endif
 
+STATIC_ASSERT(sizeof(struct si539xSetting)==4);
+
 static const uint32_t baseAddress[SI539XSEQ_COUNT] = {
     XPAR_JTRSEQ1_BASEADDR,
     XPAR_JTRSEQ2_BASEADDR,
@@ -48,12 +50,15 @@ static const uint32_t baseAddress[SI539XSEQ_COUNT] = {
 static uint32_t
 rd(unsigned ch, unsigned offset)
 {
-    return Xil_In32(baseAddress[ch] + offset);
+    uint32_t ret = Xil_In32(baseAddress[ch] + offset);
+    //printf("%s(%u) 0x%08x -> 0x%08x\n", __func__, ch, offset, ret);
+    return ret;
 }
 
 static void
 wr(unsigned ch, unsigned offset, uint32_t value)
 {
+    //printf("%s(%u) 0x%08x <- 0x%08x\n", __func__, ch, offset, value);
     Xil_Out32(baseAddress[ch] + offset, value);
 }
 
@@ -103,6 +108,161 @@ si539xSeqControl(unsigned ch, uint32_t setBits, uint32_t clearBits)
     wr(ch, SI539XSEQ_CONTROL, v & ~SI539XSEQ_CTL_SEQ_GO);
 }
 
+static
+int si539xDest(unsigned dest, unsigned* ch, size_t* base, size_t* depth)
+{
+    *ch = dest&1;
+    switch(dest) {
+    case 0x10:
+    case 0x11:
+        *base = SI539XSEQ_SEQ_MEM;
+        *depth= SI539XSEQ_SEQ_DEPTH;
+        break;
+    case 0x20:
+    case 0x21:
+        *base = SI539XSEQ_POLL_MEM;
+        *depth= SI539XSEQ_POLL_COUNT;
+        break;
+    default: return SI539XSEQ_ERR_CHANNEL;
+    }
+    return 0;
+}
+
+int si539xLoadSeq(unsigned dest, const uint32_t* cmds, size_t ncmds)
+{
+    unsigned ch;
+    size_t base, depth;
+    int err = si539xDest(dest, &ch, &base, &depth);
+    if(err)
+        return err;
+
+    if(ncmds >= depth-1) // require space for explicit END
+        return SI539XSEQ_ERR_LENGTH;
+
+    if(rd(ch, SI539XSEQ_STATUS) & SI539XSEQ_STS_SEQ_BUSY)
+        return SI539XSEQ_ERR_BUSY;
+
+    for (size_t i = 0 ; i < ncmds ; i++) {
+        wr(ch, base + 4 * i, cmds[i]);
+    }
+    wr(ch, base + 4 * ncmds, SI539XSEQ_END);
+    return 0;
+}
+
+int si539xCompileSeq(unsigned dest, bool write,
+                     const uint8_t *initials,
+                     const struct si539xSetting* settings, size_t nsettings,
+                     const struct si539xSetting* overrides, size_t noverrides)
+{
+    unsigned ch;
+    size_t base, depth;
+    int err = si539xDest(dest, &ch, &base, &depth);
+    if(err || !settings)
+        return err;
+
+    if(nsettings >= depth-1) // require space for explicit END
+        return SI539XSEQ_ERR_LENGTH;
+
+    int current_page = -1;
+    for (size_t i = 0 ; i < nsettings && i < depth ; i++) {
+        switch(settings[i].action) {
+        case si539xActionPage: // set PAGE
+            wr(ch, base + 4 * i, SI539x_PAGE(settings[i].addr));
+            current_page = settings[i].addr;
+            break;
+
+        case si539xActionDelay: // set DELAY (skip when reading)
+            wr(ch, base + 4 * i, SI539x_DELAY(write ? settings[i].addr : 0));
+            break;
+
+        case si539xActionReg:
+            if(settings[i].addr>>8 != current_page) {
+                printf("%s(%p) ERR: missing PAGE %uz 0x%03x\n", __func__, settings, i, settings[i].addr);
+                return SI539XSEQ_ERR_INVALID;
+            }
+
+            if(!write) {
+                wr(ch, base + 4 * i, SI539x_READ(settings[i].addr, 0));
+
+            } else { // writing
+                // begin with initial value
+                uint8_t cur = initials ? initials[i] : 0;
+                // apply primary setting
+                cur &= ~settings[i].mask;
+                cur |= settings[i].value & settings[i].mask;
+
+                // apply any active overrides
+                for(size_t next_over = 0; next_over < noverrides; next_over++) {
+                    const struct si539xSetting *O = &overrides[next_over];
+
+                    if(O->action == si539xActionReg && O->addr == settings[i].addr) {
+                        cur &= ~overrides[next_over].mask;
+                        cur |= overrides[next_over].value & overrides[next_over].mask;
+                    }
+                }
+
+                wr(ch, base + 4 * i, SI539x_WRITE(settings[i].addr, cur));
+            }
+            break;
+
+        default:
+            printf("%s(%p) ERR: bad inst %uz\n", __func__, settings, i);
+            return SI539XSEQ_ERR_INVALID;
+        }
+    }
+    wr(ch, base + 4 * nsettings, SI539XSEQ_END);
+    return 0;
+}
+
+uint8_t si539xReadSeq(unsigned dest, size_t idx)
+{
+    return SI539XSEQ_WORD_RESULT(si539xReadSeqInstr(dest, idx));
+}
+
+uint32_t si539xReadSeqInstr(unsigned int dest, size_t idx)
+{
+    unsigned ch;
+    size_t base, depth;
+    int err = si539xDest(dest, &ch, &base, &depth);
+    if(err || idx >= depth)
+        return 0xff;
+
+    return rd(ch, base + 4 * idx);
+}
+
+int si539xStartStop(unsigned dest, unsigned start)
+{
+    unsigned ch = dest&1;
+    switch(dest) {
+    case 0x10:
+    case 0x11:
+        if(start)
+            wr(ch, SI539XSEQ_CONTROL, rd(ch, SI539XSEQ_CONTROL) | SI539XSEQ_CTL_SEQ_GO);
+        return 0;
+    case 0x20:
+    case 0x21:
+        if (start) si539xSeqControl(ch, SI539XSEQ_CTL_POLL_EN, 0);
+        else       si539xSeqControl(ch, 0, SI539XSEQ_CTL_POLL_EN);
+        return 0;
+    default: return SI539XSEQ_ERR_CHANNEL;
+    }
+}
+
+int si539xIsIdle(unsigned dest)
+{
+    unsigned ch = dest&1;
+    switch(dest) {
+    case 0x10:
+    case 0x11:
+        return (rd(ch, SI539XSEQ_STATUS) & SI539XSEQ_STS_SEQ_BUSY)==0;
+        break;
+    case 0x20:
+    case 0x21:
+        return (rd(ch, SI539XSEQ_STATUS) & SI539XSEQ_STS_POLL_BUSY)==0;
+    default: return SI539XSEQ_ERR_CHANNEL;
+    }
+}
+
 /*
  * Load a command list (an END is appended), start it, and wait for SEQ_DONE.
  * If a poll pass is running, the sequence starts once that pass finishes,
@@ -143,44 +303,6 @@ si539xSeqWord(unsigned ch, unsigned index)
 {
     if ((ch >= SI539XSEQ_COUNT) || (index >= SI539XSEQ_SEQ_DEPTH)) return 0;
     return rd(ch, SI539XSEQ_SEQ_MEM + 4 * index);
-}
-
-/*
- * Replace the poll program (an END is appended). Polling is stopped and the
- * current pass allowed to finish first; it is left disabled afterwards.
- */
-int
-si539xSeqPollLoad(unsigned ch, const uint32_t *cmds, unsigned n, uint32_t timeoutUs)
-{
-    uint32_t start = microsecondsSinceBoot();
-    unsigned i;
-
-    if (ch >= SI539XSEQ_COUNT) return SI539XSEQ_ERR_CHANNEL;
-    if (n >= SI539XSEQ_POLL_DEPTH) return SI539XSEQ_ERR_LENGTH;
-
-    si539xSeqControl(ch, 0, SI539XSEQ_CTL_POLL_EN);
-    while (rd(ch, SI539XSEQ_STATUS) & SI539XSEQ_STS_POLL_BUSY) {
-        if (expired(start, timeoutUs)) return SI539XSEQ_ERR_TIMEOUT;
-    }
-    for (i = 0 ; i < n ; i++) {
-        wr(ch, SI539XSEQ_POLL_MEM + 4 * i, cmds[i]);
-    }
-    wr(ch, SI539XSEQ_POLL_MEM + 4 * n, SI539XSEQ_END);
-    return 0;
-}
-
-void
-si539xSeqPollEnable(unsigned ch, int enable)
-{
-    if (enable) si539xSeqControl(ch, SI539XSEQ_CTL_POLL_EN, 0);
-    else        si539xSeqControl(ch, 0, SI539XSEQ_CTL_POLL_EN);
-}
-
-uint32_t
-si539xSeqPollWord(unsigned ch, unsigned index)
-{
-    if ((ch >= SI539XSEQ_COUNT) || (index >= SI539XSEQ_POLL_DEPTH)) return 0;
-    return rd(ch, SI539XSEQ_POLL_MEM + 4 * index);
 }
 
 void

@@ -6,6 +6,8 @@
 #ifndef OSPREY_SI539X_SEQ_H
 #define OSPREY_SI539X_SEQ_H
 
+#include <stdbool.h>
+#include <stdlib.h>
 #include <stdint.h>
 
 #define SI539XSEQ_SEQ_MEM        0x0000  /* 1024 x 32 command words */
@@ -53,26 +55,78 @@
 #define SI539XSEQ_OP_READ   2u
 #define SI539XSEQ_OP_DELAY  3u
 
-static inline uint32_t si539xSeqWrite(uint16_t addr, uint8_t data)
-{
-    return (SI539XSEQ_OP_WRITE << 28) | ((uint32_t)(addr & 0xFFF) << 16) | data;
-}
-static inline uint32_t si539xSeqRead(uint16_t addr, uint8_t expected)
-{
-    return (SI539XSEQ_OP_READ << 28) | ((uint32_t)(addr & 0xFFF) << 16) | expected;
-}
-static inline uint32_t si539xSeqPage(uint8_t page)
-{
-    return (SI539XSEQ_OP_WRITE << 28) | ((uint32_t)(page & 0xF) << 24) | (0x01u << 16) | page;
-}
-/*
- * DELAY counts AXI clock cycles. Convert with clk_hz from xparameters.h
- * (the MicroBlaze runs on the same 100 MHz clock). Max 0x0FFFFFFF counts.
+#define SI539x_PAGE(page) \
+    ((SI539XSEQ_OP_WRITE << 28) | ((uint32_t)((page) & 0xF) << 24) | (0x01u << 16) | (page))
+
+#define SI539x_WRITE(addr, data) \
+    ((SI539XSEQ_OP_WRITE << 28) | ((uint32_t)((addr) & 0xFFF) << 16) | (data))
+
+#define SI539x_READ(addr, note) \
+    ((SI539XSEQ_OP_READ << 28) | ((uint32_t)((addr) & 0xFFF) << 16) | (note))
+
+#define SI539x_DELAY(ms) \
+    ((SI539XSEQ_OP_DELAY << 28) | (((ms) * SI539x_TICKS_PER_MS) & 0x0FFFFFFF))
+
+// sequencer driven by ublaze/AXI clock
+#define SI539x_TICKS_PER_MS (XPAR_CPU_CORE_CLOCK_FREQ_HZ / 1000u)
+
+// "destination" sequence
+#define SI539x_DEST_MAIN 0x10
+#define SI539x_DEST_POLL 0x20
+#define SI539x_MAIN(ch) SI539x_DEST_MAIN | ((ch)&0x1)
+#define SI539x_POLL(ch) SI539x_DEST_POLL | ((ch)&0x1)
+
+// load a concrete sequence
+int si539xLoadSeq(unsigned dest, const uint32_t* cmds, size_t ncmds);
+
+enum si539xAction {
+    si539xActionReg=6,
+    si539xActionDelay,
+    si539xActionPage,
+};
+
+struct si539xSetting {
+    enum si539xAction action: 4;
+    unsigned addr: 12;
+    unsigned mask: 8;
+    unsigned value: 8;
+};
+#define SI539x_SEQ_PAGE(page) {8, page, 0, 0}
+#define SI539x_SEQ_DELAY(millisec) {7, millisec, 0, 0}
+#define SI539x_SEQ_REG(addr, mask, value) {6, addr, mask, value}
+
+/** read an array of register actions, load a sequence of reads or writes
+ *
+ * When write=0, Load a program which reads the current value of all setting registers.
+ *
+ * When write=1, Load a program which writes all setting registers.
+ * The value written is taken from the initials array, modified by the mask & value
+ * from the corresponding settings element.
+ * If provided, the overrides array is searched for a matching.
+ * If found, the mask & value are applied as well.
+ *
+ * @params[in] dest SI539x_MAIN(ch) or SI539x_POLL(ch)
+ * @params[in] write 0 to read back, 1 to write
+ * @params[in] initials When writing, pointer to list of initial register values.
+ *                      Must have same size as settings.
+ * @params[in] settings List of registers.
+ * @params[in] nsettings Length of initials and settings arrays.
+ * @params[in] overrides When writing.  NULL or a list of additional settings
+ * @params[in] noverrides Length of overrides
  */
-static inline uint32_t si539xSeqDelay(uint32_t clocks)
-{
-    return (SI539XSEQ_OP_DELAY << 28) | (clocks & 0x0FFFFFFF);
-}
+int si539xCompileSeq(unsigned dest, bool write,
+                     const uint8_t *initials,
+                     const struct si539xSetting* settings, size_t nsettings,
+                     const struct si539xSetting* overrides, size_t noverrides);
+// Start/Stop a sequencer
+int si539xStartStop(unsigned dest, unsigned start);
+// read result value from index
+uint8_t si539xReadSeq(unsigned dest, size_t idx);
+uint32_t si539xReadSeqInstr(unsigned dest, size_t idx);
+// Test if sequencer is idle.
+// returns 1 if idle, 0 if busy, negative on error
+int si539xIsIdle(unsigned dest);
+
 #define SI539XSEQ_END 0u
 
 /* Fields of a word read back after a READ has run */
@@ -92,16 +146,12 @@ static inline uint32_t si539xSeqDelay(uint32_t clocks)
 #define SI539XSEQ_ERR_BUSY      -2  /* previous sequence still running */
 #define SI539XSEQ_ERR_LENGTH    -3  /* list longer than the memory */
 #define SI539XSEQ_ERR_TIMEOUT   -4  /* sequence or poll pass did not finish */
+#define SI539XSEQ_ERR_INVALID   -5  /* invalid si539xSetting */
 
 int      si539xSeqPresent(unsigned ch);
 uint32_t si539xSeqGetReg(unsigned ch, unsigned offset);
 void     si539xSeqSetReg(unsigned ch, unsigned offset, uint32_t value);
 void     si539xSeqControl(unsigned ch, uint32_t setBits, uint32_t clearBits);
-int      si539xSeqRun(unsigned ch, const uint32_t *cmds, unsigned n, uint32_t timeoutUs);
-uint32_t si539xSeqWord(unsigned ch, unsigned index);
-int      si539xSeqPollLoad(unsigned ch, const uint32_t *cmds, unsigned n, uint32_t timeoutUs);
-void     si539xSeqPollEnable(unsigned ch, int enable);
-uint32_t si539xSeqPollWord(unsigned ch, unsigned index);
 uint32_t si539xSeqClocksPerUs(void);
 void     si539xSeqShowStatus(unsigned ch);
 

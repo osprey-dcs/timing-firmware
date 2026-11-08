@@ -43,6 +43,7 @@
 #include "mps.h"
 #include "ospreyRFIN.h"
 #include "ospreyTRGOUT.h"
+#include "ospreySi539xSeq.h"
 #include "systemParameters.h"
 #include "tftp.h"
 #include "util.h"
@@ -524,61 +525,28 @@ cmdJTR(int argc, char **argv)
     unsigned addr, value;
 
     if ((strcmp(cmd, "r") == 0) && (argc == 3) && getUInt(argv[2], 0, &addr)
-     && (addr <= 0xFFFF)) {                     // jtr# r <addr>
-        si539xWrite(ch, 0x01, addr >> 8);       // page select
-        value = si539xRead(ch, addr & 0xFF);
-        printf("  jtr%u 0x%04x -> 0x%02x\n", ch + 1, addr, value);
+     && (addr <= 0xFFF)) {                     // jtr# r <addr>
+        si539xRead(ch, addr);
         return;
     }
     if ((strcmp(cmd, "w") == 0) && (argc == 4) && getUInt(argv[2], 0, &addr)
-     && getUInt(argv[3], 0, &value) && (addr <= 0xFFFF) && (value <= 0xFF)) {
-        si539xWrite(ch, 0x01, addr >> 8);       // page select
-        si539xWrite(ch, addr & 0xFF, value);    // jtr# w <addr> <value>
+     && getUInt(argv[3], 0, &value) && (addr <= 0xFFF) && (value <= 0xFF)) {
+        si539xWrite(ch, addr, value);    // jtr# w <addr> <value>
         printf("  jtr%u 0x%04x <- 0x%02x\n", ch + 1, addr, value);
         return;
     }
-    if ((strcmp(cmd, "s") == 0) && (argc == 2)) {          // jtr# s
-        ospreyTRGOUTshowStatus(ch);
-        return;
-    }
-    if ((strcmp(cmd, "poll") == 0) && (argc <= 3)) {       // jtr# poll [on|off]
-        if (argc == 3) {
-            if (strcmp(argv[2], "on") == 0)       ospreyTRGOUTpoll(ch, 1);
-            else if (strcmp(argv[2], "off") == 0) ospreyTRGOUTpoll(ch, 0);
-            else goto usage;
-            microsecondSpin(5000);
-        }
-        ospreyTRGOUTshowPoll(ch);
-        return;
-    }
-    if ((strcmp(cmd, "config") == 0) && (argc == 2)) {     // jtr# config
-        ospreyTRGOUTconfigure(ch);
-        return;
-    }
-    if ((strcmp(cmd, "clear") == 0) && (argc == 2)) {      // jtr# clear
-        ospreyTRGOUTclearSticky(ch);
-        microsecondSpin(5000);                  // let a poll pass pick it up
-        ospreyTRGOUTshowPoll(ch);
-        return;
-    }
-    if ((strcmp(cmd, "oe") == 0) && (argc == 3)) {         // jtr# oe on|off
-        if (strcmp(argv[2], "on") == 0)       ospreyTRGOUTclockOutputs(ch, 1);
-        else if (strcmp(argv[2], "off") == 0) ospreyTRGOUTclockOutputs(ch, 0);
-        else goto usage;
-        ospreyTRGOUTshowStatus(ch);
+    if ((strcmp(cmd, "sts") == 0)) { // jtr# dump
+        si539xSeqShowStatus(ch);
         return;
     }
     if ((strcmp(cmd, "dump") == 0)) { // jtr# dump
         ospreyTRGOUTdump(ch);
+        return;
     }
-  usage:
-    printf("usage: jtr<1|2> s                    sequencer status\n"
-           "       jtr<1|2> r <addr>             read register (0xPPRR)\n"
+    printf("usage: jtr<1|2> r <addr>             read register (0xPPRR)\n"
            "       jtr<1|2> w <addr> <value>     write register\n"
-           "       jtr<1|2> poll [on|off]        status poll, show results\n"
-           "       jtr<1|2> oe on|off            clock buffer outputs\n"
-           "       jtr<1|2> config               load and verify the configuration\n"
-           "       jtr<1|2> clear                clear the sticky status flags\n");
+           "       jtr<1|2> sts                  sequencer core status\n"
+           "       jtr<1|2> dump                 Dump all registers modified\n");
 }
 
 /*

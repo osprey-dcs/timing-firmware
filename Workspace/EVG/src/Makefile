@@ -4,6 +4,7 @@ EVG_DRIVER_DATA = ../../EVG_platform/hw/drivers/ospreyEVG_v1_0/data
 EVR_DRIVER_DATA = ../../EVG_platform/hw/drivers/ospreyEVR_v1_0/data
 
 all: softwareBuildDate.h verilogHeader JSONrom.h
+all: Design-Report.h
 
 verilogHeader: $(VERILOG_HEADER)
 
@@ -12,6 +13,9 @@ JSONrom.h: create_JSON_ROM.py \
            $(EVR_DRIVER_DATA)/ospreyEVR.py
 	PYTHONPATH="$(EVG_DRIVER_DATA):$(EVR_DRIVER_DATA):$(PYTHONPATH)" python3 create_JSON_ROM.py >LEEP.json
 	python3 "$(BEDROCK)/build_rom.py" -j LEEP.json -c JSONrom.h
+
+Design-Report.h: Design-Report.txt si5394Program.py Makefile
+	python3 si5394Program.py $< $@
 
 softwareBuildDate.h: clockAdjust.c \
                      clockAdjust.h \
@@ -64,3 +68,6 @@ $(VERILOG_HEADER): config.h gpio.h
 
 clean:
 	rm -rf LEEP.json JSONrom.h
+
+.PHONY: all clean
+.PHONY: verilogHeader

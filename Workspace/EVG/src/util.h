@@ -52,6 +52,21 @@ extern int debugFlags;
 #define ntohs(x) __builtin_bswap16(x)
 #define htons(x) __builtin_bswap16(x)
 
+#define NELEM(ARR) (sizeof(ARR) / sizeof((ARR)[0]))
+#define STATIC_JOIN(x, y, z, w) STATIC_JOIN4(x, y, z, w)
+#define STATIC_JOIN4(x, y, z, w) x ## y ## z ## w
+
+/* Compilers that do not support __COUNTER__ (e.g. GCC 4.1) will not be able to use unique static assert typedefs */
+#define STATIC_ASSERT_MSG(l) STATIC_JOIN(static_assert_, __COUNTER__, _failed_at_line_, l)
+
+/**\brief Declare a condition that should be true at compile-time.
+ * \param expr A C/C++ const-expression that should evaluate to True.
+ */
+#define STATIC_ASSERT(expr) \
+    typedef int STATIC_ASSERT_MSG(__LINE__) \
+        [ (expr) ? 1 : -1 ] __attribute__((unused))
+
+
 void microsecondSpin(int microseconds);
 uint32_t fetchRegister(int idx);
 void showIPv4address(const char *name, uint32_t address);

@@ -42,6 +42,7 @@
 #include "mmcMailbox.h"
 #include "mps.h"
 #include "ospreyRFIN.h"
+#include "ospreyTRGOUT.h"
 #include "si570.h"
 #include "softwareBuildDate.h"
 #include "systemParameters.h"
@@ -92,6 +93,8 @@ struct LEEPpacket {
 #  define REG_SI570_SIZE 4
 #define REG_SYSMON_BASE                     100
 #define SYSMON_SIZE                         300
+#define REG_TRGOUT_BASE                     400
+#  define REG_TRGOUT_SIZE TRGOUT_SIZE
 
 #define REG_JSON_ROM_BASE                   0x800
 #define REG_JSON_ROM_ALTERNATE_BASE         0x4000
@@ -256,6 +259,8 @@ readReg(int address)
         return 0;
     case REG_MARBLE_MGT_REFCLK_SOURCE: return mgtClkSwitch0;
     case REG_MARBLE_PPS_LOCAL_CSR:     return localPPSstatus();
+    case RANGE(REG_TRGOUT_BASE, REG_TRGOUT_SIZE):
+        return osreyTRGOUTRead(address - REG_TRGOUT_BASE);
     }
 
     /*

@@ -22,13 +22,14 @@
  * SOFTWARE.
  */
 
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdint.h>
 
 #include "gpio.h"
 #include "ospreySi539xSeq.h"
 #include "ospreyTRGOUT.h"
-#include "si5394Registers.h"
+#include "xparameters.h"
 #include "util.h"
 
 /*
@@ -43,77 +44,51 @@
 /* Allow for a poll pass in progress before a sequence can start */
 #define SEQ_TIMEOUT_US   100000
 
-static int present[SI539XSEQ_COUNT];
+static
+struct si5394Info {
+    // set to 1 if FMC eeprom decoded and sequencer core presents
+    // set to 2 if Si5394 also detected
+    uint8_t present;
+    // true after latest settings written
+    bool insync;
 
-static int
-checkChannel(unsigned ch)
-{
-    if ((ch < SI539XSEQ_COUNT) && present[ch]) return 1;
-    printf("jtr%u: not available (card absent or no sequencer)\n", ch + 1);
-    return 0;
-}
+    union ident {
+        // 5 bytes from device registers: 2-5, 9
+        uint8_t u1[8];
+        uint32_t u4[2];
+    } ident;
 
-static void
-reportError(unsigned ch, const char *what, int err)
-{
-    printf("jtr%u: %s failed (%d)\n", ch + 1, what, err);
-}
+    // 4 bytes from device registers: (MSB) 0x11, 0x12, 0x13, 0x53f (LSB)
+    uint32_t status;
+} si5394Info[SI539XSEQ_COUNT];
 
-/*
- * Single register access in the current page, through the sequencer.
- * Callers select the page by writing register 0x01, as before.
- */
-void si539xWrite(unsigned ch, uint8_t addr, uint8_t val)
-{
-    uint32_t cmd = si539xSeqWrite(addr, val);
-    int err;
-    if (!checkChannel(ch)) return;
-    err = si539xSeqRun(ch, &cmd, 1, SEQ_TIMEOUT_US);
-    if (err) reportError(ch, "write", err);
-}
+static
+const uint32_t si539xPollSeq[] = {
+    SI539x_PAGE(0x0),
+    SI539x_READ(0x11, 0), // read latched for history
+    SI539x_READ(0x12, 0),
+    SI539x_READ(0x13, 0),
+    // a small-ish interval when a momentary fault would be lost
+    SI539x_WRITE(0x11, 0), // clear latches
+    SI539x_WRITE(0x12, 0),
+    SI539x_WRITE(0x13, 0),
+    SI539x_PAGE(0x5),
+    SI539x_READ(0x53f, 0),
+    // wait ~1 second between poll cycles
+    SI539x_DELAY(1000u),
+};
+// ensure delay can be represented
+STATIC_ASSERT((XPAR_CPU_CORE_CLOCK_FREQ_HZ & 0x0FFFFFFF) == XPAR_CPU_CORE_CLOCK_FREQ_HZ);
 
-uint8_t si539xRead(unsigned ch, uint8_t addr)
-{
-    uint32_t cmd = si539xSeqRead(addr, 0);
-    int err;
-    if (!checkChannel(ch)) return 0;
-    err = si539xSeqRun(ch, &cmd, 1, SEQ_TIMEOUT_US);
-    if (err) {
-        reportError(ch, "read", err);
-        return 0;
-    }
-    return SI539XSEQ_WORD_RESULT(si539xSeqWord(ch, 0));
-}
-
-/*
- * Read and show the identification registers 0x0002-0x000A in one sequence.
- */
-static void
-showID(unsigned ch)
-{
-    uint32_t cmds[10];
-    unsigned n = 0, i;
-    int err;
-
-    cmds[n++] = si539xSeqPage(0x00);
-    for (i = 0x02 ; i <= 0x0A ; i++) cmds[n++] = si539xSeqRead(i, 0);
-    err = si539xSeqRun(ch, cmds, n, SEQ_TIMEOUT_US);
-    if (err) {
-        reportError(ch, "ID read", err);
-        return;
-    }
-    printf("jtr%u: Si%02X%02X, grade register 0x%02X, revision register 0x%02X\n",
-           ch + 1,
-           (unsigned)SI539XSEQ_WORD_RESULT(si539xSeqWord(ch, 2)),
-           (unsigned)SI539XSEQ_WORD_RESULT(si539xSeqWord(ch, 1)),
-           (unsigned)SI539XSEQ_WORD_RESULT(si539xSeqWord(ch, 3)),
-           (unsigned)SI539XSEQ_WORD_RESULT(si539xSeqWord(ch, 4)));
-    for (i = 1 ; i < n ; i++) {
-        uint32_t w = si539xSeqWord(ch, i);
-        printf("  0x%04X 0x%02X\n", (unsigned)SI539XSEQ_WORD_REG(w),
-                                    (unsigned)SI539XSEQ_WORD_RESULT(w));
-    }
-}
+static
+const struct si539xSetting si539xSetupSeq[] = {
+// see si5394Program.py
+// and Design-Report.txt exported from Skyworks CBPro
+#include "Design-Report.h"
+};
+// scratch space to read back default register values after reset
+static
+uint8_t si539xSetupInitial[NELEM(si539xSetupSeq)];
 
 void ospreyTRGOUTinit()
 {
@@ -122,14 +97,20 @@ void ospreyTRGOUTinit()
     if (!(GPIO_READ(GPIO_IDX_TRGOUT_JTR1_SPI) & JTR_PRESENT))
         return; // FMC2 not present
 
+    printf("%s(%u) start\n", __func__, ch);
+
     for (ch = 0 ; ch < SI539XSEQ_COUNT ; ch++) {
-        present[ch] = si539xSeqPresent(ch);
-        if (!present[ch]) {
-            printf("jtr%u: sequencer ID 0x%08x, expected 0x%08x\n", ch + 1,
+        struct si5394Info* const I = &si5394Info[ch];
+        if(si539xSeqPresent(ch))
+            I->present = 1; // core is present
+        if (!I->present) {
+            printf("ERR jtr%u: sequencer ID 0x%08x, expected 0x%08x\n", ch + 1,
                    (unsigned)si539xSeqGetReg(ch, SI539XSEQ_ID),
                    (unsigned)SI539XSEQ_ID_VALUE);
             continue;
         }
+
+        printf("%s enable\n", __func__);
         // Enable the level shifters with the chip still in reset and its
         // clock outputs disabled.
         si539xSeqControl(ch, SI539XSEQ_CTL_CHIP_RESET | SI539XSEQ_CTL_CLKBUF_DIS,
@@ -139,251 +120,256 @@ void ospreyTRGOUTinit()
     if (!any) return;
     microsecondSpin(10);
     for (ch = 0 ; ch < SI539XSEQ_COUNT ; ch++) {
-        if (present[ch]) si539xSeqControl(ch, 0, SI539XSEQ_CTL_CHIP_RESET);
+        struct si5394Info* const I = &si5394Info[ch];
+        if (I->present) {
+            printf("%s unreset\n", __func__);
+            si539xSeqControl(ch, 0, SI539XSEQ_CTL_CHIP_RESET);
+        }
     }
     microsecondSpin(SI539X_READY_US);
     for (ch = 0 ; ch < SI539XSEQ_COUNT ; ch++) {
-        if (present[ch]) showID(ch);
-    }
-}
+        struct si5394Info* const I = &si5394Info[ch];
+        if (!I->present)
+            continue;
+        printf("%s ids\n", __func__);
 
-/*
- * Clock buffer outputs on the card (off after start-up).
- */
-void ospreyTRGOUTclockOutputs(unsigned ch, int enable)
-{
-    if (!checkChannel(ch)) return;
-    if (enable) si539xSeqControl(ch, 0, SI539XSEQ_CTL_CLKBUF_DIS);
-    else        si539xSeqControl(ch, SI539XSEQ_CTL_CLKBUF_DIS, 0);
-}
+        // sequence of ID registers to read once
+        static
+        const uint32_t IdSeq[] = {
+            SI539x_PAGE(0x0),
+            SI539x_READ(0x02, 0),
+            SI539x_READ(0x03, 0),
+            SI539x_READ(0x04, 0),
+            SI539x_READ(0x05, 0),
+            SI539x_READ(0x09, 0),
+        };
 
-/*
- * Status poll: live and sticky status, active input, holdover/fast lock.
- */
-static const uint16_t pollRegs[] = {
-    0x000C, 0x000D, 0x000E, 0x000F, 0x0011, 0x0012, 0x0013, 0x0014,
-    0x0507, 0x053F,
-};
-#define POLL_INTERVAL_US 1000
-
-void ospreyTRGOUTpoll(unsigned ch, int enable)
-{
-    uint32_t cmds[24];
-    unsigned n = 0, i;
-    int page = -1, err;
-
-    if (!checkChannel(ch)) return;
-    if (!enable) {
-        si539xSeqPollEnable(ch, 0);
-        return;
-    }
-    for (i = 0 ; i < sizeof pollRegs / sizeof pollRegs[0] ; i++) {
-        if ((pollRegs[i] >> 8) != page) {
-            page = pollRegs[i] >> 8;
-            cmds[n++] = si539xSeqPage(page);
-        }
-        cmds[n++] = si539xSeqRead(pollRegs[i], 0);
-    }
-    cmds[n++] = si539xSeqDelay(POLL_INTERVAL_US * si539xSeqClocksPerUs());
-    err = si539xSeqPollLoad(ch, cmds, n, SEQ_TIMEOUT_US);
-    if (err) {
-        reportError(ch, "poll load", err);
-        return;
-    }
-    si539xSeqPollEnable(ch, 1);
-}
-
-void ospreyTRGOUTshowPoll(unsigned ch)
-{
-    uint32_t before, after, words[SI539XSEQ_POLL_DEPTH];
-    unsigned i, tries = 0;
-
-    if (!checkChannel(ch)) return;
-    // Take a consistent copy: POLL_COUNT unchanged across the reads
-    do {
-        before = si539xSeqGetReg(ch, SI539XSEQ_POLL_COUNT);
-        for (i = 0 ; i < SI539XSEQ_POLL_DEPTH ; i++) {
-            words[i] = si539xSeqPollWord(ch, i);
-            if ((words[i] >> 28) == SI539XSEQ_OP_END) break;
-        }
-        after = si539xSeqGetReg(ch, SI539XSEQ_POLL_COUNT);
-    } while ((before != after) && (++tries < 5));
-
-    printf("jtr%u poll: %s, %u passes\n", ch + 1,
-           (si539xSeqGetReg(ch, SI539XSEQ_CONTROL) & SI539XSEQ_CTL_POLL_EN) ? "on" : "off",
-           (unsigned)after);
-    if (after == 0) return;
-    for (i = 0 ; i < SI539XSEQ_POLL_DEPTH ; i++) {
-        uint32_t w = words[i];
-        if ((w >> 28) == SI539XSEQ_OP_END) break;
-        if ((w >> 28) == SI539XSEQ_OP_READ) {
-            printf("  0x%02X%02X 0x%02X\n", (unsigned)SI539XSEQ_WORD_PAGE(w),
-                   (unsigned)SI539XSEQ_WORD_REG(w),
-                   (unsigned)SI539XSEQ_WORD_RESULT(w));
+        if (si539xLoadSeq(SI539x_MAIN(ch), IdSeq, NELEM(IdSeq))
+            || si539xStartStop(SI539x_MAIN(ch), 1))
+        {
+            I->present = 0;
+            continue;
         }
     }
-}
+    for (ch = 0 ; ch < SI539XSEQ_COUNT ; ch++) {
+        struct si5394Info* const I = &si5394Info[ch];
+        if (!I->present)
+            continue;
+        printf("%s wait\n", __func__);
 
-void ospreyTRGOUTshowStatus(unsigned ch)
-{
-    if (ch >= SI539XSEQ_COUNT) return;
-    si539xSeqShowStatus(ch);
-}
-
-/*
- * Full configuration from the ClockBuilder Pro register list in
- * si5394Registers.h (Pedro Rodriguez): preamble, the post-preamble wait,
- * then the register map (which ends with the postamble), as one sequence.
- * Then a verify pass reads the registers back.
- */
-#define N_ELEMENTS(a) (sizeof (a) / sizeof (a)[0])
-#define CONFIG_TIMEOUT_US 2000000
-
-static uint32_t cmdBuf[SI539XSEQ_SEQ_DEPTH];   // too big for the stack
-
-static int
-inList(uint16_t addr, const si5394Reg_t *list, unsigned count)
-{
-    unsigned i;
-    for (i = 0 ; i < count ; i++) if (list[i].addr == addr) return 1;
-    return 0;
-}
-
-/*
- * Registers whose read-back need not match what was written: the pre- and
- * postamble mode/trigger registers, and the divider update strobes.
- */
-static const uint16_t updateStrobes[] = { 0x0230, 0x023F, 0x030C, 0x0338, 0x0520 };
-
-static int
-skipVerify(uint16_t addr)
-{
-    unsigned i;
-    if (inList(addr, si5394PreConfig, N_ELEMENTS(si5394PreConfig))) return 1;
-    if (inList(addr, si5394PostConfig, N_ELEMENTS(si5394PostConfig))) return 1;
-    for (i = 0 ; i < N_ELEMENTS(updateStrobes) ; i++) {
-        if (updateStrobes[i] == addr) return 1;
-    }
-    return 0;
-}
-
-/*
- * Append WRITE (or, for verify, READ) entries for a register list, with a
- * page write wherever the page changes. Returns the new length, or
- * SI539XSEQ_SEQ_DEPTH if the list would not fit.
- */
-static unsigned
-appendRegs(unsigned n, const si5394Reg_t *list, unsigned count, int *page, int verify)
-{
-    unsigned i;
-    for (i = 0 ; i < count ; i++) {
-        uint16_t addr = list[i].addr;
-        if (verify && skipVerify(addr)) continue;
-        if (n + 2 >= SI539XSEQ_SEQ_DEPTH) return SI539XSEQ_SEQ_DEPTH;
-        if ((addr >> 8) != *page) {
-            *page = addr >> 8;
-            cmdBuf[n++] = si539xSeqPage(*page);
+        while (si539xIsIdle(SI539x_MAIN(ch))==0) {
+            microsecondSpin(100);
         }
-        cmdBuf[n++] = verify ? si539xSeqRead(addr, list[i].val)
-                             : si539xSeqWrite(addr, list[i].val);
+
+        for(size_t i=0; i<5; i++) {
+            I->ident.u1[i] = si539xReadSeq(SI539x_MAIN(ch), i+1);
+        }
+        // assert registers 2 and 3
+        if (I->ident.u1[0]!=0x94 || I->ident.u1[1]!=0x53) {
+            printf("ERR jtr%u Found Si5394 ID 0x%02x%02x !?!\n", ch, I->ident.u1[1], I->ident.u1[0]);
+            continue;
+        }
+        printf("%s prepare\n", __func__);
+
+        // read back initial value of registers modified by the setup sequence
+        if (si539xCompileSeq(SI539x_MAIN(ch), 0,
+                             NULL,
+                             si539xSetupSeq, NELEM(si539xSetupSeq),
+                             NULL, 0)
+            || si539xStartStop(SI539x_MAIN(ch), 1))
+        {
+            I->present = 0;
+            continue;
+        }
     }
-    return n;
-}
+    for (ch = 0 ; ch < SI539XSEQ_COUNT ; ch++) {
+        struct si5394Info* const I = &si5394Info[ch];
+        if (!I->present)
+            continue;
+        printf("%s wait\n", __func__);
 
-int ospreyTRGOUTconfigure(unsigned ch)
-{
-    unsigned n, i, checked = 0, mismatches = 0;
-    int page = -1, err;
-    uint8_t grade;
-    uint32_t waitUs, start, elapsed;
+        while (si539xIsIdle(SI539x_MAIN(ch))==0) {
+            microsecondSpin(100);
+        }
 
-    if (!checkChannel(ch)) return -1;
-
-    // Grades E and P need 625 ms after the preamble, the others 300 ms
-    si539xWrite(ch, 0x01, 0x00);
-    grade = si539xRead(ch, 0x04);
-    waitUs = ((grade == 4) || (grade == 15)) ? 625000 : 300000;
-
-    n = appendRegs(0, si5394PreConfig, N_ELEMENTS(si5394PreConfig), &page, 0);
-    cmdBuf[n++] = si539xSeqDelay(waitUs * si539xSeqClocksPerUs());
-    n = appendRegs(n, si5394CLKConfig, N_ELEMENTS(si5394CLKConfig), &page, 0);
-    if (n >= SI539XSEQ_SEQ_DEPTH) {
-        printf("jtr%u: configuration does not fit the sequence memory\n", ch + 1);
-        return -1;
-    }
-    start = microsecondsSinceBoot();
-    err = si539xSeqRun(ch, cmdBuf, n, CONFIG_TIMEOUT_US);
-    elapsed = microsecondsSinceBoot() - start;
-    if (err) {
-        reportError(ch, "configuration", err);
-        return err;
-    }
-    printf("jtr%u: configured (grade %u, %u ms wait), %u commands in %u ms\n",
-           ch + 1, grade, (unsigned)(waitUs / 1000), n, (unsigned)(elapsed / 1000));
-
-    page = -1;
-    n = appendRegs(0, si5394CLKConfig, N_ELEMENTS(si5394CLKConfig), &page, 1);
-    err = si539xSeqRun(ch, cmdBuf, n, SEQ_TIMEOUT_US);
-    if (err) {
-        reportError(ch, "verify", err);
-        return err;
-    }
-    for (i = 0 ; i < n ; i++) {
-        uint32_t w = si539xSeqWord(ch, i);
-        if ((w >> 28) != SI539XSEQ_OP_READ) continue;
-        checked++;
-        if (SI539XSEQ_WORD_RESULT(w) != SI539XSEQ_WORD_EXPECTED(w)) {
-            if (++mismatches <= 10) {
-                printf("  0x%02X%02X read 0x%02X, wrote 0x%02X\n",
-                       (unsigned)SI539XSEQ_WORD_PAGE(w), (unsigned)SI539XSEQ_WORD_REG(w),
-                       (unsigned)SI539XSEQ_WORD_RESULT(w),
-                       (unsigned)SI539XSEQ_WORD_EXPECTED(w));
+        for(size_t idx=0; idx < NELEM(si539xSetupSeq); idx++) {
+            if(si539xSetupSeq[idx].action==si539xActionReg) {
+                si539xSetupInitial[idx] = si539xReadSeq(SI539x_MAIN(ch), idx);
+                printf("%u 0x%03x = 0x%02x\n", ch, si539xSetupSeq[idx].addr, si539xSetupInitial[idx]);
             }
         }
+
+        // Setup the poll sequence
+        if (si539xLoadSeq(SI539x_POLL(ch), si539xPollSeq, NELEM(si539xPollSeq))
+            || si539xStartStop(SI539x_POLL(ch), 1))
+        {
+            I->present = 0;
+            continue;
+        }
+        I->present = 2;
     }
-    printf("jtr%u: verified %u registers, %u mismatch%s\n", ch + 1, checked,
-           mismatches, (mismatches == 1) ? "" : "es");
-    if (mismatches == 0) printf("jtr%u: clock buffer outputs are still off: jtr%u oe on\n",
-                                ch + 1, ch + 1);
-    return mismatches ? -1 : 0;
+    printf("%s ", __func__);
+    for (ch = 0 ; ch < SI539XSEQ_COUNT ; ch++) {
+        struct si5394Info* const I = &si5394Info[ch];
+        printf(" %u", I->present);
+    }
+    printf("\n");
 }
 
-/*
- * Clear the sticky status flags (0x0011-0x0014).
- */
-void ospreyTRGOUTclearSticky(unsigned ch)
+// TODO: runtime overrides
+static
+struct si539xSetting si539xSetupOverrides[] = {};
+
+void ospreyTRGOUTcrank()
 {
-    uint32_t cmds[5];
-    unsigned n = 0, i;
-    int err;
+    static enum {
+        Idle,
+        Writing,
+        Fault,
+    } state[SI539XSEQ_COUNT];
 
-    if (!checkChannel(ch)) return;
-    cmds[n++] = si539xSeqPage(0x00);
-    for (i = 0x11 ; i <= 0x14 ; i++) cmds[n++] = si539xSeqWrite(i, 0x00);
-    err = si539xSeqRun(ch, cmds, n, SEQ_TIMEOUT_US);
-    if (err) reportError(ch, "clear", err);
+    for (unsigned ch = 0 ; ch < SI539XSEQ_COUNT ; ch++) {
+        struct si5394Info* const I = &si5394Info[ch];
+        if (I->present < 2)
+            continue;
+
+        bool polled = false;
+        for(unsigned tries=0; tries < 5; tries++) {
+            uint32_t before = si539xSeqGetReg(ch, SI539XSEQ_POLL_COUNT);
+            uint32_t update = 0;
+            for(unsigned i=1; i<=3; i++) { // 0x11, 12, 13
+                update |= si539xReadSeq(SI539x_POLL(ch), i);
+                update <<= 8;
+            }
+            update |= si539xReadSeq(SI539x_POLL(ch), 8); // 0x53f
+
+            uint32_t after = si539xSeqGetReg(ch, SI539XSEQ_POLL_COUNT);
+            if(before!=after)
+                continue;
+
+            // bit 8 of 0x11 is not documented as used, so we use as invalid flag
+            update &= ~0x80000000;
+            I->status |= update;
+            polled = true;
+            break;
+        }
+        if(!polled)
+            I->status |= 0x80000000; // poll timeout
+
+        switch(state[ch]) {
+        case Idle: // start new sync
+            if(!I->insync) {
+                printf("%s(%u) start sync\n", __func__, ch);
+                // disable output prior to reset
+                si539xSeqControl(ch, SI539XSEQ_CTL_CLKBUF_DIS, 0);
+                // TODO: full reset?
+
+                if (si539xCompileSeq(SI539x_MAIN(ch), 1,
+                                     si539xSetupInitial,
+                                     si539xSetupSeq, NELEM(si539xSetupSeq),
+                                     si539xSetupOverrides, NELEM(si539xSetupOverrides))
+                    || si539xStartStop(SI539x_MAIN(ch), 1))
+                {
+                    printf("jtr%u operation fault\n", ch);
+                    state[ch] = Fault;
+                } else {
+                    state[ch] = Writing;
+                }
+                I->insync = true;
+            }
+            break;
+        case Writing: // wait for completion
+            switch(si539xIsIdle(SI539x_MAIN(ch))) {
+            case 1: // now idle
+                state[ch] = Idle;
+                si539xSeqControl(ch, 0, SI539XSEQ_CTL_CLKBUF_DIS);
+                printf("%s(%u) complete sync\n", __func__, ch);
+                break;
+            case 0: // busy..
+                break;
+            default: // error
+                printf("ERR jtr%u operation incomplete\n", ch);
+                state[ch] = Fault;
+                break;
+            }
+            break;
+        case Fault:
+            break; // stick
+        }
+    }
 }
 
-uint32_t osreyTRGOUTRead(uint32_t addr) { return 0; }
+uint32_t osreyTRGOUTRead(uint32_t addr)
+{
+    struct si5394Info* const I = &si5394Info[addr&1];
+    uint32_t idx = addr>>1;
+    switch(addr) {
+    case 0 ... 3: return I->ident.u4[idx];
+    case 4 ... 5: { // clear on read...
+        uint32_t ret = I->status;
+        I->status = 0;
+        return ret;
+    }
+    case TRGOUT_SIZE ... 256: // compile error if TRGOUT_SIZE too small
+    default:
+        return 0xdeadbeef;
+    }
+}
+
 void osreyTRGOUTWrite(uint32_t addr) {}
+
+static
+void manualmode(unsigned int ch, bool write, const struct si539xSetting *regs, size_t nregs)
+{
+    struct si5394Info* const I = &si5394Info[ch];
+    if(I->present < 2) {
+        printf("...Nope\n");
+        return;
+    }
+    while (si539xIsIdle(SI539x_MAIN(ch))==0) {
+        microsecondSpin(100);
+    }
+    if (si539xCompileSeq(SI539x_MAIN(ch), write,
+                         NULL,
+                         regs, nregs,
+                         NULL, 0)
+        || si539xStartStop(SI539x_MAIN(ch), 1))
+    {
+        printf("Error\n");
+        return;
+    }
+    while (si539xIsIdle(SI539x_MAIN(ch))==0) {
+        microsecondSpin(100);
+    }
+
+    if(write)
+        return;
+
+    for(size_t i=0; i<nregs; i++) {
+        if(regs[i].action==si539xActionReg)
+            printf("  0x%04X 0x%02X\n", regs[i].addr, si539xReadSeq(SI539x_MAIN(ch), i));
+    }
+}
 
 void ospreyTRGOUTdump(unsigned int ch)
 {
-    static uint32_t cmds[N_ELEMENTS(si5394CLKConfig)];
-    for(size_t i=0; i<N_ELEMENTS(si5394CLKConfig); i++) {
-        cmds[i] = si539xSeqRead(si5394CLKConfig[i].addr, 0);
-    }
-    int page = -1;
-    unsigned n = appendRegs(0, si5394CLKConfig, N_ELEMENTS(si5394CLKConfig), &page, 1);
-    int err = si539xSeqRun(ch, cmdBuf, n, SEQ_TIMEOUT_US);
-    if (err) {
-        reportError(ch, "ID read", err);
-        return;
-    }
-    for(size_t i=0; i<n; i++) {
-        uint32_t w = si539xSeqWord(ch, i);
-        printf("  0x%02X%02X 0x%02X\n",
-               (unsigned)SI539XSEQ_WORD_PAGE(w), (unsigned)SI539XSEQ_WORD_REG(w),
-               (unsigned)SI539XSEQ_WORD_RESULT(w));
-    }
+    manualmode(ch, false, si539xSetupSeq, NELEM(si539xSetupSeq));
+}
+
+void si539xWrite(unsigned int ch, uint16_t addr, uint8_t val)
+{
+    struct si539xSetting reg[2] = {
+        SI539x_SEQ_PAGE(addr>>8),
+        SI539x_SEQ_REG(addr, 0xff, val),
+    };
+    manualmode(ch, true, reg, NELEM(reg));
+}
+
+void si539xRead(unsigned int ch, uint16_t addr)
+{
+    struct si539xSetting reg[2] = {
+        SI539x_SEQ_PAGE(addr>>8),
+        SI539x_SEQ_REG(addr, 0, 0),
+    };
+    manualmode(ch, false, reg, NELEM(reg));
 }
