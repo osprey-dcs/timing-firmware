@@ -29,16 +29,19 @@
  * Based on the AXI-lite template with extra read latency.
  */
 
+`timescale  1 ns / 1 ns
 `default_nettype none
 module ospreyEVR_v1_0 #(
     ////////////////////// Application-specific Parameters ///////////////////
+    parameter EVGCLK_FREQUENCY   = 125000000,
     parameter DISTRIBUTED_BUFFER_ADDR_WIDTH = 10,
-    parameter HARDWARE_OUTPUT_COUNT         = 4,
+    parameter HARDWARE_OUTPUT_COUNT         = 24,
     parameter SERDES_FACTOR                 = 8,
-    parameter ACTION_STROBES_WIDTH          = 16,
+    parameter ACTION_STROBES_WIDTH          = 24,
     parameter ACTIVE_LOW_OUTPUTS            = 0,
     parameter DEBUG                         = "false",
     ////////////////////// AXI-Lite Boilerplate Parameters ///////////////////
+    parameter C_S_AXI_FREQ_HZ    = 100000000,
     parameter C_S_AXI_DATA_WIDTH = 32,
     parameter C_S_AXI_ADDR_WIDTH = 11
     ) (
@@ -52,9 +55,7 @@ module ospreyEVR_v1_0 #(
     input  wire [15:0] evrRxChars,
     input  wire  [1:0] evrRxCharIsK,
 
-    /*
-     * Hardware outputs -- must connect directly to pin.
-     */
+    // Hardware outputs -- must connect to *OBUF primative
     output wire [HARDWARE_OUTPUT_COUNT-1:0] evrHardwareOutputs,
     input  wire [HARDWARE_OUTPUT_COUNT-1:0] hwDriverIn_a,
 
@@ -111,59 +112,79 @@ assign s_axi_rresp = 2'b00;
 assign s_axi_bresp = 2'b00;
 
 /*
- * Read side -- Ensure address remains stable during cycle
+ * Read side
  */
-reg  [C_S_AXI_ADDR_WIDTH-1:0] raddrLatch;
-wire [C_S_AXI_ADDR_WIDTH-1:0] raddr = s_axi_arready ? s_axi_araddr : raddrLatch;
 always @(posedge s_axi_aclk)
 begin
     if (!s_axi_aresetn) begin
         s_axi_arready <= 1;
         s_axi_rvalid <= 0;
     end
-    else if (s_axi_arready) begin
-        raddrLatch <= s_axi_araddr;
-        if (s_axi_arvalid) begin
-            s_axi_arready <= 0;
-        end
+    else if (s_axi_arvalid && s_axi_arready) begin
+        s_axi_rvalid <= 1;
+        s_axi_arready <= 0;
     end
-    else begin
-        if (s_axi_rvalid) begin
-            if (s_axi_rready) begin
-                s_axi_rvalid <= 0;
-                s_axi_arready <= 1;
-            end
-        end
-        else begin
-            s_axi_rvalid <= 1;
-        end
+    else if (s_axi_rready) begin
+        s_axi_rvalid <= 0;
+        s_axi_arready <= 1;
     end
 end
 
 /*
- * Write side
+ * AXI write operation state machine
+ * Up to 3 EVG clocks are required to pick up values from system clock domain.
+ * Fast AXI masters might start a new transaction within this time, so we
+ * can't simply latch s_axi_wdata and use the standard, simple, AXI write
+ * transaction code.  Instead we add wait states to ensure that the EVG clock
+ * code has picked up s_axi_wdata before allowing the transaction to proceed.
  */
+
+// Scale values to avoid 32-bit overflow with high clock speeds.
+// Simulate the $ceil() function missing on some Verilogs.
+localparam WRITE_WAIT_STATE_COUNT = ((((3 * (C_S_AXI_FREQ_HZ/1000)) +
+                   (EVGCLK_FREQUENCY/1000) - 1)) / (EVGCLK_FREQUENCY/1000)) - 2;
+localparam WRITE_WAIT_STATE_COUNTER_LOAD = WRITE_WAIT_STATE_COUNT - 1;
+localparam WRITE_WAIT_STATE_COUNTER_WIDTH = ((WRITE_WAIT_STATE_COUNTER_LOAD<0) ?
+                               1 : $clog2(WRITE_WAIT_STATE_COUNTER_LOAD+1)) + 1;
+reg [WRITE_WAIT_STATE_COUNTER_WIDTH-1:0] writeWaitStateCounter;
+wire writeWaitStateCounterDone =
+                        writeWaitStateCounter[WRITE_WAIT_STATE_COUNTER_WIDTH-1];
+reg writeTransactionActive = 0;
+
 assign s_axi_awready = s_axi_wready;
+wire sysWriteStrobe = s_axi_awvalid && s_axi_wvalid && !writeTransactionActive;
+
 always @(posedge s_axi_aclk)
 begin
     if (!s_axi_aresetn) begin
         s_axi_wready <= 0;
+        s_axi_bvalid <= 0;
+    end
+    else if (writeTransactionActive) begin
+        if (s_axi_bvalid) begin
+            if (s_axi_bready) begin
+                s_axi_bvalid <= 0;
+                writeTransactionActive <= 0;
+            end
+        end
+        else if (s_axi_wready) begin
+            s_axi_wready <= 0;
+            s_axi_bvalid <= 1;
+        end
+        else if (writeWaitStateCounterDone) begin
+            s_axi_wready <= 1;
+        end
+        else begin
+            writeWaitStateCounter <= writeWaitStateCounter - 1;
+        end
     end
     else begin
-        s_axi_wready <= !s_axi_wready && s_axi_awvalid && s_axi_wvalid &&
-                                                (!s_axi_bvalid || s_axi_bready);
-    end
-    if (!s_axi_aresetn) begin
-        s_axi_bvalid <= 0;
-    end
-    else if (s_axi_wready) begin
-        s_axi_bvalid <= 1;
-    end
-    else if (s_axi_bready) begin
-        s_axi_bvalid <= 0;
+        writeWaitStateCounter <= WRITE_WAIT_STATE_COUNTER_LOAD;
+        if (s_axi_awvalid && s_axi_wvalid) begin
+            writeTransactionActive <= 1;
+        end
     end
 end
-//////////////////////// End of AXI-Lite Boilerplate ////////////////////////
 
 /*
  * Sanity checks
@@ -172,7 +193,7 @@ if ((DISTRIBUTED_BUFFER_ADDR_WIDTH < 9)
  || (DISTRIBUTED_BUFFER_ADDR_WIDTH >= C_S_AXI_ADDR_WIDTH)) begin
     invalid_DISTRIBUTED_BUFFER_ADDR_WIDTH();
 end
-if ((HARDWARE_OUTPUT_COUNT < 2) || (HARDWARE_OUTPUT_COUNT > 12)) begin
+if ((HARDWARE_OUTPUT_COUNT < 2) || (HARDWARE_OUTPUT_COUNT > 24)) begin
   invalid_HARDWARE_OUTPUT_COUNT();
 end
 if (HARDWARE_OUTPUT_COUNT > ACTION_STROBES_WIDTH) begin
@@ -182,7 +203,7 @@ if ((SERDES_FACTOR!=1) && (SERDES_FACTOR!=4)
  && (SERDES_FACTOR!=6) && (SERDES_FACTOR!=8)) begin
   invalid_SERDES_FACTOR();
 end
-if ((ACTION_STROBES_WIDTH < 12) || (ACTION_STROBES_WIDTH > 22)) begin
+if ((ACTION_STROBES_WIDTH < 12) || (ACTION_STROBES_WIDTH > 30)) begin
   invalid_ACTION_STROBES_WIDTH();
 end
 
@@ -199,29 +220,38 @@ wire [REGSEL_WIDTH-1:0] rRegIndex = s_axi_araddr[2+:REGSEL_WIDTH];
 wire wAddrIsDBUF = s_axi_awaddr[DISTRIBUTED_BUFFER_ADDR_WIDTH];
 wire rAddrIsDBUF = s_axi_araddr[DISTRIBUTED_BUFFER_ADDR_WIDTH];
 
-localparam REG_INDEX_CSR               = 0;
-localparam REG_INDEX_TIMESTAMP_SECONDS = 2;
-localparam REG_INDEX_TIMESTAMP_TICKS   = 3;
-localparam REG_INDEX_ACTION_RAM        = 4;
-localparam REG_INDEX_FIFO_EVENT        = 5;
-localparam REG_INDEX_FIFO_SECONDS      = 6;
-localparam REG_INDEX_FIFO_TICKS        = 7;
-localparam REG_INDEX_TRIGGER_SELECT    = 8;
-localparam REG_INDEX_TRIGGER_CONTROL   = 9;
-localparam REG_INDEX_TRIGGER_DELAY     = 10;
-localparam REG_INDEX_TRIGGER_WIDTH     = 11;
+localparam [REGSEL_WIDTH-1:0] REG_INDEX_CSR               = 0,
+                              REG_INDEX_RAVEL             = 1,
+                              REG_INDEX_TIMESTAMP_SECONDS = 2,
+                              REG_INDEX_TIMESTAMP_TICKS   = 3,
+                              REG_INDEX_ACTION_RAM        = 4,
+                              REG_INDEX_FIFO_EVENT        = 5,
+                              REG_INDEX_FIFO_SECONDS      = 6,
+                              REG_INDEX_FIFO_TICKS        = 7,
+                              REG_INDEX_TRIGGER_SELECT    = 8,
+                              REG_INDEX_TRIGGER_CONTROL   = 9,
+                              REG_INDEX_TRIGGER_DELAY     = 10,
+                              REG_INDEX_TRIGGER_WIDTH     = 11;
 
 /*
  * Hardware output control registers
  */
 localparam OUTPUT_TRIGGER_SEL_WIDTH = $clog2(HARDWARE_OUTPUT_COUNT);
 reg [OUTPUT_TRIGGER_SEL_WIDTH-1:0] sysOutputDriverSel = 0;
+// remap physical to logical outputs.  array index is physical.  array value is logical.
+// SW responsible for ensuring a 1-to-1 mapping
+reg [OUTPUT_TRIGGER_SEL_WIDTH-1:0] sysOutputRavel [0:HARDWARE_OUTPUT_COUNT-1];
 reg [HARDWARE_OUTPUT_COUNT-1:0] sysControlUpdateToggles = 0,
                                 sysDelayCountUpdateToggles = 0,
                                 sysWidthCountUpdateToggles = 0;
 reg [C_S_AXI_DATA_WIDTH-1:0] sysControlUpdateData = 0,
                              sysDelayCountUpdateData = 0,
                              sysWidthCountUpdateData = 0;
+
+genvar o;
+for(o=0; o<HARDWARE_OUTPUT_COUNT; o=o+1) begin : ravelInit
+    initial sysOutputRavel[o] = o;
+end
 
 /*
  * Distributed buffer readout
@@ -231,13 +261,15 @@ wire [31:0] distributedBufferData = 0;
 /*
  * Instantiate core EVR
  */
-wire coreWriteStrobe = (s_axi_wready && !wAddrIsDBUF &&
+wire coreWriteStrobe = (sysWriteStrobe && !wAddrIsDBUF &&
                                            (wRegIndex == REG_INDEX_ACTION_RAM));
 wire [(ACTION_STROBES_WIDTH+2)-1:0] evrRawActions;
 assign evrActionStrobes  = evrRawActions[0+:ACTION_STROBES_WIDTH];
-wire evrInterruptRequest = evrRawActions[ACTION_STROBES_WIDTH];
+//wire evrInterruptRequest = evrRawActions[ACTION_STROBES_WIDTH];
 wire evrFifoWriteEnable  = evrRawActions[ACTION_STROBES_WIDTH+1];
+wire [31:0] sysActionReadback;
 smallEVR #(
+    // 2 extra bits for FIFO log and (unused) IRQ
     .ACTION_WIDTH(ACTION_STROBES_WIDTH+2),
     .DEBUG(DEBUG),
     .TIMESTAMP_WIDTH(64))
@@ -252,8 +284,8 @@ smallEVR #(
     .action(evrRawActions),
     .sysClk(s_axi_aclk),
     .sysActionWriteEnable(coreWriteStrobe),
-    .sysActionAddress(s_axi_wdata[7:0]),
-    .sysActionData(s_axi_wdata[8+:ACTION_STROBES_WIDTH+2]));
+    .sysActionSetting(s_axi_wdata),
+    .sysActionReadback(sysActionReadback));
 
 /*
  * Startup sequencing
@@ -299,15 +331,21 @@ assign evrPPSmarker = evrPPSstrobe | evrPPSstretch[8];
 genvar i;
 generate
 for (i = 0 ; i < HARDWARE_OUTPUT_COUNT ; i = i + 1) begin : outputDriver
+    wire [OUTPUT_TRIGGER_SEL_WIDTH-1:0] idx = sysOutputRavel[i]; // map physical to logical output index
+    wire dbus;
+    if(i<8)
+        assign dbus = evrDistributedBus[i]; // TODO: allow any bit to be mapped to any output
+    else
+        assign dbus = 1'b0;
     ospreyEVRoutputDriver #(
         .DATA_WIDTH(32),
         .SERDES_FACTOR(SERDES_FACTOR),
         .ACTIVE_LOW_OUTPUTS(ACTIVE_LOW_OUTPUTS),
         .DEBUG(DEBUG))
       ospreyEVRoutputDriver_i (
-        .sysControlUpdateToggle(sysControlUpdateToggles[i]),
-        .sysDelayCountUpdateToggle(sysDelayCountUpdateToggles[i]),
-        .sysWidthCountUpdateToggle(sysWidthCountUpdateToggles[i]),
+        .sysControlUpdateToggle(sysControlUpdateToggles[idx]),
+        .sysDelayCountUpdateToggle(sysDelayCountUpdateToggles[idx]),
+        .sysWidthCountUpdateToggle(sysWidthCountUpdateToggles[idx]),
         .sysControlUpdateData(sysControlUpdateData),
         .sysDelayCountUpdateData(sysDelayCountUpdateData),
         .sysWidthCountUpdateData(sysWidthCountUpdateData),
@@ -315,10 +353,10 @@ for (i = 0 ; i < HARDWARE_OUTPUT_COUNT ; i = i + 1) begin : outputDriver
         .evrBitClk(evrBitClk),
         .evrResetSERDES(evrResetSERDES),
         .evrLinkUp(evrLinkUp),
-        .evrActionIn(evrRawActions[i]),
-        .evrDbusIn((i<8) ? evrDistributedBus[i] : 1'b0),
-        .evrSetIn(evrRawActions[i]),
-        .evrResetIn(evrRawActions[i+1]),
+        .evrActionIn(evrRawActions[idx]),
+        .evrDbusIn(dbus),
+        .evrSetIn(1'b0), // TODO: widen action RAM to allow seperate set/reset mappings
+        .evrResetIn(1'b0),
         .extIn_a(hwDriverIn_a[i]),
         .evrPin(evrHardwareOutputs[i]));
 end
@@ -421,8 +459,7 @@ end
 /*
  * Multiplex read values
  */
-reg [C_S_AXI_DATA_WIDTH-1:0] regMux, readData;
-reg [C_S_AXI_DATA_WIDTH-1:0] controlReg;
+reg [C_S_AXI_DATA_WIDTH-1:0] readData;
 assign s_axi_rdata = readData;
 
 wire        activeLowOutputs = ACTIVE_LOW_OUTPUTS;
@@ -435,13 +472,16 @@ wire [31:0] sysStatus = {{32-1-4-5-4{1'b0}},
                         fifoOverflow, !fifoEmpty, evrTimestampValid, evrLinkUp};
 
 always @(posedge s_axi_aclk) begin
-    /*
-     * Control
-     */
-    if (s_axi_wready && !wAddrIsDBUF) begin
+    if (!s_axi_aresetn) begin
+        // TODO
+    end else begin
+        if (sysWriteStrobe && !wAddrIsDBUF) begin
         case (wRegIndex)
         REG_INDEX_TRIGGER_SELECT: begin
             sysOutputDriverSel <= s_axi_wdata[0+:OUTPUT_TRIGGER_SEL_WIDTH];
+        end
+        REG_INDEX_RAVEL: begin
+            sysOutputRavel[s_axi_wdata[16+:OUTPUT_TRIGGER_SEL_WIDTH]] <= s_axi_wdata[0+:OUTPUT_TRIGGER_SEL_WIDTH];
         end
         REG_INDEX_TRIGGER_CONTROL: begin
             sysControlUpdateData <= s_axi_wdata;
@@ -460,34 +500,37 @@ always @(posedge s_axi_aclk) begin
         end
         default: ;
         endcase
-    end
+        end
 
-    /*
-     * Readback
-     */
-    if (rAddrIsDBUF) begin
-        readData <= distributedBufferData;
-    end
-    else begin
-        case (rRegIndex)
-        REG_INDEX_CSR:               readData <= sysStatus;
-        REG_INDEX_TIMESTAMP_SECONDS: readData <= sysTimestamp[63:32];
-        REG_INDEX_TIMESTAMP_TICKS:   readData <= sysTimestamp[31:0];
-        REG_INDEX_FIFO_EVENT:        readData <= {!fifoEmpty, fifoOverflow,
-                                                  {32-2-8{1'b0}},
-                                                  fifoReadData[64+:8]};
-        REG_INDEX_FIFO_SECONDS:      readData <= fifoSeconds;
-        REG_INDEX_FIFO_TICKS:        readData <= fifoTicks;
-        default:                     readData <= 0;
-        endcase
-    end
+        /*
+         * Readback
+         */
+        if(!s_axi_arvalid || !s_axi_arready) begin
+        end else if (rAddrIsDBUF) begin
+            readData <= distributedBufferData;
+        end
+        else begin
+            case (rRegIndex)
+            REG_INDEX_CSR:               readData <= sysStatus;
+            REG_INDEX_TIMESTAMP_SECONDS: readData <= sysTimestamp[63:32];
+            REG_INDEX_TIMESTAMP_TICKS:   readData <= sysTimestamp[31:0];
+            REG_INDEX_ACTION_RAM:        readData <= sysActionReadback;
+            REG_INDEX_FIFO_EVENT:        readData <= {!fifoEmpty, fifoOverflow,
+                                                      {32-2-8{1'b0}},
+                                                      fifoReadData[64+:8]};
+            REG_INDEX_FIFO_SECONDS:      readData <= fifoSeconds;
+            REG_INDEX_FIFO_TICKS:        readData <= fifoTicks;
+            default:                     readData <= 32'hdeadbeef;
+            endcase
+        end
 
-    /*
-     * Side effects of reading
-     */
-    if (fifoReadEnable) begin
-        fifoSeconds <= fifoReadData[32+:32];
-        fifoTicks   <= fifoReadData[0+:32];
+        /*
+         * Side effects of reading
+         */
+        if (fifoReadEnable) begin
+            fifoSeconds <= fifoReadData[32+:32];
+            fifoTicks   <= fifoReadData[0+:32];
+        end
     end
 end
 endmodule

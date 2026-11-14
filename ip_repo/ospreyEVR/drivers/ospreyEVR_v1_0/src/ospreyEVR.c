@@ -33,16 +33,56 @@
 
 #define MAX_OUTPUTS 16
 
+// when reading see: OSPREY_EVR_STATUS_*
+// when writing see: OSPREY_EVR_CONTROL_*
 #define REG_OFFSET_CSR              (0*4)
+// read/write logical to physical mapping.
+// write only
+// [23:16] - physical output index
+//   [7:0] - logical output index
+// indicies in the range 0 to ouputCount-1
+// resulting mapping must be 1-to-1
+#define REG_OFFSET_RAVEL            (1*4)
+// second part of current timestamp
 #define REG_OFFSET_SECONDS          (2*4)
+// sub-seconds part of current timestamp
 #define REG_OFFSET_TICKS            (3*4)
+// Write to update a single action bit.
+//  Also stores selects event index for readback
+// [17:16] - Update command
+//           0b00 - no action
+//           0b10 - set
+//           0bx1 - clear
+//  [15:8] - action bit index
+//   [7:0] - event code
+// Read
+//  [31:0] - action bit mask for selected event code
 #define REG_OFFSET_ACTION           (4*4)
+// Read head entry in FIFO
+// Updates *_SECONDS and *_TICKS as a side effect
+// See: FIFO_EVENT_EVENT_*
+// [31] queue not empty
+// [30] queue in overflow
+// [7:0] event code
 #define REG_OFFSET_FIFO_EVENT       (5*4)
 #define REG_OFFSET_FIFO_SECONDS     (6*4)
 #define REG_OFFSET_FIFO_TICKS       (7*4)
+// output mux
+// write a value from 0 to ouputCount-1
+// effects subsequent access of CONTROL/DELAY/WIDTH
 #define REG_OFFSET_OUTPUT_SELECT    (8*4)
+// [18:16] - output source selection
+//    0 - Force low
+//    1 - Pulse sequence
+//    3 - DBus bit (output N linked to dbus bit N)
+//    7 - Force high
+// [15:8] - falling edge bit pattern
+//  [7:0] - rising edge bit pattern
+//  For bit patterns, only lower serdesFactor bits are used
 #define REG_OFFSET_OUTPUT_CONTROL   (9*4)
+// Delay in ticks betwen action and rising edge
 #define REG_OFFSET_PULSE_DELAY     (10*4)
+// Delay after rising edge
 #define REG_OFFSET_PULSE_WIDTH     (11*4)
 
 #define FIFO_EVENT_EVENT_PENDING 0x80000000
@@ -102,6 +142,20 @@ ospreyEVRInit(uint32_t baseAddress)
     return 0;
 }
 
+unsigned int ospreyEVRNumOutputs()
+{
+    if (!evrInfo.baseAddr) return 0;
+    return evrInfo.outputCount;
+}
+
+int ospreyEVRRemapOutput(unsigned int logical, unsigned int physical)
+{
+    if (!evrInfo.baseAddr || logical >= evrInfo.outputCount || physical >= evrInfo.outputCount) return -1;
+
+    Xil_Out32(evrInfo.baseAddr + REG_OFFSET_RAVEL, (physical<<16) | logical);
+    return 0;
+}
+
 int
 ospreyEVRStatus(void)
 {
@@ -109,15 +163,20 @@ ospreyEVRStatus(void)
     return Xil_In32(evrInfo.baseAddr + REG_OFFSET_CSR);
 }
 
-static
-uint32_t shadow_actions[256];
-
 int
-ospreyEVRSetEventAction(int event, int action)
+ospreyEVRSetEventAction(int event, uint32_t action)
 {
     if ((event <= 0) || (event >= 255)) return -1;
-    shadow_actions[event] = action;
-    Xil_Out32(evrInfo.baseAddr + REG_OFFSET_ACTION, (action << 8) | event);
+    // read back current mask
+    Xil_Out32(evrInfo.baseAddr + REG_OFFSET_ACTION, event);
+    unsigned current = Xil_In32(evrInfo.baseAddr + REG_OFFSET_ACTION);
+    for(unsigned bit=0; bit<32; bit++, action>>=1, current>>=1) {
+        if((action&1) == (current&1))
+            continue;
+
+        // update
+        Xil_Out32(evrInfo.baseAddr + REG_OFFSET_ACTION, event | (bit<<8) | (0x10000 << (action&1)));
+    }
     return 0;
 }
 
@@ -281,7 +340,8 @@ ospreyEVR_FEEDread(int offset)
     }
     idx = offset - REG_ACTIONS_BASE;
     if ((idx > 0) && (idx < 255)) {
-        return shadow_actions[idx];
+        Xil_Out32(evrInfo.baseAddr + REG_OFFSET_ACTION, idx);
+        return Xil_In32(evrInfo.baseAddr + REG_OFFSET_ACTION);
     }
     idx = offset - REG_OUTPUT_SELECT_BASE;
     if ((idx >= 0) && (idx < evrInfo.outputCount)) {

@@ -47,8 +47,12 @@
 #define OSPREY_EVR_ACTION_INTERRUPT         0x10000
 
 int ospreyEVRInit(uint32_t baseAddress);
+unsigned ospreyEVRNumOutputs(void);
+// default is sequential logical to physical mapping.
+// caller must ensure a 1-to-1 mapping between physical and logical.
+int ospreyEVRRemapOutput(unsigned logical, unsigned physical);
 int ospreyEVRStatus(void);
-int ospreyEVRSetEventAction(int event, int action);
+int ospreyEVRSetEventAction(int event, uint32_t action);
 int ospreyEVRSelectOutputSource(int channel, int source);
 int ospreyEVRSetPulseDelay(int channel, uint32_t delay);
 int ospreyEVRSetPulseWidth(int channel, uint32_t width);

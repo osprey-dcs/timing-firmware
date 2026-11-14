@@ -97,7 +97,17 @@ wire [SRCSEL_WIDTH-1:0] srcSel     = evrControl[16+:SRCSEL_WIDTH];
  */
 (*MARK_DEBUG=DEBUG*) reg evrLatch = 0;
 (*ASYNC_REG="true"*) reg evrExtIn_m = 0;
-reg evrExtIn = 0, evrSrc = 0;
+reg evrExtIn = 0, idleSrc = 0;
+
+always @* begin
+    case (srcSel)
+    SRCSEL_DBUS:     idleSrc = evrDbusIn;
+    SRCSEL_LATCH:    idleSrc = evrLatch;
+    SRCSEL_EXTERNAL: idleSrc = evrExtIn;
+    SRCSEL_ONE:      idleSrc = 1;
+    default:         idleSrc = 0;
+    endcase
+end
 
 /*
  * Value to output serializer
@@ -133,14 +143,7 @@ always @(posedge evrClk) begin
             state <= S_ARMED;
         end
         else begin
-            case (srcSel)
-            SRCSEL_DBUS:     evrSrc <= evrDbusIn;
-            SRCSEL_LATCH:    evrSrc <= evrLatch;
-            SRCSEL_EXTERNAL: evrSrc <= evrExtIn;
-            SRCSEL_ONE:      evrSrc <= 1;
-            default:         evrSrc <= 0;
-            endcase
-            serdesWord <= {SERDES_FACTOR{evrSrc}};
+            serdesWord <= {SERDES_FACTOR{idleSrc}};
         end
     end
     S_ARMED: begin
@@ -188,10 +191,9 @@ always @(posedge evrClk) begin
     endcase
 end
 
-wire obufI;
 generate
 if (SERDES_FACTOR == 1) begin
-  assign obufI = ACTIVE_LOW_OUTPUTS ? ~serdesWord : serdesWord;
+  assign evrPin = ACTIVE_LOW_OUTPUTS ? ~serdesWord : serdesWord;
 end
 else begin
   /////////////////////////////////////////////////////////////////////////////
@@ -272,7 +274,7 @@ else begin
     end
   end
 
-  assign obufI = evrResetSERDESextended | iserdesO;
+  assign evrPin = evrResetSERDESextended | iserdesO;
   end
   else begin
   // No need for the above ISERDES hack when outputs are active-high since
@@ -305,7 +307,7 @@ else begin
     .OCE            (1'b1),
     .CLK            (evrBitClk),
     .CLKDIV         (evrClk),
-    .OQ             (obufI),
+    .OQ             (evrPin),
     .TQ             (),
     .OFB            (),
     .TFB            (),
@@ -317,8 +319,6 @@ else begin
 end
 endgenerate
 
-OBUF evrHwIObuf(.I(obufI),
-                .O(evrPin));
 endmodule
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -327,7 +327,7 @@ module ospreyEVRoutputDriverClockCrossing #(parameter DATA_WIDTH = -1) (
     input  wire                   evrClk,
     input  wire                   sysUpdateToggle_a,
     input  wire [ DATA_WIDTH-1:0] sysData,
-    output reg  [ DATA_WIDTH-1:0] evrData);
+    output reg  [ DATA_WIDTH-1:0] evrData = 0);
 (*ASYNC_REG="true"*) reg evrUpdateToggle_m = 0;
 reg evrUpdateToggle = 0, evrUpdateToggle_d = 0;
 always @(posedge evrClk) begin

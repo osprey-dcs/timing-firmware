@@ -1,1 +1,5 @@
-commit ddf8aeb905da80f6a4bcdabc480a96e93fd6da1a (HEAD -> main, origin/main)
+commit b062a5fcea73aeb8a0585c6e327b145f662524a4
+Author: Michael Davidsaver <mdavidsaver@gmail.com>
+Date:   Sun Nov 15 09:58:24 2026 -0800
+
+    test better delay measurement

@@ -56,8 +56,8 @@ tinyEVRcommon #(.ACTION_RAM_WIDTH(0),
     .action(evStrobe),
     .sysClk(1'b0),
     .sysActionWriteEnable(1'b0),
-    .sysActionAddress(8'h00),
-    .sysActionData(1'b0));
+    .sysActionSetting(32'h0),
+    .sysActionReadback());
 endmodule
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -81,8 +81,8 @@ module smallEVR #(
 
                          input                    sysClk,
     (*mark_debug=DEBUG*) input                    sysActionWriteEnable,
-    (*mark_debug=DEBUG*) input              [7:0] sysActionAddress,
-    (*mark_debug=DEBUG*) input [ACTION_WIDTH-1:0] sysActionData);
+                         input             [31:0] sysActionSetting,
+                        output             [31:0] sysActionReadback);
 
 tinyEVRcommon #(.ACTION_RAM_WIDTH(ACTION_WIDTH),
                 .EVSTROBE_COUNT(0),
@@ -99,14 +99,14 @@ tinyEVRcommon #(.ACTION_RAM_WIDTH(ACTION_WIDTH),
     .action(action),
     .sysClk(sysClk),
     .sysActionWriteEnable(sysActionWriteEnable),
-    .sysActionAddress(sysActionAddress),
-    .sysActionData(sysActionData));
+    .sysActionSetting(sysActionSetting),
+    .sysActionReadback(sysActionReadback));
 endmodule
 
 ////////////////////////////////////////////////////////////////////////////////
 // Common implementation
 module tinyEVRcommon #(
-    parameter ACTION_RAM_WIDTH = 0,
+    parameter ACTION_RAM_WIDTH = 10,
     parameter EVSTROBE_COUNT   = 126,
     parameter DEBUG            = "false",
     parameter TIMESTAMP_WIDTH  = 64,
@@ -126,8 +126,8 @@ module tinyEVRcommon #(
 
     input                                             sysClk,
     input                                             sysActionWriteEnable,
-    input                                       [7:0] sysActionAddress,
-    input [(ACTION_RAM_WIDTH?ACTION_RAM_WIDTH-1:0):0] sysActionData);
+    input                                      [31:0] sysActionSetting,
+    output                                     [31:0] sysActionReadback);
 
 localparam SECONDS_WIDTH = TIMESTAMP_WIDTH/2;
 localparam TICKS_WIDTH   = TIMESTAMP_WIDTH/2;
@@ -209,16 +209,40 @@ for (e = 1 ; e <= 254 ; e = e + 1) begin : evstr
 end
 
 generate
-if (ACTION_RAM_WIDTH > 0) begin
+if (ACTION_RAM_WIDTH > 0) begin : ram
  //
  // Traditional lookup-table based actions
  //
- reg [ACTION_RAM_WIDTH-1:0] actionRAM [0:255], actionRAMQ, actionBus;
+ (* RAM_STYLE="block" *)
+ reg [ACTION_RAM_WIDTH-1:0] actionRAM [0:255];
+ reg [ACTION_RAM_WIDTH-1:0] actionRAMQ = 0, actionRAMRB = 0, actionBus = 0;
+
+ localparam ACTION_RAM_L = $clog2(ACTION_RAM_WIDTH);
+ reg [1:0] written = 0;
+ reg [ACTION_RAM_L-1:0] sysActionIndexSel;
+ reg [7:0] sysActionEventSel;
+
+assign sysActionReadback = {
+    {32-ACTION_RAM_WIDTH{1'b0}},
+    actionRAMRB
+};
+
+ for(e=0; e<=255; e=e+1) begin : actionRAMInit
+    initial actionRAM[e] = 0;
+ end
  reg ramQisValid = 0;
  always @(posedge sysClk) begin
     if (sysActionWriteEnable) begin
-        actionRAM[sysActionAddress] <= sysActionData;
+        sysActionIndexSel <= sysActionSetting[8+:ACTION_RAM_L];
+        sysActionEventSel <= sysActionSetting[0+:8];
+        // 2'b10 sets, 2'b01 clears, 2'b00 only updates indicies for readback
+        written <= sysActionSetting[16+:2];
     end
+    if (written!=0) begin
+        actionRAM[sysActionEventSel][sysActionIndexSel] <= written[1] & ~written[0];
+        written <= 0;
+    end
+    actionRAMRB <= actionRAM[sysActionEventSel];
  end
  always @(posedge evrRxClk) begin
     ramQisValid <= !evCodeIsK;
@@ -227,7 +251,7 @@ if (ACTION_RAM_WIDTH > 0) begin
  end
  assign action = actionBus;
 end
-else begin
+else begin : plainStrobe
  //
  // Individual strobes per event
  //
