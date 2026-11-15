@@ -38,7 +38,7 @@
 
 #define REG_CSR                (0*4)
 #define REG_CONFIG             (1*4)
-// former REG_CLK_RATE
+#define REG_DBUF               (2*4)
 #define REG_SECONDS            (3*4)
 #define REG_HEARTBEAT_DIVISOR  (4*4)
 #define REG_HW_TRIGGER_CONFIG  (5*4)
@@ -52,6 +52,7 @@
 #define REG_HW_TRIGGER_COUNT   (13*4)
 #define REG_PPS_MONITOR        (14*4)
 #define REG_TIMER_CONFIG_BASE  (16*4)
+#define DBUF_OFFSET            0x8000
 
 // REG_CSR
 // Read for:
@@ -88,6 +89,14 @@
 //         FF - Bank mask, select normal trigger mode
 #define CSR_CMD_NORML 0x60000000
 
+// REG_DBUF
+// Read:
+//  Least-significant 8 bits are bitmap of active or pending transmissions
+// Write:
+//    [11:0] - Number of bytes to transmit
+//        15 - Transmit as soon as possible (event-triggered transmision TBD)
+//   [18:16] - Buffer to transmit
+
 // REG_TIMER_CSR
 //  array of TIMER_CMD_*
 
@@ -102,7 +111,7 @@ struct timerConfig {
 };
 struct evgInfo {
     uint32_t            baseAddr;
-    evgConfigInfo conf;
+    evgConfigInfo       conf;
     struct timerConfig  timers[TIMER_CAPACITY];
 };
 static struct evgInfo evgInfo;
@@ -110,7 +119,8 @@ static struct evgInfo evgInfo;
 int
 ospreyEVGInit(uint32_t baseAddress)
 {
-    int a, memCapacity;
+    int a, memCapacity, dbufIntCapacity;
+    volatile uint32_t *lp;
     switch(baseAddress) {
 #if XPAR_OSPREYEVG_NUM_INSTANCES >= 1
     case XPAR_OSPREYEVG_0_S_AXI_BASEADDR:
@@ -127,11 +137,8 @@ ospreyEVGInit(uint32_t baseAddress)
         return -1;
     }
     evgInfo.baseAddr = baseAddress;
+
     uint32_t config = Xil_In32(evgInfo.baseAddr + REG_CONFIG);
-    if((config&0xf0000000) != 0xa0000000) {
-        printf("ERROR %s(%08x) not core\n", __func__, (unsigned)baseAddress);
-        return -1;
-    }
     evgConfigInfo *conf = &evgInfo.conf;
     conf->hwTriggerCount = (config & OSPREY_EVG_CONFIG_HW_TRIG_COUNT_MASK) >>
                                           OSPREY_EVG_CONFIG_HW_TRIG_COUNT_SHIFT;
@@ -143,6 +150,10 @@ ospreyEVGInit(uint32_t baseAddress)
                                          OSPREY_EVG_CONFIG_SEQ_ADDR_WIDTH_SHIFT;
     conf->rxCount = (config & OSPREY_EVG_CONFIG_RX_COUNT_MASK) >>
                                                OSPREY_EVG_CONFIG_RX_COUNT_SHIFT;
+    conf->dbufCount = (config & OSPREY_EVG_CONFIG_DBUF_COUNT_MASK) >>
+                                             OSPREY_EVG_CONFIG_DBUF_COUNT_SHIFT;
+    conf->dbufAddrWidth = (config & OSPREY_EVG_CONFIG_DBUF_ADDR_WIDTH_MASK) >>
+                                        OSPREY_EVG_CONFIG_DBUF_ADDR_WIDTH_SHIFT;
     if (conf->timerCount > TIMER_CAPACITY) {
         conf->timerCount = TIMER_CAPACITY;
     }
@@ -161,9 +172,24 @@ ospreyEVGInit(uint32_t baseAddress)
         ospreyEVGSetDbusInputMap(a, 0);
     }
 
-    printf("%s(%08x): #Rx:%u #Trg:%u, #Tmr:%u #Bank:%u sAddrW:%u\n", __func__, (unsigned)baseAddress,
-           conf->rxCount, conf->hwTriggerCount, conf->timerCount, conf->bankCount,
-           conf->seqAddrWidth);
+    // Check Distributed Buffer memory
+    dbufIntCapacity = conf->dbufCount * (1 << conf->dbufAddrWidth);
+    lp = ospreyEVGDbuf(0);
+    for (a = 0 ; a < dbufIntCapacity ; a++) {
+        lp[a] = a * 10007;
+    }
+    for (a = 0 ; a < dbufIntCapacity ; a++) {
+        if (lp[a] != ((uint32_t)a * 10007)) {
+            printf("CRITICAL WARNING -- Osprey EVG distributed buffer memory fault.\n");
+            break;
+        }
+    }
+
+    printf("%s(%08x):#db:%u dbAW:%u #Rx:%u #Trg:%u #Tmr:%u #Seq:%u sAddrW:%u\n",
+                       __func__, (unsigned)baseAddress,
+                       conf->dbufCount, conf->dbufAddrWidth, conf->rxCount,
+                       conf->hwTriggerCount, conf->timerCount, conf->bankCount,
+                       conf->seqAddrWidth);
     return 0;
 }
 
@@ -457,6 +483,42 @@ uint32_t ospreyEVGGetDbusInputMap(uint8_t bit)
     if (bit>=8) return -1;
     Xil_Out32(evgInfo.baseAddr + REG_DBUS_MAP, ((uint32_t)bit)<<24u);
     return Xil_In32(evgInfo.baseAddr + REG_DBUS_MAP) & 0x00ffffff;
+}
+
+volatile void *
+ospreyEVGDbuf(int dbufIndex)
+{
+    if ((dbufIndex < 0) || (dbufIndex >= evgInfo.conf.dbufCount)) return NULL;
+    return (void *)(evgInfo.baseAddr + DBUF_OFFSET +
+                               (dbufIndex * (1 << evgInfo.conf.dbufAddrWidth)));
+}
+
+int
+ospreyEVGDbufCount(void)
+{
+    return evgInfo.conf.dbufCount;
+}
+
+int
+ospreyEVGDbufCapacity(void)
+{
+    return 1 << (evgInfo.conf.dbufAddrWidth + 2);
+}
+
+int
+ospreyEVGDbufSend(int dbufIndex, int size)
+{
+    if ((dbufIndex < 0)
+     || (dbufIndex >= evgInfo.conf.dbufCount)
+     || (size <= 0)
+     || (size > (1 << (evgInfo.conf.dbufAddrWidth + 2)))) return -1;
+    Xil_Out32(evgInfo.baseAddr + REG_DBUF, (dbufIndex << 16) | (size - 1));
+    /*
+     * Wait here until transmission is complete.
+     * This ensures static buffer contents while transmission is in progress.
+     */
+    while ((Xil_In32(evgInfo.baseAddr + REG_DBUF) & (1 << dbufIndex)) != 0);
+    return 0;
 }
 
 #define SEQ_MAX_CAPACITY                 4096

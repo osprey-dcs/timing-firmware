@@ -42,15 +42,17 @@ module ospreyEVG_v1_0 #(
     ////////////////////// Application-specific Parameters ///////////////////
     parameter EVGCLK_FREQUENCY   = 125000000,
     parameter TIMER_COUNT        = 2,
-    parameter HW_TRIGGER_COUNT   = 8,
     parameter SEQRAM_ADDR_WIDTH  = 11,
     parameter SEQRAM_BANK_COUNT  = 2,
     parameter RX_COUNT           = 1,
     parameter INPUT_COUNT        = 16,
+    parameter DBUF_COUNT         = 1,
+    parameter DBUF_CAPACITY      = 2048,
+    parameter DEBUG_DBUF         = "false",
     parameter DEBUG              = "false",
     ////////////////////// AXI-Lite Boilerplate Parameters ///////////////////
     parameter C_S_AXI_FREQ_HZ    = 100000000,
-    parameter C_S_AXI_ADDR_WIDTH = 7,
+    parameter C_S_AXI_ADDR_WIDTH = 16,
     parameter C_S_AXI_DATA_WIDTH = 32
     ) (
     ////////////////////// Application-specific Ports ///////////////////
@@ -197,6 +199,13 @@ end
 if (EVGCLK_FREQUENCY > EVGCLK_FREQUENCY_MAX) begin
     error_EVGCLK_FREQUENCY_OUT_OF_RANGE();
 end
+// see DBUF_OFFSET in ospreyEVG.c
+if (C_S_AXI_ADDR_WIDTH != 16) begin
+    error_AXI_S_ADDR_WIDTH();
+end
+if (C_S_AXI_ADDR_WIDTH <= (2 * $clog2(DBUF_COUNT) * $clog2(DBUF_CAPACITY))) begin
+    error_AXI_S_ADDR_WIDTH();
+end
 
 /*
  * One for table-driven event (highest-priority), one for each
@@ -216,7 +225,7 @@ wire [REGSEL_WIDTH-1:0] s_wRegIndex = s_axi_awaddr[2+:REGSEL_WIDTH];
 wire [REGSEL_WIDTH-1:0] s_rRegIndex = s_axi_araddr[2+:REGSEL_WIDTH];
 localparam REG_IDX_CSR               = 5'd0;
 localparam REG_IDX_CONFIG            = 5'd1;
-// former REG_IDX_CLK_RATE
+localparam REG_IDX_DBUF              = 5'd2;
 localparam REG_IDX_SECONDS           = 5'd3;
 localparam REG_IDX_HEARTBEAT_DIVISOR = 5'd4;
 localparam REG_IDX_HW_TRIGGER_CONFIG = 5'd5;
@@ -263,14 +272,32 @@ reg sysSwTriggerToggle = 0;
 reg sysDbusMapUpdateToggle = 0;
 reg [DBUS_WIDTH-1:0] dbusMapReadMux = 0;
 reg [INPUTSEL_WIDTH-1:0] dbusMap [0:DBUS_BITS-1];
-
 for(i=0 ; i < DBUS_BITS ; i = i + 1) begin : dbusMapInit
 initial
     dbusMap[i] = 0;
 end
 
+// Distributed Buffer
+integer wSel;
+localparam DBUF_TINY_EVG_ADDR_WIDTH = $clog2(DBUF_CAPACITY);
+localparam DBUF_ADDR_WIDTH = $clog2(DBUF_COUNT) + DBUF_TINY_EVG_ADDR_WIDTH - 2;
+(*RAM_STYLE="BLOCK"*) reg [31:0] dbufRam [0:(1<<DBUF_ADDR_WIDTH)-1];
+reg [31:0] dbufRamQ;
+wire dbufWriteSel = s_axi_awaddr[C_S_AXI_ADDR_WIDTH-1];
+wire [DBUF_ADDR_WIDTH-1:0] dbufAddr = s_axi_awvalid ?
+                                         s_axi_awaddr[2+:DBUF_ADDR_WIDTH] :
+                                     (s_axi_arvalid ?
+                                         s_axi_araddr[2+:DBUF_ADDR_WIDTH] : 0);
+wire dbufReadSel = s_axi_araddr[C_S_AXI_ADDR_WIDTH-1];
+localparam DBUF_BANK_SEL_WIDTH = (DBUF_COUNT < 2) ? 1 : $clog2(DBUF_COUNT);
+wire [DBUF_BANK_SEL_WIDTH-1:0] dbufBank = s_axi_wdata[16+:DBUF_BANK_SEL_WIDTH];
+reg [DBUF_TINY_EVG_ADDR_WIDTH-1:0] dbufLastAddresses [0:DBUF_COUNT-1];
+reg [DBUF_COUNT-1:0] dbufSendToggles=0, dbufDoneToggles=0, evgDoneToggles=0;
+(*ASYNC_REG="true"*) reg [DBUF_COUNT-1:0] dbufDoneToggles_m;
+
 reg [31:0] sysReadData;
-assign s_axi_rdata = sysReadData;
+reg readDbuf = 0;  
+assign s_axi_rdata = readDbuf ? dbufRamQ : sysReadData;
 
 /*
  * Forward references to some EVG clock values.
@@ -286,13 +313,15 @@ wire [31:0] seqBankTrigCount;
 reg  [(TIMER_COUNT*8)-1:0] timerEventCodes = 0;
 
 // Configuration
-wire [3:0] seqAddrWidth = SEQRAM_ADDR_WIDTH;
-wire [3:0] bankCount    = SEQRAM_BANK_COUNT;
-wire [3:0] timerCount   = TIMER_COUNT;
-wire [7:0] triggerCount = INPUT_COUNT;
-wire [3:0] rxCount      = RX_COUNT;
-wire [31:0] sysConfig = {4'ha,
-                          {32-(7*4){1'b0}},
+wire [3:0] seqAddrWidth  = SEQRAM_ADDR_WIDTH;
+wire [3:0] bankCount     = SEQRAM_BANK_COUNT;
+wire [3:0] timerCount    = TIMER_COUNT;
+wire [7:0] triggerCount  = INPUT_COUNT;
+wire [3:0] rxCount       = RX_COUNT;
+wire [3:0] dbufCount     = DBUF_COUNT;
+wire [3:0] dbufAddrWidth = DBUF_ADDR_WIDTH;
+wire [31:0] sysConfig = { dbufAddrWidth,
+                          dbufCount,
                           rxCount,
                           seqAddrWidth,
                           bankCount,
@@ -311,51 +340,72 @@ begin
     if (!s_axi_aresetn) begin
     end
     else begin
+        if (s_axi_arvalid) begin
+            dbufRamQ <= dbufRam[dbufAddr];
+        end
+        dbufDoneToggles_m <= evgDoneToggles;
+        dbufDoneToggles   <= dbufDoneToggles_m;
+
         /*
          * Control (write) operations
          */
         if (sysWriteStrobe) begin
-        casez (s_wRegIndex)
-        REG_IDX_TIMER_CONFIG_MASK: begin
-            if (timerInitValSel) begin
-               sysTimerInitValToggle[timerSel] <=
-                                               !sysTimerInitValToggle[timerSel];
+            if (dbufWriteSel) begin
+                for (wSel = 0 ; wSel < 4 ; wSel = wSel + 1) begin : dbufWrites
+                    if (s_axi_wstrb[wSel]) begin
+                        dbufRam[dbufAddr][wSel*8+:8] <= s_axi_wdata[wSel*8+:8];
+                    end
+                end
             end
             else begin
-               sysTimerCodeToggle[timerSel]<=!sysTimerCodeToggle[timerSel];
+            casez (s_wRegIndex)
+            REG_IDX_TIMER_CONFIG_MASK: begin
+                if (timerInitValSel) begin
+                   sysTimerInitValToggle[timerSel] <=
+                                               !sysTimerInitValToggle[timerSel];
+                end
+                else begin
+                   sysTimerCodeToggle[timerSel]<=!sysTimerCodeToggle[timerSel];
+                end
             end
-        end
-        REG_IDX_SECONDS: begin
-            sysPosixSeconds <= s_axi_wdata;
-            sysSetSecondsToggle <= !sysSetSecondsToggle;
-        end
-        REG_IDX_HEARTBEAT_DIVISOR: begin
-            sysSetHeartbeatDivisorToggle <= !sysSetHeartbeatDivisorToggle;
-        end
-        REG_IDX_HW_TRIGGER_CONFIG: begin
-            sysHwUpdateToggle[hwSel] <= !sysHwUpdateToggle[hwSel];
-            hwSel_l <= hwSel;
-        end
-        REG_IDX_SW_EVENT: begin
-            sysSwTriggerToggle <= !sysSwTriggerToggle;
-        end
-        REG_IDX_TIMER_CSR: begin
-            sysTimerControlToggle <= !sysTimerControlToggle;
-        end
-        REG_IDX_HW_TRIGGER_COUNT: begin
-            hwSel_l <= hwSel;
-        end
-        REG_IDX_DBUS_MAP: begin
-            sysDbusMapUpdateToggle <= !sysDbusMapUpdateToggle;
-        end
-        default: ;
-        endcase
+            REG_IDX_DBUF: begin
+                dbufLastAddresses[dbufBank] <=
+                                       s_axi_wdata[0+:DBUF_TINY_EVG_ADDR_WIDTH];
+                dbufSendToggles[dbufBank] <= !dbufSendToggles[dbufBank];
+            end
+            REG_IDX_SECONDS: begin
+                sysPosixSeconds <= s_axi_wdata;
+                sysSetSecondsToggle <= !sysSetSecondsToggle;
+            end
+            REG_IDX_HEARTBEAT_DIVISOR: begin
+                sysSetHeartbeatDivisorToggle <= !sysSetHeartbeatDivisorToggle;
+            end
+            REG_IDX_HW_TRIGGER_CONFIG: begin
+                sysHwUpdateToggle[hwSel] <= !sysHwUpdateToggle[hwSel];
+                hwSel_l <= hwSel;
+            end
+            REG_IDX_SW_EVENT: begin
+                sysSwTriggerToggle <= !sysSwTriggerToggle;
+            end
+            REG_IDX_TIMER_CSR: begin
+                sysTimerControlToggle <= !sysTimerControlToggle;
+            end
+            REG_IDX_HW_TRIGGER_COUNT: begin
+                hwSel_l <= hwSel;
+            end
+            REG_IDX_DBUS_MAP: begin
+                sysDbusMapUpdateToggle <= !sysDbusMapUpdateToggle;
+            end
+            default: ;
+            endcase
+            end
         end
 
         /*
          * Readback operations
          */
         if (s_axi_arvalid && s_axi_arready) begin
+            readDbuf <= dbufReadSel;
             casez (s_rRegIndex)
             REG_IDX_TIMER_CONFIG_MASK: begin
                 if (timerInitValSelR) begin
@@ -366,6 +416,8 @@ begin
             end
             REG_IDX_CSR:            sysReadData <= sysStatus;
             REG_IDX_CONFIG:         sysReadData <= sysConfig;
+            REG_IDX_DBUF:           sysReadData <= { {32-DBUF_COUNT{1'b0}},
+                                            dbufSendToggles ^ dbufDoneToggles };
             REG_IDX_SECONDS:        sysReadData <= evgPosixSeconds;
             REG_IDX_SEQ_ADDR_CODE:  sysReadData <= seqAddrCodeRbk;
             REG_IDX_SEQ_GAP:        sysReadData <= seqGapRbk;
@@ -755,11 +807,63 @@ end
 endgenerate
 
 /*
+ * Distributed buffer
+ */
+(*MARK_DEBUG=DEBUG_DBUF*) reg evgDbufBegin = 0;
+(*MARK_DEBUG=DEBUG_DBUF*) wire evgDbufBusy;
+reg evgDbufBusy_d = 0;
+(*ASYNC_REG="true"*) reg [DBUF_COUNT-1:0] evgSendToggles_m = 0;
+reg [DBUF_COUNT-1:0] evgSendToggles = 0;
+wire [DBUF_COUNT-1:0] evgPending = evgSendToggles ^ evgDoneToggles;
+reg [DBUF_COUNT-1:0] evgDbufActiveBit;
+(*MARK_DEBUG=DEBUG_DBUF*) reg [DBUF_TINY_EVG_ADDR_WIDTH-1:0] evgDbufLastAddress;
+(*MARK_DEBUG=DEBUG_DBUF*) wire [DBUF_TINY_EVG_ADDR_WIDTH-1:0] evgDbufAddress;
+reg [31:0] evgRamQ;
+wire[1:0] evgDbufByteSel = evgDbufAddress[1:0];
+wire [7:0] evgDbufData = evgRamQ[evgDbufByteSel*8+:8];
+
+/* Parameterized priority encoder */
+(*MARK_DEBUG=DEBUG_DBUF*) reg [DBUF_BANK_SEL_WIDTH-1:0] evgDbufBankSel = 0;
+(*MARK_DEBUG=DEBUG_DBUF*) reg                           evgDbufBankReq = 0;
+integer dbi;
+always @(*) begin
+    evgDbufBankSel = 0;
+    evgDbufBankReq = 0;
+    for (dbi = DBUF_COUNT - 1 ; dbi >= 0 ; dbi = dbi - 1) begin
+        if (evgPending[dbi]) begin
+            evgDbufBankSel = dbi;
+            evgDbufBankReq = 1'b1;
+        end
+    end
+end
+
+always @(posedge evgClk) begin
+    evgSendToggles_m <= dbufSendToggles;
+    evgSendToggles   <= evgSendToggles_m;
+    evgDbufBusy_d <= evgDbufBusy;
+    evgRamQ <= dbufRam[evgDbufAddress[2+:DBUF_ADDR_WIDTH]];
+    if (evgDbufBusy) begin
+        evgDbufBegin <= 0;
+    end
+    else if (evgDbufBusy_d) begin
+        evgDoneToggles <= evgDoneToggles ^ evgDbufActiveBit;
+    end
+    else begin
+        if (evgDbufBankReq) begin
+            evgDbufLastAddress <= dbufLastAddresses[evgDbufBankSel];
+            evgDbufActiveBit = 1 << evgDbufBankSel;
+            evgDbufBegin <= 1;
+        end
+    end
+end
+
+/*
  * Instantiate the tiny event generator that does the real work
  */
 localparam DISTRIBUTED_BUFFER_ADDRESS_WIDTH = 10;
 tinyEVG #(
-    .DISTRIBUTED_BUFFER_ADDRESS_WIDTH(DISTRIBUTED_BUFFER_ADDRESS_WIDTH),
+    .DISTRIBUTED_BUFFER_ADDRESS_WIDTH(DBUF_TINY_EVG_ADDR_WIDTH),
+    .DEBUG_DBUF(DEBUG_DBUF),
     .DEBUG(DEBUG))
   tinyEVG_i (
     .evgTxClk(evgClk),
@@ -772,12 +876,11 @@ tinyEVG #(
     .secondsStrobe(evgSetSecondsToggle != evgSetSecondsToggle_d),
     .seconds(sysPosixSeconds),
     .distributedBus(evgDistributedBus),
-    .sysClk(1'b0),
-    .sysWriteStrobe(1'b0),
-    .sysAddress({DISTRIBUTED_BUFFER_ADDRESS_WIDTH{1'b0}}),
-    .sysData(8'h00),
-    .sysSendStrobe(1'b0),
-    .sysBusy());
+    .dbufStart(evgDbufBegin),
+    .dbufBusy(evgDbufBusy),
+    .dbufLastAddress(evgDbufLastAddress),
+    .dbufAddress(evgDbufAddress),
+    .dbufData(evgDbufData));
 
 endmodule
 

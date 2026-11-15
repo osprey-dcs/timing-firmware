@@ -2343,8 +2343,14 @@
         "xci_path": "ip/bd_ospreyEVG_0_3/bd_ospreyEVG_0_3.xci",
         "inst_hier_path": "ospreyEVG",
         "parameters": {
+          "C_S_AXI_ADDR_WIDTH": {
+            "value": "16"
+          },
           "DEBUG": {
             "value": "false"
+          },
+          "DEBUG_DBUF": {
+            "value": "true"
           },
           "EVGCLK_FREQUENCY": {
             "value": "125000000"

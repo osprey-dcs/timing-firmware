@@ -30,7 +30,7 @@
 reg ACLK = 0;
 reg ARESETn = 1;
 
-reg [11:0] ARADDR;
+reg [15:0] ARADDR;
 reg ARVALID = 0;
 wire ARREADY;
 
@@ -39,11 +39,12 @@ wire [1:0] RRESP;
 wire RVALID;
 reg RREADY = 0;
 
-reg [11:0] AWADDR;
+reg [15:0] AWADDR;
 reg AWVALID = 0;
 wire AWREADY;
 
 reg [31:0] WDATA;
+reg [3:0] WSTRB;
 reg WVALID = 0;
 wire WREADY;
 
@@ -120,6 +121,7 @@ always @(posedge ACLK) begin
     if(WVALID && WREADY) begin
         WVALID <= 0;
         WDATA <= 32'hxxxxxxxx;
+        WSTRB <= 4'bx;
     end
     // "the master can wait for BVALID before asserting BREADY"
     if(~wdone && BVALID) begin
@@ -174,13 +176,15 @@ end
 endtask
 
 // AXI4LITE write transaction
-task write;
+task writeN;
+    input [3:0] wstrb;
     input [31:0] addr, wdata;
 begin
-    $display("axi_writing 0x%x, value 0x%x", addr, wdata);
+    $display("axi_writing 0x%x[%b], value 0x%x", addr, wstrb, wdata);
 
     AWADDR <= 32'hxxxxxxxx;
     WDATA <= 32'hxxxxxxxx;
+    WSTRB <= 4'bx;
 
     @(negedge ACLK);
 
@@ -190,6 +194,7 @@ begin
     AWVALID <= 1;
 
     WDATA <= wdata;
+    WSTRB <= wstrb;
     WVALID <= 1;
 
     case(axi.proto)
@@ -207,6 +212,41 @@ begin
     end else begin
         $display("  Ok");
     end
+end
+endtask
+
+task write;
+    input [31:0] addr, wdata;
+begin
+    if(addr[1:0]!=0) begin
+        $display("Unaligned 32 write");
+        $stop();
+    end
+    writeN(4'hf, addr, wdata);
+end
+endtask
+
+task write16;
+    input [31:0] addr;
+    input [15:0] wdata;
+begin
+    if(addr[0]!=0) begin
+        $display("Unaligned 16 write");
+        $stop();
+    end
+    writeN(addr[1] ? 4'b1100 : 4'b0011,
+           addr & 32'hfffffffc,
+           addr[1] ? {wdata, 16'hx} : {16'hx, wdata});
+end
+endtask
+
+task write8;
+    input [31:0] addr;
+    input [7:0] wdata;
+begin
+    writeN(1 << addr[1:0],
+           addr & 32'hfffffffc,
+           wdata<<(8*addr[1:0]));
 end
 endtask
 

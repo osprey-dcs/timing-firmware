@@ -21,13 +21,13 @@
 // SOFTWARE.
 
 // Core of MRF-compatible event generator
-// Provides heartbeats, time stamps, arbitrary events and distributed buffer.
-// Nets with names beginning with 'sys' are in the system clock (sysClk) domain.
+// Provides heartbeats, time stamps, arbitrary events and distributed dbuf.
 
 module tinyEVG #(
     parameter DISTRIBUTED_BUFFER_ADDRESS_WIDTH = 11,
     parameter SECONDS_WIDTH                    = 32,
-    parameter DEBUG                            = "true" //FIXME
+    parameter DEBUG_DBUF                       = "false",
+    parameter DEBUG                            = "false"
     ) (
     // Connection to transmitter
     input  wire                            evgTxClk,
@@ -50,12 +50,16 @@ module tinyEVG #(
     input  wire               [7:0] distributedBus,
 
     // Distributed buffer
-    input  wire                                        sysClk,
-    input  wire                                        sysWriteStrobe,
-    input  wire [DISTRIBUTED_BUFFER_ADDRESS_WIDTH-1:0] sysAddress,
-    input  wire                                  [7:0] sysData,
-    input  wire                                        sysSendStrobe,
-    output reg                                         sysBusy = 0);
+    (*MARK_DEBUG=DEBUG_DBUF*)
+    input  wire                                        dbufStart,
+    (*MARK_DEBUG=DEBUG_DBUF*)
+    output reg                                         dbufBusy = 0,
+    (*MARK_DEBUG=DEBUG_DBUF*)
+    input  wire [DISTRIBUTED_BUFFER_ADDRESS_WIDTH-1:0] dbufLastAddress,
+    (*MARK_DEBUG=DEBUG_DBUF*)
+    output reg  [DISTRIBUTED_BUFFER_ADDRESS_WIDTH-1:0] dbufAddress,
+    (*MARK_DEBUG=DEBUG_DBUF*)
+    input  wire                                  [7:0] dbufData);
 
 /*
  * Space time-of-day events fairlyl widely so they
@@ -71,34 +75,6 @@ localparam EVCODE_K28_0          = 8'h1C;
 localparam EVCODE_K28_1          = 8'h3C;
 localparam EVCODE_K28_5          = 8'hBC;
 
-// Dual-port RAM
-reg [7:0] dpram[0:(1 << DISTRIBUTED_BUFFER_ADDRESS_WIDTH) - 1], dpramQ;
-reg sendAckToggle = 0;
-
-///////////////////////////////////////////////////////////////////////////////
-// System clock domain
-reg sysSendReqToggle = 0;
-(* ASYNC_REG = "true" *) reg sysSendAckToggle_m = 0;
-reg sysSendAckToggle = 0;
-reg [DISTRIBUTED_BUFFER_ADDRESS_WIDTH-1:0] sysFinalAddress;
-always @(posedge sysClk) begin
-    sysSendAckToggle_m <= sendAckToggle;
-    sysSendAckToggle   <= sysSendAckToggle_m;
-    if (sysBusy) begin
-        if (sysSendAckToggle == sysSendReqToggle) begin
-            sysBusy <= 0;
-        end
-    end
-    else if (sysSendStrobe) begin
-        sysFinalAddress <= sysAddress;
-        sysSendReqToggle <= !sysSendReqToggle;
-        sysBusy <= 1;
-    end
-    else if (sysWriteStrobe) begin
-        dpram[sysAddress] <= sysData;
-    end
-end
-
 ///////////////////////////////////////////////////////////////////////////////
 // Event generator clock domain
 (*MARK_DEBUG=DEBUG*) reg ppsPending = 0, haveSeconds = 0, sentSeconds = 0;
@@ -110,9 +86,6 @@ reg secondsBitCountDone_d = 1;
 wire secondsGapDone = secondsGap[SECONDS_GAP_COUNTER_WIDTH-1];
 (*MARK_DEBUG=DEBUG*) reg [2:0] commaGap = 0;
 wire commaGapDone = commaGap[2];
-(* ASYNC_REG = "true" *) reg sendReqToggle_m;
-reg sendReqToggle = 0;
-reg bufferBusy = 0;
 
 // Buffer transmission state machine
 localparam S_START  = 3'd0,
@@ -120,11 +93,8 @@ localparam S_START  = 3'd0,
            S_STOP   = 3'd2,
            S_CHK_HI = 3'd3,
            S_CHK_LO = 3'd4;
-reg [2:0] bufferState = S_START;
-reg [DISTRIBUTED_BUFFER_ADDRESS_WIDTH-1:0] bufferAddress;
-reg [DISTRIBUTED_BUFFER_ADDRESS_WIDTH:0] bufferCounter = 0;
-wire bufferCounterDone = bufferCounter[DISTRIBUTED_BUFFER_ADDRESS_WIDTH];
-reg [15:0] bufferChecksum;
+(*MARK_DEBUG=DEBUG_DBUF*) reg [2:0] dbufState = S_START;
+reg [15:0] dbufChecksum;
 
 always @(posedge evgTxClk) begin
     // Timer housekeeping
@@ -200,49 +170,42 @@ always @(posedge evgTxClk) begin
     end
 
     // Distributed data buffer
-    sendReqToggle_m <= sysSendReqToggle;
-    sendReqToggle   <= sendReqToggle_m;
-    dpramQ <= dpram[bufferAddress];
-    if (bufferBusy) begin
+    if (dbufBusy) begin
         if (commaGap[0]) begin
             evgTxWord[7:0] <= distributedBus;
             evgTxIsK[0] <= 0;
         end
         else begin
-            case (bufferState)
+            case (dbufState)
             S_START: begin
                 evgTxWord[7:0] <= EVCODE_K28_0;
                 evgTxIsK[0] <= 1;
-                bufferChecksum <= 0;
-                bufferAddress <= 0;
-                bufferState <= S_DATA;
+                dbufState <= S_DATA;
             end
             S_DATA: begin
-                evgTxWord[7:0] <= dpramQ;
+                evgTxWord[7:0] <= dbufData;
                 evgTxIsK[0] <= 0;
-                bufferChecksum <= bufferChecksum + dpramQ;
-                bufferAddress <= bufferAddress + 1;
-                bufferCounter <= bufferCounter - 1;
-                if (bufferCounterDone) begin
-                    bufferState <= S_STOP;
+                dbufChecksum <= dbufChecksum + dbufData;
+                dbufAddress <= dbufAddress + 1;
+                if (dbufAddress == dbufLastAddress) begin
+                    dbufState <= S_STOP;
                 end
             end
             S_STOP: begin
-                bufferChecksum <= ~bufferChecksum;
+                dbufChecksum <= ~dbufChecksum;
                 evgTxWord[7:0] <= EVCODE_K28_1;
                 evgTxIsK[0] <= 1;
-                bufferState <= S_CHK_HI;
+                dbufState <= S_CHK_HI;
             end
             S_CHK_HI: begin
-                evgTxWord[7:0] <= bufferChecksum[15:8];
+                evgTxWord[7:0] <= dbufChecksum[15:8];
                 evgTxIsK[0] <= 0;
-                bufferState <= S_CHK_LO;
+                dbufState <= S_CHK_LO;
             end
             S_CHK_LO: begin
-                evgTxWord[7:0] <= bufferChecksum[7:0];
+                evgTxWord[7:0] <= dbufChecksum[7:0];
                 evgTxIsK[0] <= 0;
-                bufferBusy <= 0;
-                sendAckToggle <= !sendAckToggle;
+                dbufBusy <= 0;
             end
             default: ;
             endcase
@@ -251,10 +214,11 @@ always @(posedge evgTxClk) begin
     else begin
         evgTxWord[7:0] <= distributedBus;
         evgTxIsK[0] <= 0;
-        bufferState <= S_START;
-        if (sendReqToggle != sendAckToggle) begin
-            bufferCounter <= {1'b0, sysFinalAddress} - 1;
-            bufferBusy <= 1;
+        dbufAddress <= 0;
+        dbufChecksum <= 0;
+        dbufState <= S_START;
+        if (dbufStart) begin
+            dbufBusy <= 1;
         end
     end
 end

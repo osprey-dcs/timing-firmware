@@ -20,7 +20,31 @@ proc init_gui { IPINST } {
   set RX_COUNT [ipgui::add_param $IPINST -name "RX_COUNT"]
   set_property tooltip {Number of event link fiber receivers} ${RX_COUNT}
   ipgui::add_param $IPINST -name "INPUT_COUNT"
+  set DEBUG_DBUF [ipgui::add_param $IPINST -name "DEBUG_DBUF"]
+  set_property tooltip {DEBUG DBUF parameter} ${DEBUG_DBUF}
+  set DBUF_COUNT [ipgui::add_param $IPINST -name "DBUF_COUNT"]
+  set_property tooltip {Number of distributed buffer banks} ${DBUF_COUNT}
+  set DBUF_CAPACITY [ipgui::add_param $IPINST -name "DBUF_CAPACITY"]
+  set_property tooltip {Distributed buffer capacity (per bank)} ${DBUF_CAPACITY}
 
+}
+
+proc update_PARAM_VALUE.C_S_AXI_ADDR_WIDTH { PARAM_VALUE.C_S_AXI_ADDR_WIDTH } {
+	# Procedure called to update C_S_AXI_ADDR_WIDTH when any of the dependent parameters in the arguments change
+}
+
+proc validate_PARAM_VALUE.C_S_AXI_ADDR_WIDTH { PARAM_VALUE.C_S_AXI_ADDR_WIDTH } {
+	# Procedure called to validate C_S_AXI_ADDR_WIDTH
+	return true
+}
+
+proc update_PARAM_VALUE.C_S_AXI_DATA_WIDTH { PARAM_VALUE.C_S_AXI_DATA_WIDTH } {
+	# Procedure called to update C_S_AXI_DATA_WIDTH when any of the dependent parameters in the arguments change
+}
+
+proc validate_PARAM_VALUE.C_S_AXI_DATA_WIDTH { PARAM_VALUE.C_S_AXI_DATA_WIDTH } {
+	# Procedure called to validate C_S_AXI_DATA_WIDTH
+	return true
 }
 
 proc update_PARAM_VALUE.C_S_AXI_FREQ_HZ { PARAM_VALUE.C_S_AXI_FREQ_HZ } {
@@ -32,12 +56,39 @@ proc validate_PARAM_VALUE.C_S_AXI_FREQ_HZ { PARAM_VALUE.C_S_AXI_FREQ_HZ } {
 	return true
 }
 
+proc update_PARAM_VALUE.DBUF_CAPACITY { PARAM_VALUE.DBUF_CAPACITY } {
+	# Procedure called to update DBUF_CAPACITY when any of the dependent parameters in the arguments change
+}
+
+proc validate_PARAM_VALUE.DBUF_CAPACITY { PARAM_VALUE.DBUF_CAPACITY } {
+	# Procedure called to validate DBUF_CAPACITY
+	return true
+}
+
+proc update_PARAM_VALUE.DBUF_COUNT { PARAM_VALUE.DBUF_COUNT } {
+	# Procedure called to update DBUF_COUNT when any of the dependent parameters in the arguments change
+}
+
+proc validate_PARAM_VALUE.DBUF_COUNT { PARAM_VALUE.DBUF_COUNT } {
+	# Procedure called to validate DBUF_COUNT
+	return true
+}
+
 proc update_PARAM_VALUE.DEBUG { PARAM_VALUE.DEBUG } {
 	# Procedure called to update DEBUG when any of the dependent parameters in the arguments change
 }
 
 proc validate_PARAM_VALUE.DEBUG { PARAM_VALUE.DEBUG } {
 	# Procedure called to validate DEBUG
+	return true
+}
+
+proc update_PARAM_VALUE.DEBUG_DBUF { PARAM_VALUE.DEBUG_DBUF } {
+	# Procedure called to update DEBUG_DBUF when any of the dependent parameters in the arguments change
+}
+
+proc validate_PARAM_VALUE.DEBUG_DBUF { PARAM_VALUE.DEBUG_DBUF } {
+	# Procedure called to validate DEBUG_DBUF
 	return true
 }
 
@@ -95,24 +146,6 @@ proc validate_PARAM_VALUE.TIMER_COUNT { PARAM_VALUE.TIMER_COUNT } {
 	return true
 }
 
-proc update_PARAM_VALUE.C_S_AXI_DATA_WIDTH { PARAM_VALUE.C_S_AXI_DATA_WIDTH } {
-	# Procedure called to update C_S_AXI_DATA_WIDTH when any of the dependent parameters in the arguments change
-}
-
-proc validate_PARAM_VALUE.C_S_AXI_DATA_WIDTH { PARAM_VALUE.C_S_AXI_DATA_WIDTH } {
-	# Procedure called to validate C_S_AXI_DATA_WIDTH
-	return true
-}
-
-proc update_PARAM_VALUE.C_S_AXI_ADDR_WIDTH { PARAM_VALUE.C_S_AXI_ADDR_WIDTH } {
-	# Procedure called to update C_S_AXI_ADDR_WIDTH when any of the dependent parameters in the arguments change
-}
-
-proc validate_PARAM_VALUE.C_S_AXI_ADDR_WIDTH { PARAM_VALUE.C_S_AXI_ADDR_WIDTH } {
-	# Procedure called to validate C_S_AXI_ADDR_WIDTH
-	return true
-}
-
 proc update_PARAM_VALUE.C_S_AXI_BASEADDR { PARAM_VALUE.C_S_AXI_BASEADDR } {
 	# Procedure called to update C_S_AXI_BASEADDR when any of the dependent parameters in the arguments change
 }
@@ -131,21 +164,6 @@ proc validate_PARAM_VALUE.C_S_AXI_HIGHADDR { PARAM_VALUE.C_S_AXI_HIGHADDR } {
 	return true
 }
 
-
-proc update_MODELPARAM_VALUE.C_S_AXI_DATA_WIDTH { MODELPARAM_VALUE.C_S_AXI_DATA_WIDTH PARAM_VALUE.C_S_AXI_DATA_WIDTH } {
-	# Procedure called to set VHDL generic/Verilog parameter value(s) based on TCL parameter value
-	set_property value [get_property value ${PARAM_VALUE.C_S_AXI_DATA_WIDTH}] ${MODELPARAM_VALUE.C_S_AXI_DATA_WIDTH}
-}
-
-proc update_MODELPARAM_VALUE.C_S_AXI_ADDR_WIDTH { MODELPARAM_VALUE.C_S_AXI_ADDR_WIDTH PARAM_VALUE.C_S_AXI_ADDR_WIDTH } {
-	# Procedure called to set VHDL generic/Verilog parameter value(s) based on TCL parameter value
-	set_property value [get_property value ${PARAM_VALUE.C_S_AXI_ADDR_WIDTH}] ${MODELPARAM_VALUE.C_S_AXI_ADDR_WIDTH}
-}
-
-proc update_MODELPARAM_VALUE.DEBUG { MODELPARAM_VALUE.DEBUG PARAM_VALUE.DEBUG } {
-	# Procedure called to set VHDL generic/Verilog parameter value(s) based on TCL parameter value
-	set_property value [get_property value ${PARAM_VALUE.DEBUG}] ${MODELPARAM_VALUE.DEBUG}
-}
 
 proc update_MODELPARAM_VALUE.EVGCLK_FREQUENCY { MODELPARAM_VALUE.EVGCLK_FREQUENCY PARAM_VALUE.EVGCLK_FREQUENCY } {
 	# Procedure called to set VHDL generic/Verilog parameter value(s) based on TCL parameter value
@@ -177,8 +195,23 @@ proc update_MODELPARAM_VALUE.INPUT_COUNT { MODELPARAM_VALUE.INPUT_COUNT PARAM_VA
 	set_property value [get_property value ${PARAM_VALUE.INPUT_COUNT}] ${MODELPARAM_VALUE.INPUT_COUNT}
 }
 
+proc update_MODELPARAM_VALUE.DEBUG { MODELPARAM_VALUE.DEBUG PARAM_VALUE.DEBUG } {
+	# Procedure called to set VHDL generic/Verilog parameter value(s) based on TCL parameter value
+	set_property value [get_property value ${PARAM_VALUE.DEBUG}] ${MODELPARAM_VALUE.DEBUG}
+}
+
 proc update_MODELPARAM_VALUE.C_S_AXI_FREQ_HZ { MODELPARAM_VALUE.C_S_AXI_FREQ_HZ PARAM_VALUE.C_S_AXI_FREQ_HZ } {
 	# Procedure called to set VHDL generic/Verilog parameter value(s) based on TCL parameter value
 	set_property value [get_property value ${PARAM_VALUE.C_S_AXI_FREQ_HZ}] ${MODELPARAM_VALUE.C_S_AXI_FREQ_HZ}
+}
+
+proc update_MODELPARAM_VALUE.C_S_AXI_ADDR_WIDTH { MODELPARAM_VALUE.C_S_AXI_ADDR_WIDTH PARAM_VALUE.C_S_AXI_ADDR_WIDTH } {
+	# Procedure called to set VHDL generic/Verilog parameter value(s) based on TCL parameter value
+	set_property value [get_property value ${PARAM_VALUE.C_S_AXI_ADDR_WIDTH}] ${MODELPARAM_VALUE.C_S_AXI_ADDR_WIDTH}
+}
+
+proc update_MODELPARAM_VALUE.C_S_AXI_DATA_WIDTH { MODELPARAM_VALUE.C_S_AXI_DATA_WIDTH PARAM_VALUE.C_S_AXI_DATA_WIDTH } {
+	# Procedure called to set VHDL generic/Verilog parameter value(s) based on TCL parameter value
+	set_property value [get_property value ${PARAM_VALUE.C_S_AXI_DATA_WIDTH}] ${MODELPARAM_VALUE.C_S_AXI_DATA_WIDTH}
 }
 

@@ -62,6 +62,11 @@
 #define OSPREY_EVG_STATUS_PPS_VALID             0x1
 
 // REG_IDX_CONFIG
+// FIXME
+#define OSPREY_EVG_CONFIG_DBUF_ADDR_WIDTH_MASK  0xF0000000
+#define OSPREY_EVG_CONFIG_DBUF_ADDR_WIDTH_SHIFT 28
+#define OSPREY_EVG_CONFIG_DBUF_COUNT_MASK       0xF000000
+#define OSPREY_EVG_CONFIG_DBUF_COUNT_SHIFT      24
 #define OSPREY_EVG_CONFIG_RX_COUNT_MASK         0xF00000
 #define OSPREY_EVG_CONFIG_RX_COUNT_SHIFT        20
 #define OSPREY_EVG_CONFIG_SEQ_ADDR_WIDTH_MASK   0x0F0000
@@ -86,6 +91,8 @@ typedef struct {
     uint8_t bankCount;      //!< XPAR_OSPREYEVG_SEQRAM_BANK_COUNT
     uint8_t seqAddrWidth;   //!< XPAR_OSPREYEVG_SEQRAM_ADDR_WIDTH
     uint8_t rxCount;        //!< XPAR_OSPREYEVG_RX_COUNT
+    uint8_t dbufCount;      //!< XPAR_OSPREYEVG_DBUF_COUNT
+    uint8_t dbufAddrWidth;  //!< XPAR_OSPREYEVG_DBUF_ADDRWIDTH
 } evgConfigInfo;
 
 
@@ -219,6 +226,32 @@ int ospreyEVGSequencerReadback(int bank, int address, uint32_t *delay);
  * so one count of the returned value corresponds to a latency of 100 ps.
  */
 int ospreyEVGLatencyReadback(int rxIndex);
+
+/** Fetch pointer to Distributed Buffer memory
+ *
+ * @param dbufIndex 0 through OSPREY_EVG_DBUF_COUNT-1
+ *
+ * Return value is pointer to base of specified distributed buffer or NULL if
+ * dbufIndex is out of range.
+ */
+volatile void *ospreyEVGDbuf(int dbufIndex);
+
+/** Return number of distributed buffer banks
+ */
+int ospreyEVGDbufCount(void);
+
+/** Return distributed buffer capacity
+ */
+int ospreyEVGDbufCapacity(void);
+
+/** Start Distributed Buffer transmission
+ *
+ * @param dbufIndex 0 through DBUF_COUNT-1
+ * @param size 1 through (1 << DBUF_ADDR_WIDTH)
+ *
+ * Return value 0/-1 success/failure
+ */
+int ospreyEVGDbufSend(int dbufIndex, int size);
 
 int ospreyEVG_FEEDwrite(int offset, uint32_t value);
 uint32_t ospreyEVG_FEEDread(int offset);

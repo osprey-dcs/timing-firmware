@@ -20,10 +20,11 @@ ospreyEVG_v1_0 #(
     .INPUT_COUNT(16),
     .TIMER_COUNT(2),
     .RX_COUNT(1),
-    .HW_TRIGGER_COUNT(16),
     .SEQRAM_BANK_COUNT(2),
     .SEQRAM_ADDR_WIDTH(11),
-    .C_S_AXI_ADDR_WIDTH(12)
+    .DBUF_COUNT(1),
+    .DBUF_CAPACITY(2048),
+    .C_S_AXI_ADDR_WIDTH(16)
 ) evg (
     .evgClk(evgClk),
     .ppsMarker_a(ppsMarker_a),
@@ -52,7 +53,7 @@ ospreyEVG_v1_0 #(
     .s_axi_awaddr(AWADDR),
     .s_axi_wvalid(WVALID),
     .s_axi_wready(WREADY),
-    .s_axi_wstrb(4'hx),
+    .s_axi_wstrb(WSTRB),
     .s_axi_wdata(WDATA),
     .s_axi_bvalid(BVALID),
     .s_axi_bready(BREADY),
@@ -98,6 +99,8 @@ initial begin
     test_seq();
     start_case("test_seq_timer");
     test_seq_timer();
+    start_case("test_dbuf");
+    test_dbuf();
 
 `ifdef __ICARUS__
     #10
@@ -116,7 +119,15 @@ endtask
 
 task test_config;
 begin
-    axi.read(evg.REG_IDX_CONFIG*4, 32'ha01B2210);
+    axi.read(evg.REG_IDX_CONFIG*4, {
+        4'd9,  // DBUF_ADDR_WIDTH
+        4'd1,  // DBUF_COUNT
+        4'd1,  // RX_COUNT
+        4'd11, // SEQRAM_ADDR_WIDTH
+        4'd2,  // SEQRAM_BANK_COUNT
+        4'd2,  // TIMER_COUNT
+        8'd16  // INPUT_COUNT
+    });
     axi.read(evg.REG_IDX_CSR*4, 32'h00000001);
 end
 endtask
@@ -368,16 +379,128 @@ begin
 end
 endtask
 
+reg [7:0] dbuf [0:15];
+reg dbufDone = 0;
+integer dbufIdx;
+
+task test_dbuf;
+begin
+    $display("# TX 1");
+    axi.write(16'h8000, 32'h04030201); // LSBF
+    axi. read(16'h8000, 32'h04030201);
+    axi. read(16'h8001, 32'h04030201);
+    axi. read(16'h8002, 32'h04030201);
+    axi. read(16'h8003, 32'h04030201);
+    //axi.write(16'h8004, 32'h08070605);
+    axi.write16(16'h8004, 16'h0605);
+    axi.write8 (16'h8006, 8'h07);
+    axi.write8 (16'h8007, 8'h08);
+    axi.read (16'h8004, 32'h08070605);
+    axi.read (16'h8006, 32'h08070605);
+    axi.write(4 * evg.REG_IDX_DBUF, {16'd0, 16'd5}); // send 6 bytes
+    axi.read (4 * evg.REG_IDX_DBUF, 32'h1);
+    while(!dbufDone)
+        @(posedge evgClk);
+    repeat(8) @(posedge evgClk);
+    axi.read (4 * evg.REG_IDX_DBUF, 32'h0);
+    `assert_eq(dbufIdx, 6);
+    `assert_eq(dbuf[0], 8'h01);
+    `assert_eq(dbuf[1], 8'h02);
+    `assert_eq(dbuf[2], 8'h03);
+    `assert_eq(dbuf[3], 8'h04);
+    `assert_eq(dbuf[4], 8'h05);
+    `assert_eq(dbuf[5], 8'h06);
+    `assert_eq(dbuf[6], 8'hxx);
+    dbufDone <= 0;
+
+    $display("# TX 2");
+    axi.write8 (16'h8000, 8'hde);
+    axi.write8 (16'h8001, 8'had);
+    axi.write16(16'h8002, 16'hefbe);
+    axi.write(4 * evg.REG_IDX_DBUF, {16'd0, 16'd3}); // send 4 bytes
+    axi.read (4 * evg.REG_IDX_DBUF, 32'h1);
+    while(!dbufDone)
+        @(posedge evgClk);
+    repeat(8) @(posedge evgClk);
+    axi.read (4 * evg.REG_IDX_DBUF, 32'h0);
+    `assert_eq(dbufIdx, 4);
+    `assert_eq(dbuf[0], 8'hde);
+    `assert_eq(dbuf[1], 8'had);
+    `assert_eq(dbuf[2], 8'hbe);
+    `assert_eq(dbuf[3], 8'hef);
+end
+endtask
+
+wire [8:0] curEvt = {
+    evg.tinyEVG_i.evgTxIsK[1],
+    evg.tinyEVG_i.evgTxWord[15:8]
+};
+wire [8:0] curBus = {
+    evg.tinyEVG_i.evgTxIsK[0],
+    evg.tinyEVG_i.evgTxWord[7:0]
+};
+
+reg evtPhase;
+
 reg [8:0] evtLog [0:15];
 reg [3:0] evtLogIn = 0;
 reg [3:0] evtLogOut = 0;
 
-always @(posedge evgClk)
-    if(evg.eventRequest) begin
-        $display("# Rx event 0x%02x", evg.eventCode);
-        evtLogIn <= evtLogIn+1;
-        evtLog[evtLogIn] = {1'b1, evg.eventCode};
+reg [15:0] dbufSum;
+localparam [1:0] DBUF_IDLE = 0, // wait for K28.0
+                 DBUF_RX = 1, // wait for K28.1
+                 DBUF_CHKH = 2, // wait for checksum high
+                 DBUF_CHKL = 3; // ... low
+reg [1:0] dbufState = DBUF_IDLE;
+
+always @(posedge evgClk) begin
+    evtPhase <= ~evtPhase;
+    if(curEvt==9'h1bc) begin
+        evtPhase <= 1;
     end
+    if(!curEvt[8] && curEvt[7:0]!=0) begin
+        $display("# Rx event 0x%02x", curEvt[7:0]);
+        evtLogIn <= evtLogIn+1;
+        evtLog[evtLogIn] = {1'b1, curEvt[7:0]};
+    end
+    if(evtPhase==1)
+        case(dbufState)
+        DBUF_IDLE: if(curBus==9'h11c) begin
+            $display("# DBUF start");
+            dbufState <= DBUF_RX;
+            dbufIdx <= 0;
+            dbufSum <= 0;
+            dbufDone <= 0;
+        end
+        DBUF_RX: begin
+            if(curBus==9'h13c) begin
+                $display("# DBUF received %d bytes", dbufIdx);
+                dbufState <= DBUF_CHKH;
+                dbufSum <= ~dbufSum;
+            end else if(!curBus[8]) begin
+                $display("# DBUF[%d] = 0x%02x", dbufIdx, curBus[7:0]);
+                dbuf[dbufIdx] <= curBus[7:0];
+                dbufIdx <= dbufIdx + 1;
+                dbufSum <= dbufSum + {8'h0, curBus[7:0]};
+            end else begin
+                $display("not ok - Extra K during dbuf?");
+                $stop();
+            end
+        end
+        DBUF_CHKH: begin
+            $display("# DBUF sumH");
+            `assert_eq(curBus, {1'b0, dbufSum[15:8]});
+            dbufState <= DBUF_CHKL;
+        end
+        DBUF_CHKL: begin
+            $display("# DBUF sumL");
+            `assert_eq(curBus, {1'b0, dbufSum[7:0]});
+            dbufState <= DBUF_IDLE;
+            dbufDone <= 1;
+            $display("# Dbuf success");
+        end
+        endcase
+end
 
 task resetEventLog;
 begin
