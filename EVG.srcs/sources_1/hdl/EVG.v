@@ -324,11 +324,26 @@ sysClkCounters #(.CLK_RATE(CFG_SYSCLK_RATE), .DEBUG("false"))
 wire [15:0] evgHwInputs;
 wire isEVG = GPIO_IN[GPIO_IDX_IO_SELECT][0];
 
+wire evrClk;
 wire [15:0] fmcOutputs;
 generate
     for(i=0; i<16; i=i+1) begin : fmcOutN
+        wire trig;
+        ODDR #(
+            .DDR_CLK_EDGE("SAME_EDGE"),
+            .INIT(0),
+            .SRTYPE("SYNC")
+        ) ddrN(
+            .C(evrClk),
+            .CE(1'b1),
+            .D1(fmcOutputs[i]),
+            .D2(fmcOutputs[i]),
+            .S(1'b0),
+            .R(1'b0),
+            .Q(trig)
+        );
         OBUFTDS outN (
-            .I(fmcOutputs[i]),
+            .I(trig),
             .T(!sysFMCisPresent[2]), // 1 - tri-state
             .O(FMC2_D_Output_P[i]),
             .OB(FMC2_D_Output_N[i])
@@ -455,6 +470,7 @@ wire  [(CFG_MGT_COUNT*MGT_DATA_WIDTH)-1:0] mgtRxChars;
 wire [(CFG_MGT_COUNT*MGT_CTYPE_WIDTH)-1:0] mgtRxCharIsK;
 wire            [CFG_MPS_OUTPUT_COUNT-1:0] mgtTxMPStripped;
 
+assign evrClk = mgtRxClks[0];
 assign clkFMC2Recovered[0] = mgtRxClks[0];
 assign clkFMC2Recovered[1] = mgtRxClks[0];
 
@@ -636,7 +652,7 @@ bd bd_i (
     .ppsMarker_a(evgPPSmarker),
     .evgHwInputs_a(evgHwInputs),
 
-    .evrClk(mgtRxClks[0]),
+    .evrClk(evrClk),
     .evrRxChars(mgtRxChars[MGT_DATA_WIDTH-1:0]),
     .evrRxCharIsK(mgtRxChars[MGT_CTYPE_WIDTH-1:0]),
     .evrPPSmarker(evrPPSmarker),
