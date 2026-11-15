@@ -2324,7 +2324,7 @@
         "inst_hier_path": "ospreyEVR",
         "parameters": {
           "ACTIVE_LOW_OUTPUTS": {
-            "value": "true"
+            "value": "false"
           },
           "DEBUG": {
             "value": "false"

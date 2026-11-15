@@ -73,9 +73,10 @@ end
 
 endgenerate
 
-assign fmcOutputs[7:0]  =  sysFMC2isPresent ? evrHwOutputs      : 0;
-assign fmcOutputs[15:8] =  sysFMC2isPresent ? evrHwOutputs      : 0; // TODO: unmirror
-assign pmodOutputs      = !sysFMC2isPresent ? evrHwOutputs      : 0;
+assign fmcOutputs[7:0]  =  sysFMC2isPresent ?  evrHwOutputs      : 0;
+assign fmcOutputs[15:8] =  sysFMC2isPresent ?  evrHwOutputs      : 0; // TODO: unmirror
+// invert PMOD outputs
+assign pmodOutputs      = !sysFMC2isPresent ? ~evrHwOutputs      : 0;
 
 endmodule
 `default_nettype wire
