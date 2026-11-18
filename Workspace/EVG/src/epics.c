@@ -70,6 +70,7 @@ struct LEEPpacket {
 };
 
 #define REG_POWERUP_STATE                   10
+#define REG_LOOP_COUNT                      11
 #define REG_FIRMWARE_BUILD_DATE             20
 #define REG_SOFTWARE_BUILD_DATE             21
 #define REG_FPGA_REBOOT                     30
@@ -114,6 +115,7 @@ struct LEEPpacket {
 
 static int powerUpFlag = 1;
 static int mgtClkSwitch0 = -1; // spoil
+static uint32_t loopCount;
 
 void
 setMgtClkSwitch0(int inputClkIndex)
@@ -224,6 +226,7 @@ readReg(int address)
     }
     switch(address) {
     case REG_POWERUP_STATE:       return powerUpFlag;
+    case REG_LOOP_COUNT:          return loopCount;
     case REG_FIRMWARE_BUILD_DATE: return GPIO_READ(GPIO_IDX_FIRMWARE_DATE);
     case REG_SOFTWARE_BUILD_DATE: return SOFTWARE_BUILD_DATE;
     case REG_SECONDS_SINCE_BOOT:  return GPIO_READ(GPIO_IDX_SECONDS_SINCE_BOOT);
@@ -365,4 +368,9 @@ epicsInit(void)
     if (ospreyUDPregisterEndpoint(LEEP_UDP_PORT, epicsHandler) == NULL) {
         printf("Can't register EPICS I/O UDP endpoint!\n");
     }
+}
+
+void epicsCrank()
+{
+    loopCount++;
 }

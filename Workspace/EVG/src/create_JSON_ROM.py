@@ -18,6 +18,13 @@ def base_build():
           "data_width": 1,
           "sign": "unsigned"
         },
+        "FPGA:loops": {
+          "access": "r",
+          "addr_width": 0,
+          "base_addr": 11,
+          "data_width": 32,
+          "sign": "unsigned"
+        },
         "firmwareBuildDate": {
           "access": "r",
           "addr_width": 0,

@@ -92,6 +92,7 @@ main(void)
     ospreyEVRInit(XPAR_OSPREYEVR_S_AXI_BASEADDR);
     printf("Boot complete @%u\n", (unsigned)microsecondsSinceBoot());
     for (;;) {
+        epicsCrank();
         clockAdjustScan();
         mgtCrank();
         consoleCrank();

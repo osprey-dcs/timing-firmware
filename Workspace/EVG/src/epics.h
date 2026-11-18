@@ -30,6 +30,7 @@
 #define _EPICS_H_
 
 void epicsInit(void);
+void epicsCrank(void);
 void setMgtClkSwitch0(int inputClkIndex);
 
 #endif /* _EPICS_H_ */
