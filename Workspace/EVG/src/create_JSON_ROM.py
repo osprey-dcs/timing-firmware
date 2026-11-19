@@ -557,7 +557,7 @@ def evt_merge():
     ))
     R.update(ospreyEVR.ospreyEVR_build(
         EVR_REG_BASE=1100000,
-        hwOutputCount=8,
+        hwOutputCount=24,
     ))
     R["__metadata__"]["si570Ref"] = 270 # MHz for 570NBB001808DGR on Marble 1.4.x
     return R

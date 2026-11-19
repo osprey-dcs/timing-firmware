@@ -179,8 +179,6 @@ assign FMC1_DI_ENb = sysFMCisPresent[1] ? 1'b0 : 1'bz;
  * FMC P2 - N/C
  */
 
-parameter TRIG_OUTPUT_COUNT = 8;
-wire [TRIG_OUTPUT_COUNT-1:0] trigOut;
 wire [7:0] pmodOut;
 
 assign PMOD2_7 = pmodOut[7]; // J13 OUT4
@@ -351,17 +349,19 @@ generate
     end
 endgenerate
 
+parameter TRIG_OUTPUT_COUNT = 24;
+wire [TRIG_OUTPUT_COUNT-1:0] trigOut;
+assign pmodOut = ~trigOut[0+:8]; // invert PMOD
+assign fmcOutputs = trigOut[8+:16];
+
 ioSelect #(.DEBUG("false"))
   ioSelect (
     .sysClk(sysClk),
     .sysCsrStrobe(GPIO_STROBES[GPIO_IDX_IO_SELECT]),
     .sysGPIO_OUT(GPIO_OUT),
     .sysStatus(GPIO_IN[GPIO_IDX_IO_SELECT]),
-    .evrHwOutputs(trigOut),
-    .pmodOutputs(pmodOut),
     .sysFMC1isPresent(sysFMCisPresent[1]),
     .sysFMC2isPresent(sysFMCisPresent[2]),
-    .fmcOutputs(fmcOutputs),
     .evgHwInputs(evgHwInputs),
     .fmcInputs(fmcIn),
     .pmodInputs(pmodIn));

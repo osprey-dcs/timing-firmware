@@ -38,6 +38,7 @@
 #include "mmcMailbox.h"
 #include "ospreyRFIN.h"
 #include "ospreyTRGOUT.h"
+#include "ospreyEVR.h"
 #include "platform.h"
 #include "softwareBuildDate.h"
 #include "si570.h"
@@ -45,6 +46,27 @@
 #include "tftp.h"
 #include "util.h"
 #include "xadc.h"
+
+static
+void outputRavel(void)
+{
+    /* Physical output order
+     *  0-3 - PMOD J12 OUT1-4
+     *  4-7 - PMOD J13 OUT1-4
+     * 8-23 - FMC2 OUT1-16
+     *
+     * default output mapping is direct I -> I
+     */
+    if(ioSelectStatus() & IOSELECT_STATUS_FMC2_IS_PRESENT) {
+        printf("FMC2 output ravel\n");
+        unsigned logical = 0;
+        // remap FMC as 0-15, PMODs as 16-23
+        for(unsigned fmc=0; fmc<16; fmc++)
+            ospreyEVRRemapOutput(logical++, fmc+8);
+        for(unsigned pmod=0; pmod<8; pmod++)
+            ospreyEVRRemapOutput(logical++, pmod);
+    }
+}
 
 int
 main(void)
@@ -74,6 +96,7 @@ main(void)
     epicsInit();
     ospreyEVGInit(XPAR_OSPREYEVG_S_AXI_BASEADDR);
     ospreyEVRInit(XPAR_OSPREYEVR_S_AXI_BASEADDR);
+    outputRavel();
     printf("Boot complete @%u\n", (unsigned)microsecondsSinceBoot());
     for (;;) {
         epicsCrank();

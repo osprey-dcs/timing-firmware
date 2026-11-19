@@ -1,7 +1,7 @@
 {
   "design": {
     "design_info": {
-      "boundary_crc": "0x6C41CDD6E15AE3B1",
+      "boundary_crc": "0x4C7C35B54449B188",
       "device": "xc7k160tffg676-2",
       "gen_directory": "../../../../EVG.gen/sources_1/bd/bd",
       "name": "bd",
@@ -46,10 +46,10 @@
       "ospreyUDP": "",
       "latencyMMCM": "",
       "evrMMCM": "",
-      "ospreyEVR": "",
       "ospreyEVG": "",
       "jtrSeq2": "",
-      "jtrSeq1": ""
+      "jtrSeq1": "",
+      "ospreyEVR": ""
     },
     "interface_ports": {
       "DDR_REF": {
@@ -469,7 +469,7 @@
       },
       "evrHwDriverIn": {
         "direction": "I",
-        "left": "7",
+        "left": "23",
         "right": "0"
       },
       "evrPPSmarker": {
@@ -477,7 +477,7 @@
       },
       "evrHardwareOutputs": {
         "direction": "O",
-        "left": "7",
+        "left": "23",
         "right": "0"
       },
       "evrTimestamp": {
@@ -2317,26 +2317,6 @@
           }
         }
       },
-      "ospreyEVR": {
-        "vlnv": "ospreydcs.com:osprey:ospreyEVR:2.2",
-        "xci_name": "bd_ospreyEVR_0_0",
-        "xci_path": "ip/bd_ospreyEVR_0_0/bd_ospreyEVR_0_0.xci",
-        "inst_hier_path": "ospreyEVR",
-        "parameters": {
-          "ACTIVE_LOW_OUTPUTS": {
-            "value": "false"
-          },
-          "DEBUG": {
-            "value": "false"
-          },
-          "HARDWARE_OUTPUT_COUNT": {
-            "value": "8"
-          },
-          "SERDES_FACTOR": {
-            "value": "1"
-          }
-        }
-      },
       "ospreyEVG": {
         "vlnv": "ospreydcs.com:user:ospreyEVG:1.0",
         "xci_name": "bd_ospreyEVG_0_3",
@@ -2961,6 +2941,29 @@
             }
           }
         }
+      },
+      "ospreyEVR": {
+        "vlnv": "ospreydcs.com:osprey:ospreyEVR:2.2",
+        "xci_name": "bd_ospreyEVR_0_0",
+        "xci_path": "ip/bd_ospreyEVR_0_0/bd_ospreyEVR_0_0.xci",
+        "inst_hier_path": "ospreyEVR",
+        "parameters": {
+          "ACTION_STROBES_WIDTH": {
+            "value": "24"
+          },
+          "ACTIVE_LOW_OUTPUTS": {
+            "value": "false"
+          },
+          "DEBUG": {
+            "value": "false"
+          },
+          "HARDWARE_OUTPUT_COUNT": {
+            "value": "24"
+          },
+          "SERDES_FACTOR": {
+            "value": "1"
+          }
+        }
       }
     },
     "interface_nets": {
@@ -3337,12 +3340,12 @@
           "hwicap/s_axi_aclk",
           "hwicap/icap_clk",
           "ospreyUDP/s_axi_lite_aclk",
-          "ospreyEVR/s_axi_aclk",
           "ospreyEVG/s_axi_aclk",
           "microblaze_0_axi_periph/M09_ACLK",
           "microblaze_0_axi_periph/M10_ACLK",
           "jtrSeq2/S_AXI_ACLK",
-          "jtrSeq1/S_AXI_ACLK"
+          "jtrSeq1/S_AXI_ACLK",
+          "ospreyEVR/s_axi_aclk"
         ]
       },
       "ospreyEVG_0_evgTxCharIsK": {
@@ -3462,12 +3465,12 @@
           "microblaze_0_axi_periph/M08_ARESETN",
           "hwicap/s_axi_aresetn",
           "ospreyUDP/s_axi_lite_aresetn",
-          "ospreyEVR/s_axi_aresetn",
           "ospreyEVG/s_axi_aresetn",
           "microblaze_0_axi_periph/M09_ARESETN",
           "microblaze_0_axi_periph/M10_ARESETN",
           "jtrSeq2/S_AXI_ARESETN",
-          "jtrSeq1/S_AXI_ARESETN"
+          "jtrSeq1/S_AXI_ARESETN",
+          "ospreyEVR/s_axi_aresetn"
         ]
       },
       "spi_miso_0_1": {

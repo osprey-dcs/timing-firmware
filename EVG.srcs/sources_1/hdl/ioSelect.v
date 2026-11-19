@@ -37,9 +37,6 @@ module ioSelect #(
     input  wire [31:0] sysGPIO_OUT,
     output wire [31:0] sysStatus,
 
-    input  wire [7:0]  evrHwOutputs, // TODO: expose 8-16!
-    output wire [7:0]  pmodOutputs,
-    output wire [15:0] fmcOutputs,
     output reg         sysFMC1isPresent = 0,
     output reg         sysFMC2isPresent = 0,
 
@@ -72,11 +69,6 @@ for (i = 0 ; i < EVG_HW_INPUT_COUNT ; i = i + 1) begin : evgHwIn
 end
 
 endgenerate
-
-assign fmcOutputs[7:0]  =  sysFMC2isPresent ?  evrHwOutputs      : 0;
-assign fmcOutputs[15:8] =  sysFMC2isPresent ?  evrHwOutputs      : 0; // TODO: unmirror
-// invert PMOD outputs
-assign pmodOutputs      = !sysFMC2isPresent ? ~evrHwOutputs      : 0;
 
 endmodule
 `default_nettype wire
