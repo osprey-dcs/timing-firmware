@@ -32,7 +32,8 @@ import json
 def ospreyEVR_build(EVR_REG_BASE=1100000, hwOutputCount=8):
     R = {
         "__metadata__": {
-            "evrActionWidth": 18,
+            # one bit per Pulse action, 2 extra for (unused) IRQ and FIFO input
+            "evrActionWidth": hwOutputCount+2,
         },
         "EVR:status": {
             "access": "r",
@@ -48,11 +49,18 @@ def ospreyEVR_build(EVR_REG_BASE=1100000, hwOutputCount=8):
             "data_width": 32,
             "sign": "unsigned",
         },
+        "EVR:nout": {
+            "access": "r",
+            "addr_width": 0,
+            "base_addr": EVR_REG_BASE+3,
+            "data_width": 32,
+            "sign": "unsigned",
+        },
         "EVR:evnt:map": {
             "access": "rw",
             "addr_width": 8, # 256
             "base_addr": EVR_REG_BASE+100,
-            "data_width": 18,
+            "data_width": hwOutputCount+2,
             "sign": "unsigned",
         },
     }
@@ -66,7 +74,7 @@ def ospreyEVR_build(EVR_REG_BASE=1100000, hwOutputCount=8):
             "sign": "unsigned",
         }
 
-    for addr, idx in enumerate(range(1, hwOutputCount+1), EVR_REG_BASE+420):
+    for addr, idx in enumerate(range(1, hwOutputCount+1), EVR_REG_BASE+432):
         R[f"EVR:pls{idx}:delay"] = {
             "access": "rw",
             "addr_width": 0,
@@ -74,8 +82,15 @@ def ospreyEVR_build(EVR_REG_BASE=1100000, hwOutputCount=8):
             "data_width": 32,
             "sign": "unsigned",
         }
+        R[f"EVR:pls{idx}:mult"] = {
+            "access": "r",
+            "addr_width": 0,
+            "base_addr": EVR_REG_BASE+4, # TODO: allow per output
+            "data_width": 32,
+            "sign": "unsigned",
+        },
 
-    for addr, idx in enumerate(range(1, hwOutputCount+1), EVR_REG_BASE+440):
+    for addr, idx in enumerate(range(1, hwOutputCount+1), EVR_REG_BASE+464):
         R[f"EVR:pls{idx}:width"] = {
             "access": "rw",
             "addr_width": 0,

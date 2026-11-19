@@ -26,12 +26,14 @@
  * Basic MRF-compatible event receiver
  * Assume only one per processor
  */
-#include <stdio.h>
 #include <stdint.h>
 #include <xil_io.h>
+#include <xil_printf.h>
 #include "ospreyEVR.h"
 
-#define MAX_OUTPUTS 16
+#define printf xil_printf
+
+#define MAX_OUTPUTS 24
 
 // when reading see: OSPREY_EVR_STATUS_*
 // when writing see: OSPREY_EVR_CONTROL_*
@@ -135,10 +137,15 @@ ospreyEVRInit(uint32_t baseAddress)
     status = ospreyEVRStatus();
     outputCount = (status & OSPREY_EVR_STATUS_OUTPUT_COUNT_MASK) >>
                                            OSPREY_EVR_STATUS_OUTPUT_COUNT_SHIFT;
-    if ((outputCount < 2) || (outputCount > MAX_OUTPUTS)) return -2;
+    if ((outputCount < 2) || (outputCount > MAX_OUTPUTS)) {
+        printf("ERROR: %s invalid outputCount %d\n", __func__, MAX_OUTPUTS);
+        return -2;
+    }
     evrInfo.outputCount = outputCount;
     evrInfo.serdesFactor = (status & OSPREY_EVR_STATUS_SERDES_FACTOR_MASK) >>
                                           OSPREY_EVR_STATUS_SERDES_FACTOR_SHIFT;
+    printf("%s(0x%08x, #out=%u, serdes=%u)\n", __func__, (unsigned)baseAddress,
+           evrInfo.outputCount, evrInfo.serdesFactor);
     return 0;
 }
 
@@ -265,42 +272,56 @@ ospreyEVRGetFifoEvent(uint32_t *seconds, uint32_t *ticks)
 /*
  * FEED I/O support
  */
-#define REG_STATUS                      0
-#define REG_NOW                         1
+#define F_REG_STATUS                      0
+#define F_REG_NOW                         1
 // ... 2
-#define REG_ACTIONS_BASE              100
-#define REG_OUTPUT_SELECT_BASE        400
-#define REG_PULSE_DELAY_BASE          420
-#define REG_PULSE_WIDTH_BASE          440
+#define F_REG_NOUTPUT                     3
+#define F_REG_RES_MULT                    4
+#define F_REG_ACTIONS_BASE              100
+#  define ACTIONS_SIZE 256
+#define F_REG_OUTPUT_SELECT_BASE        400
+#  define OUTPUT_SELECT_SIZE MAX_OUTPUTS
+#define F_REG_PULSE_DELAY_BASE          432
+#  define PULSE_DELAY_SIZE MAX_OUTPUTS
+#define F_REG_PULSE_WIDTH_BASE          464
+#  define PULSE_WIDTH_SIZE MAX_OUTPUTS
 
+// feed register size must be a power of 2.
+// event fifo has 3 words per entry.  So one word left unused.
 // (1<<8) == 3*85 + 1
-#define REG_EVNT_LOG                  500
+#define F_REG_EVNT_LOG_JUNK           500
+#define F_REG_EVNT_LOG_BASE           501
+#  define EVNT_LOG_SIZE (3*85)
 // ... 756
+
+#define RRANGE(REG) (F_REG_ ## REG ## _BASE) ... (F_REG_ ## REG ## _BASE + REG ## _SIZE - 1): \
+    idx = offset - F_REG_ ## REG ## _BASE;
+
 
 int
 ospreyEVR_FEEDwrite(int offset, uint32_t value)
 {
     int idx;
     if (!evrInfo.baseAddr) return -1;
-    idx = offset - REG_ACTIONS_BASE;
-    if ((idx > 0) && (idx < 255)) {
+    switch(offset) {
+    case RRANGE(ACTIONS) {
         ospreyEVRSetEventAction(idx, value);
         return 0;
     }
-    idx = offset - REG_OUTPUT_SELECT_BASE;
-    if ((idx >= 0) && (idx < evrInfo.outputCount)) {
+    case RRANGE(OUTPUT_SELECT) {
         ospreyEVRSelectOutputSource(idx, value);
         return 0;
     }
-    idx = offset - REG_PULSE_DELAY_BASE;
-    if ((idx >= 0) && (idx < evrInfo.outputCount)) {
+    case RRANGE(PULSE_DELAY) {
         ospreyEVRSetPulseDelay(idx, value);
         return 0;
     }
-    idx = offset - REG_PULSE_WIDTH_BASE;
-    if ((idx >= 0) && (idx < evrInfo.outputCount)) {
+    case RRANGE(PULSE_WIDTH) {
         ospreyEVRSetPulseWidth(idx, value);
         return 0;
+    }
+    case OSPREYEVR_FEED_LIMIT...0xffff: // cause compiler error on overlap
+        break;
     }
     return -1;
 }
@@ -312,48 +333,48 @@ ospreyEVR_FEEDread(int offset)
     static uint32_t now_nsec;
     static uint32_t log_sec, log_nsec;
 
+    int idx;
     switch(offset) {
-    case REG_STATUS:       return ospreyEVRStatus();
-    case REG_NOW: {
+    case F_REG_STATUS:       return ospreyEVRStatus();
+    case F_REG_NOW: {
         uint32_t sec=now_nsec=0;
         (void)ospreyEVRGetTime(&sec, &now_nsec);
         return sec;
     }
-    case REG_NOW+1:
+    case F_REG_NOW+1:
         return now_nsec;
-    case REG_EVNT_LOG:
+    case F_REG_NOUTPUT:
+        return (ospreyEVRStatus() & OSPREY_EVR_STATUS_OUTPUT_COUNT_MASK) >> OSPREY_EVR_STATUS_OUTPUT_COUNT_SHIFT;
+    case F_REG_RES_MULT:
+        return (ospreyEVRStatus() & OSPREY_EVR_STATUS_SERDES_FACTOR_MASK) >> OSPREY_EVR_STATUS_SERDES_FACTOR_SHIFT;
+    case F_REG_EVNT_LOG_JUNK:
         return 0xdeadbeef;
-    }
-
-    int idx;
-    idx = offset - REG_EVNT_LOG;
-    if ((idx > 0) && (idx < 256)) {
+    case RRANGE(EVNT_LOG) {
         switch(idx%3u) {
-        case 1:
-            return ospreyEVRGetFifoEvent(&log_sec, &log_nsec);
-        case 2:
-            return log_sec;
         case 0:
+            return ospreyEVRGetFifoEvent(&log_sec, &log_nsec);
+        case 1:
+            return log_sec;
+        case 2:
             return log_nsec;
         }
-        return 0;
+        return 0xdeadbeef;
     }
-    idx = offset - REG_ACTIONS_BASE;
-    if ((idx > 0) && (idx < 255)) {
+    case RRANGE(ACTIONS) {
         Xil_Out32(evrInfo.baseAddr + REG_OFFSET_ACTION, idx);
         return Xil_In32(evrInfo.baseAddr + REG_OFFSET_ACTION);
     }
-    idx = offset - REG_OUTPUT_SELECT_BASE;
-    if ((idx >= 0) && (idx < evrInfo.outputCount)) {
+    case RRANGE(OUTPUT_SELECT) {
         return evrInfo.source[idx];
     }
-    idx = offset - REG_PULSE_DELAY_BASE;
-    if ((idx >= 0) && (idx < evrInfo.outputCount)) {
+    case RRANGE(PULSE_DELAY) {
         return evrInfo.delays[idx];
     }
-    idx = offset - REG_PULSE_WIDTH_BASE;
-    if ((idx >= 0) && (idx < evrInfo.outputCount)) {
+    case RRANGE(PULSE_WIDTH) {
         return evrInfo.widths[idx];
+    }
+    case OSPREYEVR_FEED_LIMIT...0xffff: // cause compiler error on overlap
+        break;
     }
 
     return 0;

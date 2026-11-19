@@ -1,5 +1,5 @@
-commit b062a5fcea73aeb8a0585c6e327b145f662524a4
+commit e15d138fbd60db73ce232faedd6485f55615ca34
 Author: Michael Davidsaver <mdavidsaver@gmail.com>
-Date:   Sun Nov 15 09:58:24 2026 -0800
+Date:   Sat Nov 21 08:27:01 2026 -0800
 
-    test better delay measurement
+    Advertise FEED register size

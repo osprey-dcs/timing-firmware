@@ -1091,12 +1091,12 @@
     <spirit:parameter>
       <spirit:name>ACTION_STROBES_WIDTH</spirit:name>
       <spirit:displayName>Action Stobes Width</spirit:displayName>
-      <spirit:value spirit:format="long" spirit:resolve="user" spirit:id="PARAM_VALUE.ACTION_STROBES_WIDTH" spirit:minimum="16" spirit:maximum="16" spirit:rangeType="long">16</spirit:value>
+      <spirit:value spirit:format="long" spirit:resolve="user" spirit:id="PARAM_VALUE.ACTION_STROBES_WIDTH" spirit:minimum="16" spirit:maximum="24" spirit:rangeType="long">16</spirit:value>
     </spirit:parameter>
     <spirit:parameter>
       <spirit:name>HARDWARE_OUTPUT_COUNT</spirit:name>
       <spirit:displayName>Hardware Output Count</spirit:displayName>
-      <spirit:value spirit:format="long" spirit:resolve="user" spirit:id="PARAM_VALUE.HARDWARE_OUTPUT_COUNT" spirit:minimum="2" spirit:maximum="16" spirit:rangeType="long">4</spirit:value>
+      <spirit:value spirit:format="long" spirit:resolve="user" spirit:id="PARAM_VALUE.HARDWARE_OUTPUT_COUNT" spirit:minimum="2" spirit:maximum="24" spirit:rangeType="long">4</spirit:value>
     </spirit:parameter>
     <spirit:parameter>
       <spirit:name>SERDES_FACTOR</spirit:name>
@@ -1136,7 +1136,7 @@
       <xilinx:xpmLibraries>
         <xilinx:xpmLibrary>XPM_FIFO</xilinx:xpmLibrary>
       </xilinx:xpmLibraries>
-      <xilinx:coreRevision>8</xilinx:coreRevision>
+      <xilinx:coreRevision>9</xilinx:coreRevision>
       <xilinx:upgrades>
         <xilinx:canUpgradeFrom>user.org:user:ospreyEVR:1.0</xilinx:canUpgradeFrom>
         <xilinx:canUpgradeFrom>ospreydcs.com:osprey:ospreyEVR:1.0</xilinx:canUpgradeFrom>

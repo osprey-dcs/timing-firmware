@@ -38,13 +38,13 @@ for(pin=0; pin<8; pin=pin+1) begin : history
 end
 wire [15:0] hwOutputsHist3 = hwOutputsHist[3];
 
-wire [25:0] evrActionStrobes;
+wire [23:0] evrActionStrobes;
 
 ospreyEVR_v1_0 #(
     .HARDWARE_OUTPUT_COUNT(24),
     .SERDES_FACTOR(1),
     .ACTIVE_LOW_OUTPUTS(0),
-    .ACTION_STROBES_WIDTH(26)
+    .ACTION_STROBES_WIDTH(24)
 ) dut(
     .evrClk(evrClk),
     .evrBitClk(evrBitClk),
@@ -186,6 +186,17 @@ initial begin
     axi.read (4 * dut.REG_INDEX_ACTION_RAM, 32'h00000004);
     axi.write(4 * dut.REG_INDEX_ACTION_RAM, {14'hx, 2'b01, 8'd2, 8'd15}); // event 15 triggers 3rd action
     axi.read (4 * dut.REG_INDEX_ACTION_RAM, 32'h00000000);
+
+    start_case("FIFO");
+    axi.write(4 * dut.REG_INDEX_ACTION_RAM, {14'hx, 2'b10, 8'd25, 8'd125}); // event 125 read FIFO action
+    axi.read (4 * dut.REG_INDEX_ACTION_RAM, 32'h02000000);
+    axi.read (4 * dut.REG_INDEX_FIFO_EVENT, 32'h000000xx);
+    @(negedge evrClk);
+    nextCode <= 9'd125;
+    while(!dut.evrRawActions[25])
+        @(posedge evrClk);
+    // TODO: simulate xpm_fifo_async
+    `assert_eq(dut.evrFifoWriteData[71-:8], 8'd125);
 
     start_case("End");
 `ifdef __ICARUS__

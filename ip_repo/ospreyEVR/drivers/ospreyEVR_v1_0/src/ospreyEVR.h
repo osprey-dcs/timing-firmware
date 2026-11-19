@@ -59,6 +59,7 @@ int ospreyEVRSetPulseWidth(int channel, uint32_t width);
 int ospreyEVRGetTime(uint32_t *seconds, uint32_t *ticks);
 int ospreyEVRGetFifoEvent(uint32_t *seconds, uint32_t *ticks);
 
+#define OSPREYEVR_FEED_LIMIT 800
 int ospreyEVR_FEEDwrite(int offset, uint32_t value);
 uint32_t ospreyEVR_FEEDread(int offset);
 
