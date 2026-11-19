@@ -97,7 +97,7 @@ void ospreyTRGOUTinit()
     if (!(GPIO_READ(GPIO_IDX_TRGOUT_JTR1_SPI) & JTR_PRESENT))
         return; // FMC2 not present
 
-    printf("%s(%u) start\n", __func__, ch);
+    printf("%s start\n", __func__);
 
     for (ch = 0 ; ch < SI539XSEQ_COUNT ; ch++) {
         struct si5394Info* const I = &si5394Info[ch];
@@ -110,7 +110,6 @@ void ospreyTRGOUTinit()
             continue;
         }
 
-        printf("%s enable\n", __func__);
         // Enable the level shifters with the chip still in reset and its
         // clock outputs disabled.
         si539xSeqControl(ch, SI539XSEQ_CTL_CHIP_RESET | SI539XSEQ_CTL_CLKBUF_DIS,
@@ -122,7 +121,7 @@ void ospreyTRGOUTinit()
     for (ch = 0 ; ch < SI539XSEQ_COUNT ; ch++) {
         struct si5394Info* const I = &si5394Info[ch];
         if (I->present) {
-            printf("%s unreset\n", __func__);
+            printf("%s(%u) unreset\n", __func__, ch);
             si539xSeqControl(ch, 0, SI539XSEQ_CTL_CHIP_RESET);
         }
     }
@@ -131,7 +130,6 @@ void ospreyTRGOUTinit()
         struct si5394Info* const I = &si5394Info[ch];
         if (!I->present)
             continue;
-        printf("%s ids\n", __func__);
 
         // sequence of ID registers to read once
         static
@@ -155,7 +153,7 @@ void ospreyTRGOUTinit()
         struct si5394Info* const I = &si5394Info[ch];
         if (!I->present)
             continue;
-        printf("%s wait\n", __func__);
+        printf("%s(%u) wait\n", __func__, ch);
 
         while (si539xIsIdle(SI539x_MAIN(ch))==0) {
             microsecondSpin(100);
@@ -169,7 +167,7 @@ void ospreyTRGOUTinit()
             printf("ERR jtr%u Found Si5394 ID 0x%02x%02x !?!\n", ch, I->ident.u1[1], I->ident.u1[0]);
             continue;
         }
-        printf("%s prepare\n", __func__);
+        printf("%s(%u) prepare\n", __func__, ch);
 
         // read back initial value of registers modified by the setup sequence
         if (si539xCompileSeq(SI539x_MAIN(ch), 0,
@@ -186,7 +184,7 @@ void ospreyTRGOUTinit()
         struct si5394Info* const I = &si5394Info[ch];
         if (!I->present)
             continue;
-        printf("%s wait\n", __func__);
+        printf("%s(%u) wait\n", __func__, ch);
 
         while (si539xIsIdle(SI539x_MAIN(ch))==0) {
             microsecondSpin(100);

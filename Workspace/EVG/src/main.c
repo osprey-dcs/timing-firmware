@@ -46,22 +46,6 @@
 #include "util.h"
 #include "xadc.h"
 
-#include <ospreyEVR.h>
-static void
-checkEVR(void)
-{
-    int code;
-    uint32_t seconds, ticks;
-    static int firstTime = 1;
-    if (firstTime) {
-        firstTime = 0;
-        ospreyEVRSetEventAction(125, OSPREY_EVR_ACTION_WRITE_FIFO);
-    }
-    if ((code = ospreyEVRGetFifoEvent(&seconds, &ticks)) != 0) {
-        printf("%X %3d %10u%10u\n", ospreyEVRStatus(), code, seconds, ticks);
-    }
-}
-
 int
 main(void)
 {
@@ -98,7 +82,6 @@ main(void)
         consoleCrank();
         ospreyUDPcrank();
         ospreyTRGOUTcrank();
-        //checkEVR();
     }
     cleanup_platform();
     return 0;
