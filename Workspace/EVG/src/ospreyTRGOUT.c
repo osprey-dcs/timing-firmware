@@ -193,7 +193,6 @@ void ospreyTRGOUTinit()
         for(size_t idx=0; idx < NELEM(si539xSetupSeq); idx++) {
             if(si539xSetupSeq[idx].action==si539xActionReg) {
                 si539xSetupInitial[idx] = si539xReadSeq(SI539x_MAIN(ch), idx);
-                printf("%u 0x%03x = 0x%02x\n", ch, si539xSetupSeq[idx].addr, si539xSetupInitial[idx]);
             }
         }
 
