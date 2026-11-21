@@ -11,6 +11,9 @@ import ospreyEVR
 
 def base_build():
     R = {
+        "__metadata__": {
+          "si570Ref": 270, # MHz for 570NBB001808DGR on Marble 1.4.x
+        },
         "FPGA:powerUp_": {
           "access": "rw",
           "addr_width": 0,
@@ -544,22 +547,31 @@ def mpsLocal_build(MPS_REG_BASE=10000, mpsOutputCount=2):
 
     return R
 
+def merge_core(base, core):
+    'Merge register map and metadata map'
+    Mb = base.get('__metadata__') or {}
+    Mc = core.get('__metadata__') or {}
+    Mb.update(Mc)
+    base.update(core)
+    base['__metadata__'] = Mb
+
 def evt_merge():
     R = base_build()
-    R.update(mpsLocal_build(MPS_REG_BASE=100000,
-                            mpsOutputCount=8))
-    R.update(ospreyEVG.ospreyEVG_build(
+    merge_core(R, mpsLocal_build(
+        MPS_REG_BASE=100000,
+        mpsOutputCount=8,
+    ))
+    merge_core(R, ospreyEVG.ospreyEVG_build(
         EVG_REG_BASE=1000000,
         timerCount=8,
         hwTriggerCount=16,
         seqBankCount=8,
         seqAddrWidth=11,
     ))
-    R.update(ospreyEVR.ospreyEVR_build(
+    merge_core(R, ospreyEVR.ospreyEVR_build(
         EVR_REG_BASE=1100000,
         hwOutputCount=24,
     ))
-    R["__metadata__"]["si570Ref"] = 270 # MHz for 570NBB001808DGR on Marble 1.4.x
     return R
 
 def sortOrdered(D: dict) -> OrderedDict:
