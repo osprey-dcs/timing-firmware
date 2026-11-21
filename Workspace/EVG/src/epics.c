@@ -43,6 +43,7 @@
 #include "mps.h"
 #include "ospreyRFIN.h"
 #include "ospreyTRGOUT.h"
+#include "ospreyEVR.h"
 #include "si570.h"
 #include "softwareBuildDate.h"
 #include "systemParameters.h"
@@ -90,28 +91,30 @@ struct LEEPpacket {
 #define REG_MARBLE_PLL_SET_Y3               87
 #define REG_MARBLE_PPS_LOCAL_CSR            88
 #define REG_IOSELECT                        89
-#define REG_SI570_BASE                      90
-#  define REG_SI570_SIZE 4
-#define REG_SYSMON_BASE                     100
-#define SYSMON_SIZE                         300
-#define REG_TRGOUT_BASE                     400
-#  define REG_TRGOUT_SIZE TRGOUT_SIZE
+#define F_REG_SI570_BASE                    90
+#  define SI570_SIZE                4
+#define F_REG_SYSMON_BASE                   100
+#  define SYSMON_SIZE               300
+#define F_REG_TRGOUT_BASE                   400
 
-#define REG_JSON_ROM_BASE                   0x800
-#define REG_JSON_ROM_ALTERNATE_BASE         0x4000
-#define REG_JSON_ROM_ALTERNATE_SIZE         0x4000
+// See: Required Registers
+//   https://github.com/osprey-dcs/feed-core/blob/master/documentation/proto.rst
+#define F_REG_HELLO_BASE                    0
+#  define HELLO_SIZE                4
+#define F_REG_JSON_ROM_BASE                 0x800
+#  define JSON_ROM_SIZE             0x800
+#define F_REG_JSON_ROM_ALTERNATE_BASE       0x4000
+#  define JSON_ROM_ALTERNATE_SIZE   0x4000
 
-#define REG_EVG_START                       1000000
-#define REG_EVG_COUNT                       100000
-#define REG_EVR_START                       1100000
-#define REG_EVR_COUNT                       100000
+#define F_REG_EVG_BASE                      1000000
+#  define EVG_SIZE                  100000
+#define F_REG_EVR_BASE                      1100000
+#  define EVR_SIZE                  OSPREYEVR_FEED_LIMIT
 
-#define REG_MPS_LOCAL_START                 100000
-#define REG_MPS_LOCAL_COUNT                 1000
-#define REG_MPS_MERGE_START                 110000
-#define REG_MPS_MERGE_COUNT                 1000
-
-#define RANGE(base, count) (base) ... ((base)+(count)-1)
+#define F_REG_MPS_LOCAL_BASE                100000
+#  define MPS_LOCAL_SIZE            1000
+#define F_REG_MPS_MERGE_BASE                110000
+#  define MPS_MERGE_SIZE            1000
 
 static int powerUpFlag = 1;
 static int mgtClkSwitch0 = -1; // spoil
@@ -158,25 +161,14 @@ setMgtClkSwitch0(int inputClkIndex)
     }
 }
 
+#define RRANGE(REG) (F_REG_ ## REG ## _BASE) ... (F_REG_ ## REG ## _BASE + REG ## _SIZE - 1): \
+    idx = offset - F_REG_ ## REG ## _BASE;
+
 static void
-writeReg(int address, uint32_t value)
+writeReg(int offset, uint32_t value)
 {
-    if ((address >= REG_EVG_START)
-     && (address < (REG_EVG_START + REG_EVG_COUNT))) {
-        ospreyEVG_FEEDwrite(address - REG_EVG_START, value);
-        return;
-    }
-    if ((address >= REG_EVR_START)
-     && (address < (REG_EVR_START + REG_EVR_COUNT))) {
-        ospreyEVR_FEEDwrite(address - REG_EVR_START, value);
-        return;
-    }
-    if ((address >= REG_MPS_LOCAL_START)
-     && (address < (REG_MPS_LOCAL_START + REG_MPS_LOCAL_COUNT))) {
-        mpsWrite(address - REG_MPS_LOCAL_START, value);
-        return;
-    }
-    switch(address) {
+    uint32_t idx;
+    switch(offset) {
     case REG_POWERUP_STATE:     if (value == 0)   powerUpFlag = 0;       return;
     case REG_FPGA_REBOOT:       if (value == 100) resetFPGA(0);          return;
     case REG_FPGA_MODE_EVG:             ioSelectActivateEVG(value != 0); return;
@@ -185,9 +177,9 @@ writeReg(int address, uint32_t value)
     case REG_MARBLE_PLL_SET_Y3:         clockAdjustSetDAC(1, value);     return;
     case REG_MARBLE_PPS_LOCAL_CSR:      localPPSenable(value);           return;
     case REG_MGT_RESET:       if(value) mgtReset();                      return;
-    case RANGE(REG_SI570_BASE, REG_SI570_SIZE):
+    case RRANGE(SI570) {
         if((mgtClkSwitch0==MGT_CLK_SWITCH_INPUT_SI570_CLK)
-            && ((address - REG_SI570_BASE)==1) )
+            && (idx==1) )
         {
             // The MGTs do not react well to having the reference frequency change,
             // and get stuck in an inoperative state with no status indicating an issue.
@@ -195,36 +187,33 @@ writeReg(int address, uint32_t value)
             mgtClkSwitchConnectOutputToInput(MGT_CLK_SWITCH_OUTPUT_MGTCLK0,
                                              MGT_CLK_SWITCH_INPUT_DISABLE_OUTPUT);
         }
-        si570Write(address - REG_SI570_BASE, value);
+        si570Write(idx, value);
         if((mgtClkSwitch0==MGT_CLK_SWITCH_INPUT_SI570_CLK)
-            && ((address - REG_SI570_BASE)==1) )
+            && (idx==1) )
         {
             mgtClkSwitchConnectOutputToInput(MGT_CLK_SWITCH_OUTPUT_MGTCLK0,
                                              mgtClkSwitch0);
         }
         return;
     }
+    case RRANGE(MPS_LOCAL) {
+        mpsWrite(idx, value);
+    }
+    // external IP cores
+    case RRANGE(EVG) {
+        ospreyEVG_FEEDwrite(idx, value);
+    }
+    case RRANGE(EVR) {
+        ospreyEVR_FEEDwrite(idx, value);
+    }
+    }
 }
 
 static uint32_t
-readReg(int address)
+readReg(int offset)
 {
-    /*
-     * Application-specific registers
-     */
-    if ((address >= REG_EVG_START)
-     && (address < (REG_EVG_START + REG_EVG_COUNT))) {
-        return ospreyEVG_FEEDread(address - REG_EVG_START);
-    }
-    if ((address >= REG_EVR_START)
-     && (address < (REG_EVR_START + REG_EVR_COUNT))) {
-        return ospreyEVR_FEEDread(address - REG_EVR_START);
-    }
-    if ((address >= REG_MPS_LOCAL_START)
-     && (address < (REG_MPS_LOCAL_START + REG_MPS_LOCAL_COUNT))) {
-        return mpsRead(address - REG_MPS_LOCAL_START);
-    }
-    switch(address) {
+    uint32_t idx;
+    switch(offset) {
     case REG_POWERUP_STATE:       return powerUpFlag;
     case REG_LOOP_COUNT:          return loopCount;
     case REG_FIRMWARE_BUILD_DATE: return GPIO_READ(GPIO_IDX_FIRMWARE_DATE);
@@ -242,14 +231,13 @@ readReg(int address)
                                                                        & 0xFFFF;
     case REG_MARBLE_PMOD_INPUTS:  return GPIO_READ(GPIO_IDX_PMOD_FMC_MONITOR)
                                                                           >> 16;
-    case RANGE(REG_SI570_BASE, REG_SI570_SIZE):
-        return si570Read(address - REG_SI570_BASE);
+    case RRANGE(SI570) {
+        return si570Read(idx);
+    }
     case REG_IOSELECT:            return ioSelectStatus();
-    case RANGE(REG_SYSMON_BASE, SYSMON_SIZE):
-        {
-        int offset = address - REG_SYSMON_BASE;
-        int bank = offset & 0xE0;
-        int index = offset & 0x1F;
+    case RRANGE(SYSMON) {
+        int bank = idx & 0xE0;
+        int index = idx & 0x1F;
         switch (bank) {
         case 0x00:  return xadcFetchSysmon(index);
         case 0x20:  return mmcMailboxFetchSysmon(index);
@@ -258,34 +246,42 @@ readReg(int address)
         case 0xC0:  return clockAdjustFetchSysmon(index);
         case 0xE0:  return mgtFetchSysmon(index);
         }
-        }
         return 0;
+    }
     case REG_MARBLE_MGT_REFCLK_SOURCE: return mgtClkSwitch0;
     case REG_MARBLE_PPS_LOCAL_CSR:     return localPPSstatus();
-    case RANGE(REG_TRGOUT_BASE, REG_TRGOUT_SIZE):
-        return osreyTRGOUTRead(address - REG_TRGOUT_BASE);
+    case RRANGE(MPS_LOCAL) {
+        return mpsRead(idx);
     }
-
-    /*
-     * Generic LEEP registers
-     * The baseRegs initializer puts the string in network byte order.
-     * Check these addresses last since they're read only at IOC (re)connect.
-     */
-    union LEEPbaseRegs { char u_c[16]; uint32_t u_l[4]; };
-    static const union LEEPbaseRegs baseRegs = {.u_c = "Hello World!\r\n\r\n"};
+    case RRANGE(TRGOUT) {
+        return osreyTRGOUTRead(idx);
+    }
+    // external IP cores
+    case RRANGE(EVG) {
+        return ospreyEVG_FEEDread(idx);
+    }
+    case RRANGE(EVR) {
+        return ospreyEVR_FEEDread(idx);
+    }
+    // Generic LEEP registers
+    case RRANGE(HELLO) {
+        static const
+        union LEEPbaseRegs { char u_c[16]; uint32_t u_l[4]; }
+        baseRegs = {.u_c = "Hello World!\r\n\r\n"};
+        return ntohl(baseRegs.u_l[idx]);
+    }
+    case RRANGE(JSON_ROM) {
+        return 0; // indicate use of alternate/larger ROM
+    }
+    case RRANGE(JSON_ROM_ALTERNATE) {
 #   include "JSONrom.h"
-#   define JSON_ELEMENT_COUNT ((sizeof config_romx / sizeof config_romx[0]))
-    if ((address >= 0) && (address < 3)) {
-        return ntohl(baseRegs.u_l[address]);
-    }
-    else if (address == REG_JSON_ROM_BASE) {
+STATIC_ASSERT(NELEM(config_romx) < JSON_ROM_ALTERNATE_SIZE);
+        if(idx < NELEM(config_romx))
+            return config_romx[idx];
         return 0;
     }
-    else if ((address >= REG_JSON_ROM_ALTERNATE_BASE)
-          && (address < (REG_JSON_ROM_ALTERNATE_BASE + JSON_ELEMENT_COUNT))) {
-        return config_romx[address-REG_JSON_ROM_ALTERNATE_BASE];
     }
-    return 0;
+    return 0x2bad4700;
 }
 
 static void
