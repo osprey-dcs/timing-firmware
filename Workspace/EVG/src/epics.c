@@ -94,7 +94,8 @@ struct LEEPpacket {
 #define F_REG_SI570_BASE                    90
 #  define SI570_SIZE                4
 #define F_REG_SYSMON_BASE                   100
-#  define SYSMON_SIZE               300
+#  define SYSMON_SIZE               256
+#define F_REG_IICFPGA_BASE                  356
 #define F_REG_TRGOUT_BASE                   400
 
 #define F_REG_RFIN_BASE                     500
@@ -242,17 +243,19 @@ readReg(int offset)
     }
     case REG_IOSELECT:            return ioSelectStatus();
     case RRANGE(SYSMON) {
-        int bank = idx & 0xE0;
-        int index = idx & 0x1F;
+        unsigned bank = idx & 0xE0;
+        unsigned index = idx & 0x1F;
         switch (bank) {
         case 0x00:  return xadcFetchSysmon(index);
         case 0x20:  return mmcMailboxFetchSysmon(index);
-        case 0x40:  return iicFPGAfetchSysmon(index);
         case 0xA0:  return evgFetchSysmon(index);
         case 0xC0:  return clockAdjustFetchSysmon(index);
         case 0xE0:  return mgtFetchSysmon(index);
         }
-        return 0;
+        return 0xdeadbeef;
+    }
+    case RRANGE(IICFPGA) {
+        return iicFPGAfetchSysmon(idx);
     }
     case REG_MARBLE_MGT_REFCLK_SOURCE: return mgtClkSwitch0;
     case REG_MARBLE_PPS_LOCAL_CSR:     return localPPSstatus();

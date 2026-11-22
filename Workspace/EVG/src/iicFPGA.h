@@ -51,7 +51,8 @@ int iicFPGAeepromWrite(int idx, uint32_t address, uint32_t length,
 const char *iicFPGAgetNameString(int index);
 uint32_t iicFPGAgetSerialNumber(int index);
 uint32_t iicFPGAgetPartNumber(int index);
-uint32_t iicFPGAfetchSysmon(int index);
+#define IICFPGA_SIZE 32
+uint32_t iicFPGAfetchSysmon(unsigned int index);
 void iicFPGAscan(void);
 
 #endif /* _IIC_FPGA_H_ */
