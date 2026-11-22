@@ -303,7 +303,8 @@ uint32_t osreyTRGOUTRead(uint32_t addr)
     switch(addr) {
     case 0 ... 3: return I->ident.u4[idx];
     case 4 ... 5: { // clear on read...
-        uint32_t ret = I->status;
+         // 0x53f[1] - HIST_VALID is the only "ok" bit.  Invert so sts!=0 is an error
+        uint32_t ret = I->status ^ 0x2;
         I->status = 0;
         return ret;
     }
