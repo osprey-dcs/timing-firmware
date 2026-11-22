@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-#include <stdio.h>
+#include <stdbool.h>
 #include "ioSelect.h"
 #include "ospreyRFIN.h"
 #include "gpio.h"
@@ -122,6 +122,7 @@ ospreyRFINreadADS7253(int i)
 static void
 lmk01801writeRegister(uint32_t shiftReg)
 {
+    printf("  0x%08x\n", shiftReg);
     int i;
     for (i = 0 ; i < 32 ; i++) {
         uint32_t d = (shiftReg & 0x80000000) ? CSR_W_LMK01801_DATA : 0;
@@ -147,97 +148,170 @@ int ospreyEFINlmk01801Set(unsigned fmc, unsigned value)
  *  For now:
  *   CLK0 input:
  *     CLK0_M2C -- LMK01801 CLK0  -- divide by 1
- *     GBTCLK1  -- LMK01801 CLK4  -- divide by 1
+ *     GBTCLK1  -- LMK01801 CLK4  -- divide by 1 (reconfigured below)
  *   CLK1 input:
- *     GBTCLK0  -- LMK01801 CLK8  -- divide by 1
+ *     GBTCLK0  -- LMK01801 CLK8  -- divide by 1 (reconfigured below)
  *     CLK1_M2C -- LMK01801 CLK12 -- divide by 1 (J20 diagnostic output too)
  */
-static void
-lmk01801init(void)
+/* R0
+  RESET = 0
+  POWERDOWN = 0
+  CLKout0_3_PD = 0
+  CLKout4_7_PD = 0
+  CLKout8_11_PD = 0
+  CLKout12_13_PD = 0
+  CLKin0_BUF_TYPE = 0
+  CLKin1_BUF_TYPE = 0
+  CLKin0_DIV = 1
+  CLKin0_MUX = 0
+  CLKin1_DIV = 1
+  CLKin1_MUX = 0
+ */
+#define LMK_R0 (0x48087000)
+
+/* R1
+  CLKout0_TYPE = 1
+  CLKout1_TYPE = 0
+  CLKout2_TYPE = 0
+  CLKout3_TYPE = 0
+  CLKout4_TYPE = 1
+  CLKout5_TYPE = 0
+  CLKout6_TYPE = 0
+  CLKout7_TYPE = 0
+ */
+#define LMK_R1 (0x00010011)
+
+/* R2
+  CLKout8_TYPE = 1
+  CLKout9_TYPE = 0
+  CLKout10_TYPE = 0
+  CLKout11_TYPE = 0
+  CLKout12_TYPE = 1
+  CLKout13_TYPE = 12
+ */
+#define LMK_R2 (0x0C100012)
+
+/* R3
+  CLKout12_13_ADLY = 0
+  CLKout12_13_HS = 0
+  SYNC1_QUAL = 0
+  SYNC0_POL_INV = 0
+  SYNC1_POL_INV = 0
+  NO_SYNC_CLKout0_3 = 1
+  NO_SYNC_CLKout4_7 = 1
+  NO_SYNC_CLKout8_11 = 1
+  NO_SYNC_CLKout12_13 = 1
+  CLKout0_3_OFFSET_PD = 1
+  CLKout4_7_OFFSET_PD = 1
+  CLKout8_11_OFFSET_PD = 1
+  SYNC0_FAST = 0
+  SYNC1_FAST = 0
+  SYNC0_AUTO = 0
+  SYNC1_AUTO = 0
+ */
+#define LMK_R3 (0x107F0003)
+
+/* R4
+  CLKout12_13_DDLY = 0
+ */
+#define LMK_R4 (0x00000004)
+
+/* R5
+  CLKout0_3_DIV = 1
+  CLKout4_7_DIV = 1
+  CLKout8_11_DIV = 1
+  CLKout12_ADLY_SEL = 0
+  CLKout13_ADLY_SEL = 0
+  CLKout12_13_DIV = 1
+ */
+#define LMK_R5 (0x00020495)
+
+static
+void bupdate(uint32_t *val, uint8_t high, uint8_t low, uint32_t fld)
 {
+    uint8_t width = high-low+1;
+    uint32_t mask = ((1u<<width)-1)<<low;
+
+    fld = mask & (fld<<low);
+    *val = (~mask & *val) | fld;
+}
+
+static uint8_t clkDiv[2]; // range [0, 63]
+
+static
+void splitDiv(uint8_t input, uint8_t *oa, uint8_t *ob)
+{
+    input++;
+    // input range [1, 64]
+    uint8_t a, b; // range [1, 8]
+    for(a=8; a>0; a--) { // prefer larger IN divider
+        for(b=8; b>0; b--) {
+            if(a*b == input) {
+                *oa = a; // [1, 8] (8 will wrap to 0)
+                *ob = b;
+                return;
+            }
+        }
+    }
+    *oa = 7;
+    *ob = 7;
+}
+
+static
+void lmk01801setup(bool reset)
+{
+    printf("%s(%s)\n", __func__, reset ? "reset" : "");
+
+    if(!(ioSelectStatus() & IOSELECT_STATUS_FMC1_IS_PRESENT))
+        return;
+
     // See https://www.ti.com/lit/ds/symlink/lmk01801.pdf
     // also scripts/lmk01801.py for help constructing and unpacking register values
+
+    uint32_t r0 = LMK_R0, r5 = LMK_R5;
+    {
+        uint8_t CLKin, CLKout;
+
+        splitDiv(clkDiv[0], &CLKin, &CLKout);
+        // CLKin0_MUX
+        bupdate(&r0, 18, 17, CLKin!=1); // enable divider if needed
+        // CLKin0_DIV
+        bupdate(&r0, 16, 14, CLKin);
+        // CLKout4_7_DIV
+        bupdate(&r5, 9, 7, CLKout);
+
+        splitDiv(clkDiv[1], &CLKin, &CLKout);
+        // CLKin1_MUX
+        bupdate(&r0, 23, 22, CLKin!=1); // enable divider if needed
+        // CLKin1_DIV
+        bupdate(&r0, 21, 19, CLKin);
+        // CLKout4_7_DIV
+        bupdate(&r5, 12, 10, CLKout);
+    }
 
     /* Unlock settings */
     lmk01801writeRegister(0x000005EF);
 
     // setup for pass through (divide by 1, no delays, no sync. functions)
 
-    /* R0 -- reset */
-    lmk01801writeRegister(0x48003010);
+    if(reset) {
+        /* R0 -- reset */
+        lmk01801writeRegister(0x48003010);
+    }
 
-    /* R0
-      RESET = 0
-      POWERDOWN = 0
-      CLKout0_3_PD = 0
-      CLKout4_7_PD = 0
-      CLKout8_11_PD = 0
-      CLKout12_13_PD = 0
-      CLKin0_BUF_TYPE = 0
-      CLKin1_BUF_TYPE = 0
-      CLKin0_DIV = 1
-      CLKin0_MUX = 0
-      CLKin1_DIV = 1
-      CLKin1_MUX = 0
-     */
-    lmk01801writeRegister(0x48087000);
+    lmk01801writeRegister(r0);
 
-    /* R1
-      CLKout0_TYPE = 1
-      CLKout1_TYPE = 0
-      CLKout2_TYPE = 0
-      CLKout3_TYPE = 0
-      CLKout4_TYPE = 1
-      CLKout5_TYPE = 0
-      CLKout6_TYPE = 0
-      CLKout7_TYPE = 0
-     */
-    lmk01801writeRegister(0x00010011);
+    if(reset) { // unchanged after init
+        lmk01801writeRegister(LMK_R1);
 
-    /* R2
-      CLKout8_TYPE = 1
-      CLKout9_TYPE = 0
-      CLKout10_TYPE = 0
-      CLKout11_TYPE = 0
-      CLKout12_TYPE = 1
-      CLKout13_TYPE = 12
-     */
-    lmk01801writeRegister(0x0C100012);
+        lmk01801writeRegister(LMK_R2);
 
-    /* R3
-      CLKout12_13_ADLY = 0
-      CLKout12_13_HS = 0
-      SYNC1_QUAL = 0
-      SYNC0_POL_INV = 0
-      SYNC1_POL_INV = 0
-      NO_SYNC_CLKout0_3 = 1
-      NO_SYNC_CLKout4_7 = 1
-      NO_SYNC_CLKout8_11 = 1
-      NO_SYNC_CLKout12_13 = 1
-      CLKout0_3_OFFSET_PD = 1
-      CLKout4_7_OFFSET_PD = 1
-      CLKout8_11_OFFSET_PD = 1
-      SYNC0_FAST = 0
-      SYNC1_FAST = 0
-      SYNC0_AUTO = 0
-      SYNC1_AUTO = 0
-     */
-    lmk01801writeRegister(0x107F0003);
+        lmk01801writeRegister(LMK_R3);
 
-    /* R4
-      CLKout12_13_DDLY = 0
-     */
-    lmk01801writeRegister(0x00000004);
+        lmk01801writeRegister(LMK_R4);
+    }
 
-    /* R5
-      CLKout0_3_DIV = 1
-      CLKout4_7_DIV = 1
-      CLKout8_11_DIV = 1
-      CLKout12_ADLY_SEL = 0
-      CLKout13_ADLY_SEL = 0
-      CLKout12_13_DIV = 1
-     */
-    lmk01801writeRegister(0x00020495);
+    lmk01801writeRegister(r5);
 
     /* Lock settings */
     lmk01801writeRegister(0x000005FF);
@@ -260,5 +334,40 @@ ospreyRFINinit(void)
     if (cfr != 0x0040) {
         printf("WARNING -- RF-IN ADS7253 CFR 0x%04X (expect 0x0040).\n", cfr);
     }
-    lmk01801init();
+    lmk01801setup(true); // reset and setup with divide by 1
+}
+
+#define F_REG_CLKDIV_BASE       0
+#  define CLKDIV_SIZE       2
+
+#define RRANGE(REG) (F_REG_ ## REG ## _BASE) ... (F_REG_ ## REG ## _BASE + REG ## _SIZE - 1): \
+    idx = offset - F_REG_ ## REG ## _BASE;
+
+uint32_t osreyRFINRead(uint32_t offset)
+{
+    unsigned idx;
+    switch(offset) {
+    case RRANGE(CLKDIV) {
+        return clkDiv[idx]+1;
+    }
+    }
+    return 0xdeadbeef;
+}
+
+void osreyRFINWrite(uint32_t offset, uint32_t value)
+{
+    unsigned idx;
+    switch(offset) {
+    case RRANGE(CLKDIV) {
+        if(value==0 || value>64)
+            value = 64;
+        value--; // [0, 63]
+
+        if(value != clkDiv[idx]) {
+            clkDiv[idx] = value;
+            lmk01801setup(false);
+        }
+        break;
+    }
+    }
 }

@@ -97,6 +97,9 @@ struct LEEPpacket {
 #  define SYSMON_SIZE               300
 #define F_REG_TRGOUT_BASE                   400
 
+#define F_REG_RFIN_BASE                     500
+#  define RFIN_SIZE                 OSPREYRFIN_SIZE
+
 // See: Required Registers
 //   https://github.com/osprey-dcs/feed-core/blob/master/documentation/proto.rst
 #define F_REG_HELLO_BASE                    0
@@ -199,6 +202,9 @@ writeReg(int offset, uint32_t value)
     case RRANGE(MPS_LOCAL) {
         mpsWrite(idx, value);
     }
+    case RRANGE(RFIN) {
+        osreyRFINWrite(idx, value);
+    }
     // external IP cores
     case RRANGE(EVG) {
         ospreyEVG_FEEDwrite(idx, value);
@@ -252,6 +258,9 @@ readReg(int offset)
     case REG_MARBLE_PPS_LOCAL_CSR:     return localPPSstatus();
     case RRANGE(MPS_LOCAL) {
         return mpsRead(idx);
+    }
+    case RRANGE(RFIN) {
+        return osreyRFINRead(idx);
     }
     case RRANGE(TRGOUT) {
         return osreyTRGOUTRead(idx);

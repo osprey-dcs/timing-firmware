@@ -21,6 +21,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+#ifndef OSPREYRFIN_H
+#define OSPREYRFIN_H
+
+#include <stdint.h>
 
 /*
  * Communicate with devices on RF-IN FMC card.
@@ -30,3 +34,9 @@ void ospreyRFINinit(void);
 int ospreyRFINreadADS7253(int i);
 
 int ospreyEFINlmk01801Set(unsigned fmc, unsigned value);
+
+#define OSPREYRFIN_SIZE 2
+uint32_t osreyRFINRead(uint32_t addr);
+void osreyRFINWrite(uint32_t addr, uint32_t value);
+
+#endif // OSPREYRFIN_H

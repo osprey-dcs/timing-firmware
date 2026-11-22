@@ -456,6 +456,20 @@ def base_build():
             "data_width": 24,
             "sign": "unsigned"
         },
+        "CLKIN:div1": {
+            "access": "rw",
+            "addr_width": 0,
+            "base_addr": 500,
+            "data_width": 7, # [1, 64]
+            "sign": "unsigned"
+        },
+        "CLKIN:div2": {
+            "access": "rw",
+            "addr_width": 0,
+            "base_addr": 501,
+            "data_width": 7, # [1, 64]
+            "sign": "unsigned"
+        },
     }
     return R
 
