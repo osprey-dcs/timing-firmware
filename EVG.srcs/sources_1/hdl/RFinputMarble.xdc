@@ -6,12 +6,12 @@
 # FMC1_CLK0_M2C -- FMC1 H4/H5
 set_property -dict {PACKAGE_PIN F17 IOSTANDARD LVDS_25 DIFF_TERM 1} [get_ports FMC1_CLK0_M2C_P]
 set_property -dict {PACKAGE_PIN E17 IOSTANDARD LVDS_25 DIFF_TERM 1} [get_ports FMC1_CLK0_M2C_N]
-create_clock -period 8.000 -name FMC1_CLK0_M2C [get_ports FMC1_CLK0_M2C_P]
+create_clock -period 6.6666 -name FMC1_CLK0_M2C [get_ports FMC1_CLK0_M2C_P]
 
 # FMC1_CLK1_M2C -- FMC1 G2/G3
 set_property -dict {PACKAGE_PIN E18 IOSTANDARD LVDS_25 DIFF_TERM 1} [get_ports FMC1_CLK1_M2C_P]
 set_property -dict {PACKAGE_PIN D18 IOSTANDARD LVDS_25 DIFF_TERM 1} [get_ports FMC1_CLK1_M2C_N]
-create_clock -period 8.000 -name FMC1_CLK1_M2C [get_ports FMC1_CLK1_M2C_P]
+create_clock -period 6.6666 -name FMC1_CLK1_M2C [get_ports FMC1_CLK1_M2C_P]
 
 ############################# GPIO #############################
 # FMC1 LA00 -- FMC1 G6/G7

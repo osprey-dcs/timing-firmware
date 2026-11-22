@@ -18,7 +18,7 @@
 # FMC2 LA00 CC -- FMC2 G6/G7
 set_property -dict {PACKAGE_PIN Y22  IOSTANDARD LVDS_25 DIFF_TERM 1} [get_ports FMC2_Cleaned_CLK_P[0]]
 set_property -dict {PACKAGE_PIN AA22 IOSTANDARD LVDS_25 DIFF_TERM 1} [get_ports FMC2_Cleaned_CLK_N[0]]
-create_clock -period 8.000 -name FMC2_Cleaned_CLK0 [get_ports FMC2_Cleaned_CLK_P[0]]
+create_clock -period 6.6666 -name FMC2_Cleaned_CLK0 [get_ports FMC2_Cleaned_CLK_P[0]]
 
 # FMC2 LA01 CC -- FMC2 D8/D9
 set_property -dict {PACKAGE_PIN AA23 IOSTANDARD LVDS_25} [get_ports FMC2_Recovered_CLK_N[0]]
@@ -27,7 +27,7 @@ set_property -dict {PACKAGE_PIN AB24 IOSTANDARD LVDS_25} [get_ports FMC2_Recover
 # FMC2 LA17 CC -- FMC2 D20/D21
 set_property -dict {PACKAGE_PIN G22 IOSTANDARD LVDS_25 DIFF_TERM 1} [get_ports FMC2_Cleaned_CLK_P[1]]
 set_property -dict {PACKAGE_PIN F23 IOSTANDARD LVDS_25 DIFF_TERM 1} [get_ports FMC2_Cleaned_CLK_N[1]]
-create_clock -period 8.000 -name FMC2_Cleaned_CLK1 [get_ports FMC2_Cleaned_CLK_P[1]]
+create_clock -period 6.6666 -name FMC2_Cleaned_CLK1 [get_ports FMC2_Cleaned_CLK_P[1]]
 
 # FMC2 LA18 CC -- FMC2 C22/C23
 set_property -dict {PACKAGE_PIN G24 IOSTANDARD LVDS_25} [get_ports FMC2_Recovered_CLK_N[1]]
@@ -36,12 +36,12 @@ set_property -dict {PACKAGE_PIN F24 IOSTANDARD LVDS_25} [get_ports FMC2_Recovere
 # FMC2_CLK0_M2C -- FMC2 H4/H5 -- Unused
 #set_property -dict {PACKAGE_PIN F17 IOSTANDARD LVDS_25 DIFF_TERM 1} [get_ports FMC2_CLK0_M2C_P]
 #set_property -dict {PACKAGE_PIN E17 IOSTANDARD LVDS_25 DIFF_TERM 1} [get_ports FMC2_CLK0_M2C_N]
-#create_clock -period 8.000 -name FMC2_CLK0_M2C [get_ports FMC2_CLK0_M2C_P]
+#create_clock -period 6.6666 -name FMC2_CLK0_M2C [get_ports FMC2_CLK0_M2C_P]
 
 # FMC2_CLK1_M2C -- FMC2 G2/G3 -- Unused
 #set_property -dict {PACKAGE_PIN E18 IOSTANDARD LVDS_25 DIFF_TERM 1} [get_ports FMC2_CLK1_M2C_P]
 #set_property -dict {PACKAGE_PIN D18 IOSTANDARD LVDS_25 DIFF_TERM 1} [get_ports FMC2_CLK1_M2C_N]
-#create_clock -period 8.000 -name FMC2_CLK1_M2C [get_ports FMC2_CLK1_M2C_P]
+#create_clock -period 6.6666 -name FMC2_CLK1_M2C [get_ports FMC2_CLK1_M2C_P]
 
 ############################## Marble FMC2 ##############################
 ############################ Digital Outputs ############################
