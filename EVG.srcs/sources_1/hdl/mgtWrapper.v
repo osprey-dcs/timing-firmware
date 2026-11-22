@@ -29,9 +29,9 @@
 `default_nettype none
 `timescale 1ns / 1ps
 module mgtWrapper #(
-    parameter MGT_COUNT        = -1,
-    parameter MGT_DATA_WIDTH   = -1,
-    parameter COMMA_ALIGN_BYTE = -1,
+    parameter MGT_COUNT        = 8,
+    parameter MGT_DATA_WIDTH   = 16,
+    parameter COMMA_ALIGN_BYTE = 1,
     parameter SYSCLK_RATE      = 100000000,
     parameter DEBUG            = "false",
     parameter MGT_CTYPE_WIDTH  = (MGT_DATA_WIDTH+7)/8
