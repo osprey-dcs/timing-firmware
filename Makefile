@@ -49,12 +49,13 @@ Workspace/EVG_app/Release/EVG_app.elf: EVG.xsa $(APP_SRC)
 	xsct BuildScripts/BuildApp.tcl
 	touch --no-create $@
 
-# step 4: add ublaze application info primary bit stream
+# step 4: add ublaze application into primary bit stream
 Workspace/EVG/build/EVG.bit: Workspace/EVG_app/Release/EVG_app.elf
 	$(MAKE) -C Workspace/EVG/build EVG.bit ELF=../../EVG_app/Release/EVG_app.elf
 
 # step 5: give final bit stream  a friendly name
 EVG-$(CNAME).bit: Workspace/EVG/build/EVG.bit
+	cp $< EVG-latest.bit
 	cp $< $@
 
 PRINT.%:

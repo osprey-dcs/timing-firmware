@@ -12,7 +12,7 @@ JSONrom.h: create_JSON_ROM.py \
            $(EVG_DRIVER_DATA)/ospreyEVG.py \
            $(EVR_DRIVER_DATA)/ospreyEVR.py
 	PYTHONPATH="$(EVG_DRIVER_DATA):$(EVR_DRIVER_DATA):$(PYTHONPATH)" python3 create_JSON_ROM.py >LEEP.json
-	python3 "$(BEDROCK)/build_rom.py" -j LEEP.json -c JSONrom.h
+	python3 "$(BEDROCK)/build_rom.py" -d "Osprey EVx" -j LEEP.json -c JSONrom.h
 
 Design-Report.h: Design-Report.txt si5394Program.py Makefile
 	python3 si5394Program.py $< $@
