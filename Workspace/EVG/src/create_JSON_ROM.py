@@ -372,17 +372,25 @@ def base_build():
           "data_width": 32,
           "sign": "unsigned"
         },
+        # mgtFetchSysmon()
         "MGT:status": {
           "access": "r",
           "addr_width": 0,
-          "base_addr": 324,
+          "base_addr": 432+0,
           "data_width": 32,
           "sign": "unsigned"
         },
         "MGT:clkStatus": {
           "access": "r",
           "addr_width": 0,
-          "base_addr": 325,
+          "base_addr": 432+1,
+          "data_width": 32,
+          "sign": "unsigned"
+        },
+        "MGT:numReset": {
+          "access": "r",
+          "addr_width": 0,
+          "base_addr": 432+2,
           "data_width": 32,
           "sign": "unsigned"
         },

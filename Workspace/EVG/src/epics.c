@@ -97,6 +97,7 @@ struct LEEPpacket {
 #  define SYSMON_SIZE               256
 #define F_REG_IICFPGA_BASE                  356
 #define F_REG_TRGOUT_BASE                   400
+#define F_REG_MGTMON_BASE                   432
 
 #define F_REG_RFIN_BASE                     500
 #  define RFIN_SIZE                 OSPREYRFIN_SIZE
@@ -250,12 +251,14 @@ readReg(int offset)
         case 0x20:  return mmcMailboxFetchSysmon(index);
         case 0xA0:  return evgFetchSysmon(index);
         case 0xC0:  return clockAdjustFetchSysmon(index);
-        case 0xE0:  return mgtFetchSysmon(index);
         }
         return 0xdeadbeef;
     }
     case RRANGE(IICFPGA) {
         return iicFPGAfetchSysmon(idx);
+    }
+    case RRANGE(MGTMON) {
+        return mgtFetchSysmon(idx);
     }
     case REG_MARBLE_MGT_REFCLK_SOURCE: return mgtClkSwitch0;
     case REG_MARBLE_PPS_LOCAL_CSR:     return localPPSstatus();

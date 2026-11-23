@@ -40,7 +40,8 @@ void mgtInit(void);
 void mgtReset(void);
 void mgtCrank(void);
 void mgtShowStatus(void);
-uint32_t mgtFetchSysmon(int index);
+#define MGTMON_SIZE 8
+uint32_t mgtFetchSysmon(unsigned index);
 void mgtSetActiveRx(uint32_t active);
 void mgtSetActiveTx(uint32_t active);
 void mgtSetLoopback(int mgtIndex, int loopback);

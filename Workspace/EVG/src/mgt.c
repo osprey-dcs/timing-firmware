@@ -102,6 +102,8 @@ static enum {
     rstWait2,
 } mgtRst = rstIdle;
 
+static uint32_t mgtRstCount;
+
 void
 mgtInit(void)
 {
@@ -225,6 +227,7 @@ mgtCrank(void)
             GPIO_WRITE(GPIO_IDX_MGT_CSR, CSR_W_RX_LANE_RESET | CSR_W_LOL_CLEAR);
 
             mgtRst = rstIdle;
+            mgtRstCount++;
             printf("MGT reset complete\n");
         }
         break;
@@ -242,12 +245,14 @@ mgtCrank(void)
 }
 
 uint32_t
-mgtFetchSysmon(int index)
+mgtFetchSysmon(unsigned int index)
 {
     switch (index) {
     case 0: return GPIO_READ(GPIO_IDX_LINK_STATUS);
     case 1: return GPIO_READ(GPIO_IDX_MGT_CSR);
-    default: return 0;
+    case 2: return mgtRstCount;
+    case MGTMON_SIZE...0xff: // compile error if SIZE too small
+    default: return 0xdeadbeef;
     }
 }
 
