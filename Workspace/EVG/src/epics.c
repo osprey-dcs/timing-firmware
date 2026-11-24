@@ -125,6 +125,12 @@ static int powerUpFlag = 1;
 static int mgtClkSwitch0 = -1; // spoil
 static uint32_t loopCount;
 
+int
+getMgtClkSwitch0(void)
+{
+    return mgtClkSwitch0;
+}
+
 void
 setMgtClkSwitch0(int inputClkIndex)
 {
@@ -183,22 +189,7 @@ writeReg(int offset, uint32_t value)
     case REG_MARBLE_PPS_LOCAL_CSR:      localPPSenable(value);           return;
     case REG_MGT_RESET:       if(value) mgtReset();                      return;
     case RRANGE(SI570) {
-        if((mgtClkSwitch0==MGT_CLK_SWITCH_INPUT_SI570_CLK)
-            && (idx==1) )
-        {
-            // The MGTs do not react well to having the reference frequency change,
-            // and get stuck in an inoperative state with no status indicating an issue.
-            // So disable the reference to trigger PLL loss of lock.
-            mgtClkSwitchConnectOutputToInput(MGT_CLK_SWITCH_OUTPUT_MGTCLK0,
-                                             MGT_CLK_SWITCH_INPUT_DISABLE_OUTPUT);
-        }
         si570Write(idx, value);
-        if((mgtClkSwitch0==MGT_CLK_SWITCH_INPUT_SI570_CLK)
-            && (idx==1) )
-        {
-            mgtClkSwitchConnectOutputToInput(MGT_CLK_SWITCH_OUTPUT_MGTCLK0,
-                                             mgtClkSwitch0);
-        }
         return;
     }
     case RRANGE(MPS_LOCAL) {

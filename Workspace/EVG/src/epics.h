@@ -31,6 +31,9 @@
 
 void epicsInit(void);
 void epicsCrank(void);
+/// Return one of MGT_CLK_SWITCH_INPUT_*
+/// valid after mgtClkSwitchInit()
+int getMgtClkSwitch0(void);
 void setMgtClkSwitch0(int inputClkIndex);
 
 #endif /* _EPICS_H_ */

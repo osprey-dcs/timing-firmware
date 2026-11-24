@@ -36,6 +36,8 @@
 #include <stdio.h>
 #include <stdint.h>
 #include "iicFPGA.h"
+#include "epics.h"
+#include "mgtClkSwitch.h"
 #include "si570.h"
 #include "util.h"
 
@@ -120,7 +122,23 @@ void si570Write(int addr, uint32_t val)
     static uint32_t scratch7_9 = 0;
     switch(addr) {
     case 0: scratch7_9 = val; break;
-    case 1:
+    case 1: {
+        uint32_t rbR7_9 = si570getR7_9(),
+               rbR10_12 = si570getR10_12();
+
+        if(scratch7_9==rbR7_9 && rbR10_12==val)
+            return; // skip identical setting
+
+        int src = getMgtClkSwitch0();
+        if(src==MGT_CLK_SWITCH_INPUT_SI570_CLK)
+        {
+            // The MGTs do not react well to having the reference frequency change,
+            // and get stuck in an inoperative state with no status indicating an issue.
+            // So whe we are the source, disable while changing freq. to trigger PLL loss of lock.
+            mgtClkSwitchConnectOutputToInput(MGT_CLK_SWITCH_OUTPUT_MGTCLK0,
+                                             MGT_CLK_SWITCH_INPUT_DISABLE_OUTPUT);
+        }
+
         // programming sequence for arbitrary freq (not small jump) from si570 datasheet,
 
         writeRegister(137, 0x10); // Freeze DCO
@@ -130,7 +148,14 @@ void si570Write(int addr, uint32_t val)
 
         writeRegister(137, 0x00); // Un-Freeze DCO
         writeRegister(135, 0x40); // NewFreq
+
+        if(src==MGT_CLK_SWITCH_INPUT_SI570_CLK)
+        {
+            // re-enable
+            mgtClkSwitchConnectOutputToInput(MGT_CLK_SWITCH_OUTPUT_MGTCLK0, src);
+        }
         break;
+    }
     }
 }
 
